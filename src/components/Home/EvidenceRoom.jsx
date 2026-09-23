@@ -10,19 +10,18 @@ function EvidenceRoom() {
 
         {/* Heading */}
         <div className="max-w-2xl">
-
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">
-            Governance evidence chain
+            Evidence behind the assessment
           </p>
 
           <h2 className="mt-3 text-3xl font-bold text-[#0F2747] sm:text-4xl">
-            Every important assessment decision has a trail.
+            See where the assessment information comes from.
           </h2>
 
           <p className="mt-4 text-sm leading-6 text-slate-600">
-            Assessment results are connected to the evidence that supports them.
+            Important assessment results can be linked back to the documents
+            and information used to reach them.
           </p>
-
         </div>
 
         {/* Main content */}
@@ -32,16 +31,15 @@ function EvidenceRoom() {
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
 
             <h3 className="text-sm font-bold text-[#0F2747]">
-              Evidence timeline
+              Example evidence
             </h3>
 
             <p className="mt-1 text-xs text-slate-500">
-              Sample assessment record
+              Sample information used in an assessment
             </p>
 
             {/* Source */}
             <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
-
               <div className="flex items-center gap-3">
 
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
@@ -58,17 +56,15 @@ function EvidenceRoom() {
                   </p>
 
                   <p className="text-xs text-slate-500">
-                    Vendor compliance evidence
+                    Vendor certification document
                   </p>
                 </div>
 
               </div>
-
             </div>
 
             {/* Finding */}
             <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
-
               <div className="flex items-center gap-3">
 
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
@@ -77,7 +73,7 @@ function EvidenceRoom() {
 
                 <div>
                   <p className="text-[10px] uppercase text-slate-400">
-                    Finding
+                    What we found
                   </p>
 
                   <p className="mt-1 text-sm font-semibold text-[#0F2747]">
@@ -90,12 +86,10 @@ function EvidenceRoom() {
                 </div>
 
               </div>
-
             </div>
 
             {/* Decision */}
             <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
-
               <div className="flex items-center gap-3">
 
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
@@ -104,7 +98,7 @@ function EvidenceRoom() {
 
                 <div>
                   <p className="text-[10px] uppercase text-slate-400">
-                    Decision
+                    Result
                   </p>
 
                   <p className="mt-1 text-sm font-semibold text-[#0F2747]">
@@ -117,7 +111,6 @@ function EvidenceRoom() {
                 </div>
 
               </div>
-
             </div>
 
           </div>
@@ -130,12 +123,12 @@ function EvidenceRoom() {
             </div>
 
             <h3 className="mt-5 text-2xl font-bold">
-              Evidence stays connected to the decision.
+              Keep the evidence connected.
             </h3>
 
             <p className="mt-3 text-sm leading-6 text-slate-300">
-              The buyer can understand where an assessment result came from
-              and what evidence supports it.
+              Buyers can see the information used in an assessment and
+              understand how it connects to the result.
             </p>
 
             {/* Simple flow */}
@@ -143,11 +136,11 @@ function EvidenceRoom() {
 
               <div className="rounded-lg bg-white/10 p-4">
                 <p className="text-sm font-semibold">
-                  1. Original source
+                  1. Source information
                 </p>
 
                 <p className="mt-1 text-xs text-slate-400">
-                  Document or assessment input
+                  Document or information provided by the vendor
                 </p>
               </div>
 
@@ -157,11 +150,11 @@ function EvidenceRoom() {
 
               <div className="rounded-lg bg-white/10 p-4">
                 <p className="text-sm font-semibold">
-                  2. Assessment finding
+                  2. What we found
                 </p>
 
                 <p className="mt-1 text-xs text-slate-400">
-                  What the assessment found
+                  Information identified during the assessment
                 </p>
               </div>
 
@@ -171,11 +164,11 @@ function EvidenceRoom() {
 
               <div className="rounded-lg bg-emerald-500/10 p-4">
                 <p className="text-sm font-semibold">
-                  3. Governance record
+                  3. Assessment result
                 </p>
 
                 <p className="mt-1 text-xs text-slate-400">
-                  Record of the assessment result
+                  The result recorded from the assessment
                 </p>
               </div>
 
@@ -190,11 +183,11 @@ function EvidenceRoom() {
 
           <div>
             <p className="text-sm font-semibold text-[#0F2747]">
-              Designed for traceable assurance.
+              Everything stays connected.
             </p>
 
             <p className="mt-1 text-xs text-slate-500">
-              Source → finding → decision → evidence
+              Source → finding → result → evidence
             </p>
           </div>
 

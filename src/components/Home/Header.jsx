@@ -25,13 +25,14 @@ function Header() {
             </div>
 
             <div className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">
-              Assurance Platform
+              Offshore Vendor Assurance
             </div>
           </div>
         </Link>
 
         {/* Navigation */}
         <nav className="hidden items-center gap-8 lg:flex">
+
           <a
             href="#story"
             className="text-sm font-medium text-slate-600 transition-colors hover:text-[#0F2747]"
@@ -43,7 +44,7 @@ function Header() {
             href="#engines"
             className="text-sm font-medium text-slate-600 transition-colors hover:text-[#0F2747]"
           >
-            Assurance engines
+            What we check
           </a>
 
           <a
@@ -59,10 +60,12 @@ function Header() {
           >
             Buyer view
           </a>
+
         </nav>
 
         {/* Actions */}
         <div className="flex items-center gap-3">
+
           <Link
             to="/buyer/login"
             className="hidden text-sm font-semibold text-[#0F2747] transition-colors hover:text-blue-600 sm:inline-flex"
@@ -74,12 +77,14 @@ function Header() {
             to="/buyer/login"
             className="group inline-flex items-center gap-2 rounded-lg bg-[#0F2747] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#17385F] hover:shadow-md"
           >
-            View demo
+            See the demo
+
             <ArrowRight
               size={15}
               className="transition-transform duration-200 group-hover:translate-x-0.5"
             />
           </Link>
+
         </div>
       </div>
     </header>

@@ -12,13 +12,13 @@ const engines = [
     number: '01',
     title: 'Compliance Engine',
     description:
-      'Builds a structured view of vendor compliance credentials, certifications, security controls and other required information.',
+      "Checks the vendor's company information, certifications, insurance and security controls.",
     icon: ShieldCheck,
     color: 'blue',
     checks: [
-      'Company and compliance information',
+      'Company information',
       'Data protection certifications',
-      'Insurance and ISO frameworks',
+      'Insurance and ISO certifications',
       'Security controls and subcontracting',
     ],
   },
@@ -26,40 +26,40 @@ const engines = [
     number: '02',
     title: 'Contract Engine',
     description:
-      'Reviews uploaded contracts, SOWs and NDAs against the terms expected for an offshore engagement.',
+      "Reviews contracts, SOWs and NDAs to identify important terms and potential gaps.",
     icon: FileCheck2,
     color: 'indigo',
     checks: [
-      'IP ownership',
+      'Who owns the work and IP',
       'Confidentiality',
       'Subcontracting rights',
-      'Data-use limits and payment triggers',
+      'Data use and payment terms',
     ],
   },
   {
     number: '03',
     title: 'Data Transfer Engine',
     description:
-      'Provides a structured view of regulatory safety and UK GDPR-compliant data transfer considerations.',
+      "Checks how data will be transferred and whether the required UK GDPR safeguards are considered.",
     icon: LockKeyhole,
     color: 'cyan',
     checks: [
-      'Transfer considerations',
-      'Regulatory safety',
+      'Why the data is transferred',
+      'Types of data involved',
+      'Transfer safeguards',
       'UK GDPR requirements',
-      'Relevant protection controls',
     ],
   },
   {
     number: '04',
     title: 'Delivery Assurance',
     description:
-      'Tracks offshore vendor progress, reporting evidence and milestone deliverables throughout the relationship.',
+      "Tracks vendor progress, project updates and important milestones during the engagement.",
     icon: Truck,
     color: 'emerald',
     checks: [
       'Vendor progress',
-      'Reporting evidence',
+      'Project updates',
       'Milestone deliverables',
       'Delivery status',
     ],
@@ -85,17 +85,16 @@ function AssuranceEngines() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">
-              Four operational engines
+              Four areas we check before you outsource
             </p>
 
             <h2 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-[#0F2747] sm:text-4xl">
-              Assurance built around the offshore relationship.
+              Four areas we check before you outsource.           
             </h2>
 
             <p className="mt-4 text-sm leading-6 text-slate-600 sm:text-base">
-              Each engine focuses on a different part of the buyer's
-              relationship with an offshore service provider. Together they
-              form the operational assurance layer.
+              Each area looks at an important part of working with an offshore
+              vendor — from compliance and contracts to data transfers and delivery.
             </p>
           </div>
 
@@ -144,7 +143,7 @@ function AssuranceEngines() {
                 {/* Checks */}
                 <div className="mt-6 border-t border-slate-100 pt-5">
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                    Assessment focus
+                    What We Check
                   </p>
 
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -169,7 +168,7 @@ function AssuranceEngines() {
                 {/* Footer */}
                 <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
                   <span className="text-xs font-medium text-slate-400">
-                    Operational engine
+                    Assessment area
                   </span>
 
                   <ArrowUpRight
@@ -187,17 +186,16 @@ function AssuranceEngines() {
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-blue-200">
-                Combined assurance
+                One clear view
               </p>
 
               <h3 className="mt-2 text-xl font-bold tracking-[-0.02em] text-white">
-                The engines contribute to one buyer-facing assurance view.
+                All four areas come together in one clear view.
               </h3>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-                Compliance, contract, data transfer and delivery information
-                can be brought together with the supporting evidence used
-                throughout the assessment.
+                See the vendor's compliance, contract, data transfer and delivery 
+                information together, along with the evidence behind the assessment.
               </p>
             </div>
 

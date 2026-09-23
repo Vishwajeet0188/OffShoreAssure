@@ -60,16 +60,16 @@ function Hero() {
         {/* Heading */}
         <div className="mx-auto max-w-4xl text-center">
           <h1 className="text-4xl font-bold leading-[1.08] tracking-[-0.045em] text-[#0F2747] sm:text-5xl lg:text-7xl">
-            Confidence before you
+            Before You Outsource
             <span className="block text-blue-600">
-              outsource.
+              Know Your Vendor.
             </span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-            OffshoreAssure gives UK and European buyers a structured view of
-            vendor compliance, contracts, data transfers and delivery assurance
-            before work moves offshore.
+            OffshoreAssure helps businesses review their offshore vendors across
+            compliance, contracts, data transfers, and delivery before starting a
+            working relationship.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

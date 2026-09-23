@@ -12,29 +12,29 @@ const stages = [
     id: 'vendor',
     number: '01',
     label: 'Vendor',
-    title: 'Understand who you are working with.',
+    title: 'Know who you are working with.',
     description:
-      'Start with a structured view of the offshore vendor and the information needed to begin an assurance assessment.',
+      'Start by looking at the vendor, their company information, certifications and security details.',
     icon: ShieldCheck,
     points: [
       'Company information',
-      'Relevant credentials',
+      'Certifications',
       'Security controls',
-      'Insurance and certifications',
+      'Insurance',
     ],
   },
   {
     id: 'assessment',
     number: '02',
     label: 'Assessment',
-    title: 'Assess the relationship across key risk areas.',
+    title: 'Check the important parts of the relationship.',
     description:
-      'The assurance process brings compliance, contract, data transfer and delivery considerations into one structured assessment.',
+      'Review the vendor across four important areas: compliance, contracts, data transfers and delivery.',
     icon: ClipboardCheck,
     points: [
-      'Compliance requirements',
+      'Compliance',
       'Contract terms',
-      'Data transfer controls',
+      'Data transfers',
       'Delivery expectations',
     ],
   },
@@ -42,29 +42,29 @@ const stages = [
     id: 'evidence',
     number: '03',
     label: 'Evidence',
-    title: 'Connect findings to supporting evidence.',
+    title: 'See the information behind the assessment.',
     description:
-      'Assessment findings are connected to the underlying information and documents used to reach them.',
+      'Keep the documents, findings and important decisions connected so the buyer can see where the assessment information comes from.',
     icon: FileSearch,
     points: [
       'Source documents',
       'Assessment findings',
       'Flags and decisions',
-      'Timestamped records',
+      'Recorded evidence',
     ],
   },
   {
     id: 'governance',
     number: '04',
     label: 'Governance',
-    title: 'Give the buyer a clear assurance view.',
+    title: 'Get a clear view before making a decision.',
     description:
-      'The resulting information is brought together so buyers can understand the current assurance position of a vendor relationship.',
+      'Bring the assessment information together so buyers can understand the current position of the vendor relationship.',
     icon: Workflow,
     points: [
-      'Unified assessment view',
-      'Current risk flags',
-      'Evidence trail',
+      'Overall assessment',
+      'Current flags',
+      'Evidence history',
       'Buyer decision support',
     ],
   },
@@ -85,17 +85,17 @@ function AssuranceJourney() {
         {/* Section heading */}
         <div className="max-w-2xl">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">
-            The assurance journey
+            How it works
           </p>
 
           <h2 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-[#0F2747] sm:text-4xl">
-            From vendor relationship to buyer assurance.
+            From finding a vendor to making a decision.
           </h2>
 
           <p className="mt-4 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
-            OffshoreAssure brings the key assurance stages into a structured
-            journey, giving buyers a clearer view of the relationship before
-            and during offshore delivery.
+            OffshoreAssure helps buyers review an offshore vendor step by
+            step, from understanding the vendor to reviewing evidence and
+            making an informed decision.
           </p>
         </div>
 
@@ -192,7 +192,7 @@ function AssuranceJourney() {
                 </div>
 
                 <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-300">
-                  Stage {activeStage.number}
+                  Step {activeStage.number}
                 </span>
               </div>
 
@@ -206,7 +206,7 @@ function AssuranceJourney() {
 
               <div className="mt-8 border-t border-white/10 pt-6">
                 <p className="text-[12px] font-bold uppercase tracking-[0.15em] text-blue-200">
-                  Assessment view
+                  What we look at
                 </p>
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -237,7 +237,7 @@ function AssuranceJourney() {
         <div className="mt-8 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-[#0F2747]">
-              One structured assurance path
+              A simple step-by-step process
             </p>
 
             <p className="mt-1 text-xs text-slate-500">
@@ -249,7 +249,7 @@ function AssuranceJourney() {
             href="#engines"
             className="inline-flex w-fit items-center gap-2 text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700"
           >
-            Explore the assurance engines
+            See what we check
             <ArrowRight size={14} />
           </a>
         </div>

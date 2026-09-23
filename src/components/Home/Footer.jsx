@@ -29,14 +29,15 @@ function Footer() {
               </Link>
 
               <p className="mt-1 max-w-sm text-xs leading-5 text-slate-500">
-                A structured assurance platform for UK and European buyers
-                managing offshore vendor relationships.
+                Helps UK and European businesses review offshore vendors
+                before working with them.
               </p>
             </div>
           </div>
 
           {/* Links */}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+
             <a
               href="#story"
               className="text-xs font-medium text-slate-500 transition-colors hover:text-[#0F2747]"
@@ -48,7 +49,7 @@ function Footer() {
               href="#engines"
               className="text-xs font-medium text-slate-500 transition-colors hover:text-[#0F2747]"
             >
-              Assurance engines
+              What we check
             </a>
 
             <a
@@ -69,20 +70,32 @@ function Footer() {
               to="/buyer/login"
               className="text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700"
             >
-              Buyer demo
+              See the buyer demo
             </Link>
           </div>
         </div>
 
         {/* Bottom */}
         <div className="mt-8 flex flex-col gap-4 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[11px] text-slate-400">
-            Phase 1 interactive prototype
-          </p>
+
+          <div>
+            <p className="text-[11px] font-medium text-slate-400">
+              Phase 1 interactive prototype
+            </p>
+
+            <p className="mt-1 text-[10px] text-slate-400">
+              Sample data shown for demonstration purposes.
+            </p>
+          </div>
 
           <button
             type="button"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            onClick={() =>
+              window.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+              })
+            }
             className="group inline-flex w-fit items-center gap-2 text-[11px] font-semibold text-slate-500 transition-colors hover:text-[#0F2747]"
           >
             Back to top
@@ -91,6 +104,7 @@ function Footer() {
               <ArrowUp size={12} />
             </span>
           </button>
+
         </div>
       </div>
     </footer>
