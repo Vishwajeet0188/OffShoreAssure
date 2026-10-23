@@ -318,6 +318,12 @@ Specifications for Stages 2–9 (field lists, rules) will come from the client s
 - **Database:** `007_stage2_vendor_selection.sql` (vendor_invitations, vendor_shortlist, vendor_selections, and the selected vendor on each assessment).
 - **Tests:** API 45 (Stage 2: 8 new); browser 49 / 47 / 31 / 22 (new Stage 2 run). All pass.
 
+### Feedback only from registered users (23 Oct 2026)
+- Only signed-in **buyers and vendors** can send feedback or a review. Visitors who are not signed in see "Sign in to share your feedback" with Login and Create an account buttons; admins are pointed to Admin → Feedback.
+- The form no longer asks for a name or email: both come from the account (the name from the profile). Reviews show that name and the role (Buyer / Vendor), never the email.
+- The server refuses feedback without a session (401) and from admin accounts (403). The bot trap field is no longer needed and was removed.
+- Files: `server/src/feedback/routes.js`, `frontend/src/pages/site/parts.jsx`, `frontend/src/pages/site/Home.jsx`, `server/test/site.test.js` (committed on `stage-0-3`, merged into Stage 4).
+
 ### Friendlier messages when the service is unreachable (23 Oct 2026)
 - Users no longer see technical text such as "Make sure the API is running (cd server, npm run dev)". Every page now shows: "We could not connect to OffshoreAssure just now. Please try again in a moment."
 - The technical hint is written to the browser console in development only.
