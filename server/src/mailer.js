@@ -1,12 +1,59 @@
 import nodemailer from 'nodemailer';
 import { config } from './config.js';
 
-let transport = null;
+/*
+ * Emails can be sent in two ways:
+ *  1. Brevo's web API (BREVO_API_KEY). Uses the normal HTTPS port, so it also
+ *     works on hosts that block email ports, such as Render's free plan.
+ *  2. SMTP (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS).
+ * With neither set (development), emails are printed in the server console.
+ */
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+
+let smtpTransport = null;
 if (config.smtp.host) {
-  transport = nodemailer.createTransport({
-    host: config.smtp.host, port: config.smtp.port, secure: config.smtp.secure,
-    auth: config.smtp.user ? { user: config.smtp.user, pass: config.smtp.pass } : undefined
+  smtpTransport = nodemailer.createTransport({
+    host: config.smtp.host,
+    port: config.smtp.port,
+    secure: config.smtp.secure,
+    auth: config.smtp.user ? { user: config.smtp.user, pass: config.smtp.pass } : undefined,
+    // Give up quickly when the mail server cannot be reached (for example when the
+    // host blocks the SMTP port), so the user sees an error instead of waiting for minutes.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
   });
+}
+
+const canSendEmail = () => Boolean(config.brevoApiKey || smtpTransport);
+
+/* "OffshoreAssure <no-reply@example.com>" → { name, email } */
+function parseSender(from) {
+  const match = String(from).match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
+  return match ? { name: match[1].trim() || undefined, email: match[2].trim() } : { email: String(from).trim() };
+}
+
+async function deliver(to, message) {
+  if (config.brevoApiKey) {
+    const response = await fetch(BREVO_API_URL, {
+      method: 'POST',
+      headers: { 'api-key': config.brevoApiKey, 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({
+        sender: parseSender(config.smtp.from),
+        to: [{ email: to }],
+        subject: message.subject,
+        htmlContent: message.html,
+        textContent: message.text,
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      throw new Error(`Brevo API ${response.status}: ${detail.slice(0, 200)}`);
+    }
+    return;
+  }
+  await smtpTransport.sendMail({ from: config.smtp.from, to, subject: message.subject, text: message.text, html: message.html });
 }
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -130,14 +177,14 @@ The OffshoreAssure Team`;
   return { subject: t.subject, text, html: layout({ preheader: `${t.preheader}: ${code}`, kicker: t.kicker, body }) };
 }
 
-/* Sends a verification code. Without SMTP settings (development) the code is printed in the server console. */
+/* Sends a verification code. Without email settings (development) the code is printed in the server console. */
 export async function sendCode(email, code, purpose) {
-  const m = renderCodeEmail(code, purpose);
-  if (!transport) {
+  const message = renderCodeEmail(code, purpose);
+  if (!canSendEmail()) {
     console.log(`[DEV EMAIL] ${purpose} code for ${email}: ${code}`);
     return { delivered: false };
   }
-  await transport.sendMail({ from: config.smtp.from, to: email, subject: m.subject, text: m.text, html: m.html });
+  await deliver(email, message);
   return { delivered: true };
 }
 
@@ -156,8 +203,11 @@ export function renderNotice(subject, lines, { kicker = 'ACCOUNT NOTICE', title 
 }
 
 export async function sendNotice(email, subject, lines, opts) {
-  const m = renderNotice(subject, lines, opts);
-  if (!transport) { console.log(`[DEV EMAIL] ${subject} → ${email}\n${m.text}`); return { delivered: false }; }
-  await transport.sendMail({ from: config.smtp.from, to: email, subject: m.subject, text: m.text, html: m.html });
+  const message = renderNotice(subject, lines, opts);
+  if (!canSendEmail()) {
+    console.log(`[DEV EMAIL] ${subject} → ${email}\n${message.text}`);
+    return { delivered: false };
+  }
+  await deliver(email, message);
   return { delivered: true };
 }
