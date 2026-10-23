@@ -31,6 +31,8 @@ export const config = {
   requireAdminApproval: bool(process.env.REQUIRE_ADMIN_APPROVAL, false),
 
   // Email: SMTP when configured; otherwise codes are printed in the server console (development only).
+  // Brevo web API key (starts with "xkeysib-"). When set, emails go through the API instead of SMTP.
+  brevoApiKey: process.env.BREVO_API_KEY || '',
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: num(process.env.SMTP_PORT, 587),
