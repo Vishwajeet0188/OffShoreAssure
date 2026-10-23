@@ -35,7 +35,7 @@ const sendLimit = config.rateLimit
 
 function requireBuyerOrVendor(req, res, next) {
   if (!req.user) {
-    return res.status(401).json({ error: 'not_signed_in', message: 'Please sign in to send feedback.' });
+    return res.status(401).json({ error: 'not_signed_in', message: 'Please register yourself first, then you can send feedback.' });
   }
   if (!['buyer', 'vendor'].includes(req.user.role)) {
     return res.status(403).json({ error: 'wrong_role', message: 'Feedback can be sent from a buyer or vendor account.' });
