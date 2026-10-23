@@ -1,0 +1,31 @@
+{
+  "name": "offshoreassure-api",
+  "private": true,
+  "version": "0.1.0",
+  "description": "OffshoreAssure API: Express + PostgreSQL. Stage 0 (customer registration, login, admin users).",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "migrate": "node src/migrate.js",
+    "seed:admin": "node src/seedAdmin.js",
+    "test:email": "node src/testEmail.js",
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "test": "node --test --test-concurrency=1 test/*.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^7.0.6",
+    "pg": "^8.16.3",
+    "zod": "^4.1.0"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}
