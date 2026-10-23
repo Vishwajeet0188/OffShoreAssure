@@ -4,6 +4,13 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { Icon } from '../common/Icon.jsx';
 import { Logo } from './Brand.jsx';
 import { homeFor } from '../../lib/roles.js';
+import ThemeToggle from '../extras/ThemeToggle.jsx';
+import SiteSearch from '../extras/SiteSearch.jsx';
+import SkipLink from '../extras/SkipLink.jsx';
+import ScrollProgress from '../extras/ScrollProgress.jsx';
+import FloatingActions from '../extras/FloatingActions.jsx';
+import CookieNotice from '../extras/CookieNotice.jsx';
+import LastUpdated from '../extras/LastUpdated.jsx';
 
 /* The public website pages (separate routes). */
 export const SITE_PAGES = [['/', 'Home'], ['/how-it-works', 'How It Works'], ['/solutions', 'Solutions'], ['/about', 'About Us']];
@@ -40,6 +47,10 @@ function LpNav() {
             </>)}
           </div>
         </nav>
+        <div className="lp-tools">
+          <SiteSearch />
+          <ThemeToggle />
+        </div>
         <button className="lp-burger" data-act="lpmenu" aria-label={menu ? 'Close menu' : 'Open menu'} aria-expanded={menu} onClick={() => setMenu(m => !m)}><Icon n={menu ? 'x' : 'menu'} s={22} /></button>
       </div>
     </header>
@@ -67,7 +78,7 @@ function Footer() {
             : [['/signup?role=buyer', 'Register as a buyer'], ['/signup?role=vendor', 'Register as a vendor'], ['/login', 'Login']])}
         </div>
         <div className="lpf-base">
-          <span>&copy; {year} OffshoreAssure. All rights reserved.</span>
+          <span>&copy; {year} OffshoreAssure. All rights reserved. <LastUpdated /></span>
           <span>OffshoreAssure supports the buyer&rsquo;s decision. It does not give legal advice or certify compliance.</span>
           <button className="lpf-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Back to top">Back to top <span aria-hidden="true">↑</span></button>
         </div>
@@ -107,5 +118,15 @@ function useReveal() {
 /* Public site shell: navigation bar, routed page (Home, How It Works, Solutions, About Us, Login, Sign Up), footer. */
 export default function PublicLayout() {
   useReveal();
-  return <div className="lp"><LpNav /><main id="lp-main"><Outlet /></main><Footer /></div>;
+  return (
+    <div className="lp">
+      <SkipLink target="lp-main" />
+      <ScrollProgress />
+      <LpNav />
+      <main id="lp-main" tabIndex={-1}><Outlet /></main>
+      <Footer />
+      <FloatingActions />
+      <CookieNotice />
+    </div>
+  );
 }

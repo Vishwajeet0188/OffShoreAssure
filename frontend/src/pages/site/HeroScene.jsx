@@ -33,7 +33,7 @@ export default function HeroScene() {
         <defs>
           <radialGradient id="hs2-glow" cx="50%" cy="48%" r="52%"><stop offset="0%" stopColor="#F2DDD5" /><stop offset="100%" stopColor="#F2DDD5" stopOpacity="0" /></radialGradient>
           <linearGradient id="hs2-globe" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#FFFFFF" /><stop offset="100%" stopColor="#EFE7F3" /></linearGradient>
-          <linearGradient id="hs2-arc" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#B95F50" /><stop offset="100%" stopColor="#6E4A8E" /></linearGradient>
+          <linearGradient id="hs2-arc" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#D66A4A" /><stop offset="100%" stopColor="#6E4A8E" /></linearGradient>
           <clipPath id="hs2-clip"><circle cx={C[0]} cy={C[1]} r={R_GLOBE} /></clipPath>
         </defs>
         <circle cx={C[0]} cy={C[1]} r="250" fill="url(#hs2-glow)" />
@@ -62,13 +62,13 @@ export default function HeroScene() {
           <g key={s.id}>
             <path d={arc(UK, s.c, s.at)} fill="none" stroke="#EADBE0" strokeWidth="5" strokeLinecap="round" />
             <path className="hs2-flow" style={{ animationDelay: `${i * -0.5}s` }} d={arc(UK, s.c, s.at)} fill="none" stroke="url(#hs2-arc)" strokeWidth="2" strokeLinecap="round" strokeDasharray="5 8" />
-            <circle r="3.5" fill="#B95F50" className="hs2-trav"><animateMotion dur={`${3 + i * 0.45}s`} repeatCount="indefinite" path={arc(UK, s.c, s.at)} /></circle>
+            <circle r="3.5" fill="#D66A4A" className="hs2-trav"><animateMotion dur={`${3 + i * 0.45}s`} repeatCount="indefinite" path={arc(UK, s.c, s.at)} /></circle>
             <circle cx={s.at[0]} cy={s.at[1]} r="5.5" fill="#6E4A8E" stroke="#fff" strokeWidth="2" />
             <text x={s.left ? s.at[0] - 10 : s.at[0] + 9} y={s.at[1] + (s.left ? 4 : 17)} textAnchor={s.left ? 'end' : 'start'} className="hs2-label">{s.label}</text>
           </g>
         ))}
         <circle cx={UK[0]} cy={UK[1]} r="16" className="hs2-ping" />
-        <circle cx={UK[0]} cy={UK[1]} r="9" fill="#B95F50" stroke="#fff" strokeWidth="3" />
+        <circle cx={UK[0]} cy={UK[1]} r="9" fill="#D66A4A" stroke="#fff" strokeWidth="3" />
         <text x={UK[0] - 13} y={UK[1] - 14} textAnchor="end" className="hs2-uk">UK</text>
       </svg>
 

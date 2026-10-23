@@ -67,6 +67,13 @@ export async function userPayload(db, userId) {
 }
 
 /* ---------------- Register: email + password → code by email ---------------- */
+/* Keeps only the UTM tags that were actually sent; returns null when there are none. */
+function cleanSource(source) {
+  if (!source) return null;
+  const kept = Object.fromEntries(Object.entries(source).filter(([, value]) => value));
+  return Object.keys(kept).some(key => key.startsWith('utm_')) ? kept : null;
+}
+
 authRouter.post('/register', async (req, res) => {
   const body = parse(schemas.register, req, res); if (!body) return;
   const hash = await bcrypt.hash(body.password, 12);
@@ -79,7 +86,9 @@ authRouter.post('/register', async (req, res) => {
       const wait = await cooldownLeft(db, user.id, 'register');
       if (wait > 0) return { user, wait };
     } else {
-      user = (await db.query('INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3) RETURNING *', [body.email, hash, body.role])).rows[0];
+      const source = cleanSource(body.source);
+      user = (await db.query('INSERT INTO users (email, password_hash, role, signup_source) VALUES ($1, $2, $3, $4) RETURNING *',
+        [body.email, hash, body.role, source ? JSON.stringify(source) : null])).rows[0];
       await audit(req, 'user.registered', { actor: user, detail: { status: 'unverified', role: body.role }, db });
     }
     const code = await issueCode(db, user.id, 'register');

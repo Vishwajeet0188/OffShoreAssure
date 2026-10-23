@@ -361,6 +361,40 @@ Specifications for Stages 2–9 (field lists, rules) will come from the client s
 - All requests go through one place (`frontend/src/lib/api.js`: `api`, `readResponse`, `unavailableError`), including the file uploads (requirement documents, vendor evidence, contracts).
 - The "Development build" label in the sidebar is shown only in development.
 
+### Brand colours set to the client's palette (23 Oct 2026, on `stage-6-transfer-assessment`)
+- Colours now use the exact codes from the client's design: **Aubergine `#30233F`** (headings, dark surfaces, sidebar), **Copper `#D66A4A`** (buttons, links, highlights; hover `#BC5838`), **Warm Ivory `#F7F3EC`** (page background), **Charcoal `#242329`** (token `--charcoal`), **Sage `#71806A`**, status **Compliant `#71806A`**, **Attention `#C48342`**, **High risk `#AF4343`**.
+- Before: aubergine `#271A38`, copper `#B95F50`, ivory `#F5F2EB`. Logo, favicon, hero globe and shadows updated to match.
+- Small text in sage and amber stays a shade darker (`#5B6D55`, `#A3652A`) so it stays readable on the ivory background; the fills, rings and dots use the exact palette codes.
+- File: `frontend/src/styles.css` (palette noted at the top), `Brand.jsx`, `HeroScene.jsx`, `public/favicon.svg`.
+
+### Website and app extras (23 Oct 2026, on `stage-6-transfer-assessment`)
+Small additions that make the site work like a finished product. On the Stage 6 branch only (not on the live `stage-0-3` yet).
+
+| # | Feature | Where | Notes |
+|---|---|---|---|
+| 1 | Dark mode toggle | Website header, buyer/vendor top bar, admin top bar | Moon/sun button; remembered in the browser; follows the device setting until chosen; applied before the page draws (no flash) |
+| 2 | Cookie notice | Website and apps | We only set one essential sign-in cookie, so it is a notice with "OK", not a consent choice |
+| 3 | Site search | Website header (also Ctrl+K or "/") | Searches pages, the 9 stages, solutions and FAQ answers |
+| 4 | Back to top | Bottom right, after scrolling down | Also still in the footer |
+| 5 | Mobile menu | Website | Already there (menu button) |
+| 6 | Loading animation | Every page that loads data | Spinner with "Loading…" |
+| 7 | Hover states | Cards, buttons, links | Already there |
+| 8 | Scroll progress bar | Website pages | Thin copper bar at the top |
+| 9 | Copy button | Assessment ID on every stage page | Copies the ID, shows "Copied" |
+| 10 | Print stylesheet | All pages | Prints only the content, black on white; hides menus and buttons |
+| 11 | Sticky headers | Website, apps, admin | Already there |
+| 12 | Skip to content | All layouts | First thing keyboard users reach |
+| 13 | Password show/hide | Login, sign-up, reset | Already there |
+| 14 | UTM tracking | Sign-up | The utm_* tags of the first link are kept in the browser and saved with the new account (`users.signup_source`, migration `014_signup_source.sql`); admin sees "Came from" on the user's page. No tracking cookies |
+| 15–16 | Form success and error states | All forms | Already there |
+| 17 | Confirmation dialogs | Deactivate user/admin, remove a vendor from the shortlist, remove a document | "Are you sure?" box; Cancel is the default |
+| 18 | Last updated date | Website footer | The date the site was built |
+| 19 | Expandable FAQ | Home page | Already there |
+| 20 | Floating contact button | Website, bottom right | Opens the feedback form; set `VITE_CONTACT_EMAIL` to make it an email link instead |
+
+- Files: `frontend/src/components/extras/*` (ThemeToggle, CookieNotice, SiteSearch, FloatingActions, ScrollProgress, SkipLink, CopyButton, Loading, ConfirmDialog, LastUpdated), `frontend/src/lib/theme.js`, `frontend/src/lib/utm.js`, layouts, `styles.css` (dark tokens and print), `index.html`, `vite.config.js`; server `auth/routes.js`, `validation.js`, `admin/routes.js`.
+- **Tests:** API 69 (sign-up source: 1 new); browser: every stage run passes, plus a new "extras" run with 24 checks.
+
 ### Stage 6 — Transfer assessment, Steps 25–28 (23 Oct 2026) ✅ — Stage 6 complete
 - **When:** after the obligations are extracted (Stage 5). It reads the requirement (Stage 1), the selected vendor's delivery countries (Stage 2), the vendor's transfer answers (Stage 3, ASS-005), the contract's transfer clause (Stage 4) and the obligation register (Stage 5). It runs again only when one of those changes.
 - **Step 25 · Routes:** one route per destination: data storage locations (cloud hosting provider as sub-processor when cloud services are used), remote access countries, the vendor's delivery centres, and "sub-processors (location not confirmed)" when sub-processors are allowed.
@@ -623,7 +657,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 
 | Suite | Count | Last result |
 |---|---|---|
-| API (`server`, `npm test`) | 68 (Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 8, Stage 3: 4, Stage 4: 6, Stage 5: 6, Stage 6: 5, Website: 2) | ✅ all pass |
+| API (`server`, `npm test`) | 69 (Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 8, Stage 3: 4, Stage 4: 6, Stage 5: 6, Stage 6: 5, Website: 2, Sign-up source: 1) | ✅ all pass |
 | Browser, Stage 0 + admin console | 49 checks | ✅ all pass |
 | Browser, Stage 1 (Steps 1–4) + clean build | 48 checks | ✅ all pass |
 | Browser, roles (buyer / vendor / admin / membership) | 31 checks | ✅ all pass |
@@ -632,6 +666,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 | Browser, Stage 4 contract analysis | 19 checks | ✅ all pass |
 | Browser, Stage 5 obligation extraction | 15 checks | ✅ all pass |
 | Browser, Stage 6 transfer assessment | 12 checks | ✅ all pass |
+| Browser, website and app extras (dark mode, search, cookie notice, UTM, confirm dialogs …) | 24 checks | ✅ all pass |
 | Browser, public website pages, feedback, reviews + footer | 22 checks | ✅ all pass |
 
 ---

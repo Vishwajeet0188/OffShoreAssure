@@ -5,6 +5,7 @@ import { fmtTime } from '../../lib/format.js';
 import { TYPE_TONE, describeTiming } from '../../lib/obligations.js';
 import { PageHead } from '../../components/common/PageHead.jsx';
 import { Icon } from '../../components/common/Icon.jsx';
+import Loading from '../../components/extras/Loading.jsx';
 
 /* Vendor portal · Obligations: assessments where the buyer has extracted the obligations (Stage 5). */
 export function VendorObligationsList() {
@@ -27,7 +28,7 @@ export function VendorObligationsList() {
       <div className="card" data-section="vendor-obligations">
         {error ? <p className="form-err pad">{error}</p> : null}
         {!registers ? (
-          <p className="note pad">Loading…</p>
+          <Loading pad />
         ) : registers.length === 0 ? (
           <p className="note pad">No obligations yet. They appear here after a buyer that selected your company has analysed the contract.</p>
         ) : (
@@ -68,7 +69,7 @@ export default function VendorObligations() {
   }, [ref]);
 
   if (error) return <p className="form-err">{error}</p>;
-  if (!data) return <p className="note">Loading…</p>;
+  if (!data) return <Loading />;
 
   const topicName = Object.fromEntries(data.topics.map(t => [t.id, t.name]));
   const groups = groupByTopic(data.obligations, topicName);

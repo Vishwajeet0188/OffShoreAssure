@@ -7,6 +7,8 @@ import { PARTY_TONE, TYPE_TONE, CONFIDENCE_TONE, describeTiming } from '../lib/o
 import { PageHead } from '../components/common/PageHead.jsx';
 import { Badge } from '../components/common/Badges.jsx';
 import { Icon } from '../components/common/Icon.jsx';
+import Loading from '../components/extras/Loading.jsx';
+import { ReferenceTag } from '../components/extras/CopyButton.jsx';
 
 const STEPS = [
   [21, 'Extract obligations'],
@@ -37,7 +39,7 @@ export function ObligationsList() {
       <div className="card" data-section="obligations-list">
         {error ? <p className="form-err pad">{error}</p> : null}
         {!assessments ? (
-          <p className="note pad">Loading…</p>
+          <Loading pad />
         ) : assessments.length === 0 ? (
           <p className="note pad">No assessments yet. Start with <Link className="link" to="/requirements">Stage 1 · Requirement</Link>.</p>
         ) : (
@@ -109,7 +111,7 @@ export default function Obligations() {
   }
 
   if (error && !state) return <p className="form-err">{error}</p>;
-  if (!state) return <p className="note">Loading…</p>;
+  if (!state) return <Loading />;
 
   const register = state.register;
   const lastDoneStep = register ? 24 : 20;
@@ -121,7 +123,7 @@ export default function Obligations() {
         eyebrow={`Buyer · Stage 5 · Obligation extraction · ${state.assessment.reference}`}
         title={state.assessment.title}
         lead={state.vendor ? `Contract with ${state.vendor.name}` : 'No vendor selected yet.'}
-        right={<span className="mono asr-tag">{state.assessment.reference}</span>}
+        right={<ReferenceTag value={state.assessment.reference} />}
       />
 
       <ol className="vs-steps" aria-label="Stage 5 steps">

@@ -7,6 +7,8 @@ import { RATING_TONE, STATUS, GAP_KIND, answerTone, buyerEvidenceUrl } from '../
 import { PageHead } from '../components/common/PageHead.jsx';
 import { Badge } from '../components/common/Badges.jsx';
 import { Icon } from '../components/common/Icon.jsx';
+import Loading from '../components/extras/Loading.jsx';
+import { ReferenceTag } from '../components/extras/CopyButton.jsx';
 
 const BackArrow = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>;
 
@@ -21,7 +23,7 @@ export function ComplianceList() {
         lead="Send the selected vendor a questionnaire built from the controls that apply, collect its answers and evidence, and see a provisional score with the gaps." />
       <div className="card" data-section="compliance-list">
         {err ? <p className="form-err" style={{ padding: '0 22px' }}>{err}</p> : null}
-        {!list ? <p className="note pad">Loading…</p> : !list.length ? <p className="note pad">No assessments yet. Start with <Link className="link" to="/requirements">Stage 1 · Requirement</Link>.</p> : (
+        {!list ? <Loading pad /> : !list.length ? <p className="note pad">No assessments yet. Start with <Link className="link" to="/requirements">Stage 1 · Requirement</Link>.</p> : (
           <div className="tw"><table>
             <thead><tr><th>Assessment</th><th>Service</th><th>Vendor</th><th>Compliance</th><th></th></tr></thead>
             <tbody>{list.map(a => (
@@ -73,7 +75,7 @@ export default function Compliance() {
   useEffect(() => { load(); }, [load]);
   const start = async () => { setBusy(true); setErr(''); try { setSt(await api(`/assessments/${ref}/compliance`, { method: 'POST' })); } catch (x) { setErr(x.message); } finally { setBusy(false); } };
   if (err && !st) return <p className="form-err">{err}</p>;
-  if (!st) return <p className="note">Loading…</p>;
+  if (!st) return <Loading />;
   const c = st.compliance, r = st.result;
   const steps = [[10, 'Start'], [11, 'Questionnaire'], [12, 'Request sent'], [13, 'Vendor answers'], [14, 'Score'], [15, 'Saved'], [16, 'Results']];
   const doneTo = !c ? 9 : c.status === 'submitted' ? 16 : 12;
@@ -81,7 +83,7 @@ export default function Compliance() {
     <div className="vs">
       <Link className="link" to="/compliance" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><BackArrow /> Compliance assessment</Link>
       <PageHead eyebrow={`Buyer · Stage 3 · Compliance assessment · ${st.assessment.reference}`} title={st.assessment.title}
-        lead={st.vendor ? `Vendor: ${st.vendor.name}` : 'No vendor selected yet.'} right={<span className="mono asr-tag">{st.assessment.reference}</span>} />
+        lead={st.vendor ? `Vendor: ${st.vendor.name}` : 'No vendor selected yet.'} right={<ReferenceTag value={st.assessment.reference} />} />
       <ol className="vs-steps" aria-label="Stage 3 steps">{steps.map(([n, t]) => <li key={n} className={n <= doneTo ? 'done' : ''}><span className="journey-n">{n}</span>{t}</li>)}</ol>
       {err ? <div className="rq-msg err" role="alert"><b>{err}</b></div> : null}
 

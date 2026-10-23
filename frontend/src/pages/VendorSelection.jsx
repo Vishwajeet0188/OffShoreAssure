@@ -7,6 +7,9 @@ import { MATCH_LABEL, CHECK_TONE, CHECK_WORD, CHECK_SHORT, VERIFY, countryList }
 import { PageHead } from '../components/common/PageHead.jsx';
 import { Badge } from '../components/common/Badges.jsx';
 import { Icon } from '../components/common/Icon.jsx';
+import Loading from '../components/extras/Loading.jsx';
+import { ReferenceTag } from '../components/extras/CopyButton.jsx';
+import { confirmAction } from '../components/extras/ConfirmDialog.jsx';
 
 const BackArrow = ({ s = 14 }) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>;
 
@@ -21,7 +24,7 @@ export function VendorSelectionList() {
         lead="Choose the vendor for each assessment: search verified vendors or invite one, compare them against your requirement, then confirm your choice with the reason." />
       <div className="card" data-section="selection-list">
         {err ? <p className="form-err" style={{ padding: '0 22px' }}>{err}</p> : null}
-        {!list ? <p className="note pad">Loading…</p> : !list.length ? (
+        {!list ? <Loading pad /> : !list.length ? (
           <p className="note pad">No assessments yet. Submit a requirement first (<Link className="link" to="/requirements">Stage 1 · Requirement</Link>); its Assessment ID then appears here.</p>
         ) : (
           <div className="tw"><table>
@@ -110,7 +113,7 @@ export default function VendorSelection() {
   };
 
   if (err && !st) return <p className="form-err">{err}</p>;
-  if (!st) return <p className="note">Loading…</p>;
+  if (!st) return <Loading />;
   const c = st.criteria, cur = st.current;
   const cand = st.shortlist.find(x => x.id === pick.vendorId);
   const showConfirm = !cur || changing;
@@ -120,7 +123,7 @@ export default function VendorSelection() {
       <Link className="link" to="/vendor-selection" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><BackArrow /> Vendor selection</Link>
       <PageHead eyebrow={`Buyer · Stage 2 · Vendor selection · ${st.assessment.reference}`} title={st.assessment.title}
         lead="Search verified vendors or invite one, compare them against your requirement, then confirm the vendor and say why."
-        right={<span className="mono asr-tag">{st.assessment.reference}</span>} />
+        right={<ReferenceTag value={st.assessment.reference} />} />
       <ol className="vs-steps" aria-label="Stage 2 steps">
         {[[5, 'Search or invite'], [6, 'Match'], [7, 'Shortlist and compare'], [8, 'Confirm vendor'], [9, 'Saved to evidence']].map(([n, t]) => (
           <li key={n} className={(n === 6 ? step(5) : step(n)) ? 'done' : ''}><span className="journey-n">{n}</span>{t}</li>))}
@@ -177,7 +180,7 @@ export default function VendorSelection() {
           <select aria-label="Delivers from" value={q.country} onChange={e => setQ({ ...q, country: e.target.value })}><option value="">Any country</option>{(ref0?.countries || []).map(x => <option key={x.code} value={x.code}>{x.name}</option>)}</select>
           <button className="btn" type="submit" data-act="search">Search</button>
         </form>
-        {!results ? <p className="note pad">Loading…</p> : !results.length ? <p className="note pad">No verified vendors match this search. Try fewer filters, or invite the vendor by email.</p> : (
+        {!results ? <Loading pad /> : !results.length ? <p className="note pad">No verified vendors match this search. Try fewer filters, or invite the vendor by email.</p> : (
           <div className="tw"><table data-table="results">
             <thead><tr><th>Vendor</th><th>Delivers from</th><th>Match (step 6)</th><th></th></tr></thead>
             <tbody>{results.map(v => (
@@ -205,7 +208,7 @@ export default function VendorSelection() {
                 <td><b>{v.name}</b><div className="note">{countryList(v.deliveryCountries, names)}{v.source === 'invitation' ? ' · invited' : ''}</div></td>
                 {v.match.checks.map(ch => <td key={ch.id}><span className={'b ' + CHECK_TONE[ch.result]} title={ch.detail}>{CHECK_WORD[ch.result]}</span><div className="note vs-why">{ch.detail}</div></td>)}
                 <td><MatchBadge m={v.match} />{cur?.vendorId === v.id ? <div><span className="b b-plum" style={{ marginTop: 4 }}>Selected</span></div> : null}</td>
-                <td style={{ textAlign: 'right' }}>{cur?.vendorId === v.id ? null : <button className="btn sm" disabled={busy === 'rm' + v.id} onClick={() => remove(v)} data-act="remove">Remove</button>}</td>
+                <td style={{ textAlign: 'right' }}>{cur?.vendorId === v.id ? null : <button className="btn sm" disabled={busy === 'rm' + v.id} onClick={async () => { if (await confirmAction({ title: `Remove ${v.name} from the shortlist?`, message: 'You can add the vendor again later from the search.', confirmLabel: 'Remove' })) remove(v); }} data-act="remove">Remove</button>}</td>
               </tr>))}</tbody>
           </table></div>)}
       </section>

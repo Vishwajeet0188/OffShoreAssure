@@ -7,6 +7,8 @@ import { STATUS, GAP_KIND, vendorEvidenceUrl } from '../../lib/compliance.js';
 import { PageHead } from '../../components/common/PageHead.jsx';
 import { Badge } from '../../components/common/Badges.jsx';
 import { Icon } from '../../components/common/Icon.jsx';
+import Loading from '../../components/extras/Loading.jsx';
+import { confirmAction } from '../../components/extras/ConfirmDialog.jsx';
 
 const BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 const ANSWERS = ['Yes', 'Partly', 'No'];
@@ -97,7 +99,7 @@ export default function VendorQuestionnaire() {
 
   const total = useMemo(() => d ? d.compliance.questionnaire.reduce((n, c) => n + c.questions.length, 0) : 0, [d]);
   if (err) return <p className="form-err">{err}</p>;
-  if (!d) return <p className="note">Loading…</p>;
+  if (!d) return <Loading />;
   const c = d.compliance, done = c.status === 'submitted';
   const answered = Object.values(ans).filter(a => ANSWERS.includes(a?.answer)).length;
   return (
@@ -151,7 +153,7 @@ export default function VendorQuestionnaire() {
             })}</div>
             <div className="vq-docs">
               {docs.length ? <ul className="prf-docs">{docs.map(e => <li key={e.id}><Icon n="doc" s={15} /><a className="link" href={vendorEvidenceUrl(ref, e.id)}>{e.fileName}</a><span className="note">{d.evidenceTypes[e.type].split(' (')[0]}{e.expiresOn ? ` · expires ${fmtDate(e.expiresOn)}` : ''} · {fmtBytes(e.size)}</span>
-                {!done ? <button className="link vq-del" onClick={() => removeDoc(e)} aria-label={`Remove ${e.fileName}`}>Remove</button> : null}</li>)}</ul> : null}
+                {!done ? <button className="link vq-del" onClick={async () => { if (await confirmAction({ title: `Remove ${e.fileName}?`, message: 'The document will be deleted. You can upload it again before you submit.', confirmLabel: 'Remove' })) removeDoc(e); }} aria-label={`Remove ${e.fileName}`}>Remove</button> : null}</li>)}</ul> : null}
               {!done ? <Uploader refId={ref} control={ct.id} types={d.evidenceTypes} expiring={d.expiring} onDone={e => setEvidence(v => [...v, e])} /> : null}
             </div>
           </section>);

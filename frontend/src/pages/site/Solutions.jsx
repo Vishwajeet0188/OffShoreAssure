@@ -11,7 +11,7 @@ const PROBLEMS = [
 ];
 
 /* What OffshoreAssure provides, how it helps, and whether it is live in this build. */
-const SOLUTIONS = [
+export const SOLUTIONS = [
   ['clipboard', 'Requirement and risk screening', true, 'Describe the service once. OffshoreAssure checks your answers, sets an early risk level, picks the rules that apply and lists what is still missing.', ['A clear starting point for every assessment', 'Gaps found on day one, not after signing']],
   ['users', 'Vendor selection', true, 'Search verified vendors or invite your own. Each vendor is compared with your needs on service, location and countries, and your final choice is saved with its reason.', ['Fair, explained comparisons', 'A recorded decision you can show later']],
   ['shield', 'Vendor compliance assessment', true, 'A questionnaire built from the checks that apply to you. The vendor answers it and uploads certificates and policies, and gets a first score.', ['No generic, oversized questionnaires', 'Evidence checked, not just collected']],
