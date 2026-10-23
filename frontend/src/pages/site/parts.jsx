@@ -56,40 +56,33 @@ const KINDS = [['feedback', 'General feedback'], ['question', 'A question'], ['p
 const EMPTY_FEEDBACK = { kind: 'feedback', rating: 0, message: '', publicConsent: false };
 
 /*
- * Feedback form on the home page. Only signed-in buyers and vendors can send
- * feedback; everyone else is asked to sign in or create an account first.
+ * Feedback form on the home page. Everyone can see and fill it in, but only
+ * signed-in buyers and vendors can send it. Anyone else is asked to register
+ * or sign in when they press "Send feedback"; what they typed is kept.
  * Messages go to the OffshoreAssure team (Admin → Feedback).
  */
 export function FeedbackForm() {
   const auth = useAuth();
-
-  if (!auth.user) return <SignInToGiveFeedback />;
-  if (!['buyer', 'vendor'].includes(auth.user.role)) {
-    return (
-      <div className="card lp-fbdone" data-section="feedback-admin">
-        <span className="lp-oi"><Icon n="shield" s={20} /></span>
-        <div><b>You are signed in as an OffshoreAssure admin.</b>
-          <p className="note" style={{ margin: '4px 0 0' }}>Feedback is sent by buyers and vendors. You can read it in <Link className="link" to="/admin/feedback">Admin → Feedback</Link>.</p></div>
-      </div>
-    );
-  }
   return <FeedbackFormFields user={auth.user} />;
 }
 
-function SignInToGiveFeedback() {
-  return (
-    <div className="card lp-fbdone" data-section="feedback-signin">
-      <span className="lp-oi"><Icon n="login" s={20} /></span>
-      <div>
-        <b>Sign in to share your feedback.</b>
-        <p className="note" style={{ margin: '4px 0 0' }}>
-          Feedback and reviews can only be sent by registered buyers and vendors, so every review on this page comes from a real user.
-        </p>
-        <div className="row" style={{ gap: 8, marginTop: 12 }}>
-          <Link className="btn primary sm" to="/login" data-act="feedback-login">Login</Link>
-          <Link className="btn sm" to="/signup">Create an account</Link>
-        </div>
+function NotAllowedNotice({ user }) {
+  if (user) {
+    // Signed in, but as an admin.
+    return (
+      <div className="rq-flag warning full" role="alert" data-section="feedback-denied">
+        <Icon n="alert" s={16} />
+        <span>Feedback is sent from a buyer or vendor account. You can read it in <Link className="link" to="/admin/feedback">Admin → Feedback</Link>.</span>
       </div>
+    );
+  }
+  return (
+    <div className="rq-flag warning full" role="alert" data-section="feedback-denied">
+      <Icon n="alert" s={16} />
+      <span>
+        Please register yourself first, then you can send feedback.{' '}
+        <Link className="link" to="/signup">Create an account</Link> or <Link className="link" to="/login">log in</Link>.
+      </span>
     </div>
   );
 }
@@ -100,6 +93,8 @@ function FeedbackFormFields({ user }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [sentMessage, setSentMessage] = useState('');
+  const [notAllowed, setNotAllowed] = useState(false);
+  const canSend = user && ['buyer', 'vendor'].includes(user.role);
 
   const update = (key, value) => {
     setForm(current => ({ ...current, [key]: value }));
@@ -109,6 +104,11 @@ function FeedbackFormFields({ user }) {
   async function submit(event) {
     event.preventDefault();
     setError('');
+
+    if (!canSend) {
+      setNotAllowed(true);
+      return;
+    }
 
     if (form.message.trim().length < 10) {
       setFieldErrors({ message: 'Write at least 10 characters.' });
@@ -124,7 +124,8 @@ function FeedbackFormFields({ user }) {
       setSentMessage(result.message);
       setForm(EMPTY_FEEDBACK);
     } catch (err) {
-      if (Object.keys(err.fields || {}).length) setFieldErrors(err.fields);
+      if (err.status === 401 || err.status === 403) setNotAllowed(true);
+      else if (Object.keys(err.fields || {}).length) setFieldErrors(err.fields);
       else setError(err.message);
     } finally {
       setBusy(false);
@@ -137,7 +138,7 @@ function FeedbackFormFields({ user }) {
         <span className="lp-oi"><Icon n="check" s={20} /></span>
         <div>
           <b>{sentMessage}</b>
-          <p className="note" style={{ margin: '4px 0 0' }}>We read every message. If you asked a question, we will reply to {user.email}.</p>
+          <p className="note" style={{ margin: '4px 0 0' }}>We read every message. If you asked a question, we will reply to {user?.email}.</p>
           <button className="btn sm" style={{ marginTop: 10 }} onClick={() => setSentMessage('')}>Send another message</button>
         </div>
       </div>
@@ -186,7 +187,7 @@ function FeedbackFormFields({ user }) {
         {fieldErrors.message ? <span className="form-err">{fieldErrors.message}</span> : null}
       </div>
 
-      <p className="note full" style={{ margin: 0 }}>Sending as {user.email}. We will reply there if needed.</p>
+      {canSend ? <p className="note full" style={{ margin: 0 }}>Sending as {user.email}. We will reply there if needed.</p> : null}
 
       {canBePublished ? (
         <label className="lp-consent full">
@@ -198,6 +199,7 @@ function FeedbackFormFields({ user }) {
         </label>
       ) : null}
 
+      {notAllowed ? <NotAllowedNotice user={user} /> : null}
       {error ? <p className="form-err full" role="alert">{error}</p> : null}
       <div className="full">
         <button className="btn primary" type="submit" disabled={busy} data-act="send-feedback">{busy ? 'Sending…' : 'Send feedback'}</button>
