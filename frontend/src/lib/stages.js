@@ -16,8 +16,8 @@ export const STAGES = [
   { n: 4, slug: 'contract-analysis', title: 'Contract analysis', icon: 'file', path: '/contract',
     summary: 'Upload the contract with the selected vendor; OffshoreAssure extracts the text, identifies the clauses and shows which topics are covered.',
     steps: [[17, 'Upload or select contract', 'B', 'E'], [18, 'Extract text and identify clauses', 'E', 'E'], [19, 'Save original file and extraction', 'E', 'R'], [20, 'Contract analysis and clause list', 'E', 'B']] },
-  { n: 5, slug: 'obligation-extraction', title: 'Obligation extraction', icon: 'list',
-    summary: 'Extract obligations and parties from the clauses and map them to requirements and rules.',
+  { n: 5, slug: 'obligation-extraction', title: 'Obligation extraction', icon: 'list', path: '/obligations',
+    summary: 'Extract obligations and parties from the contract clauses, map them to the requirement’s controls and rules, and save the obligation register.',
     steps: [[21, 'Extract obligations and parties', 'E', 'E'], [22, 'Map clauses to requirements and rules', 'E', 'E'], [23, 'Obligations, sources and confidence', 'E', 'B'], [24, 'Save obligation register and rule trace', 'E', 'R']] },
   { n: 6, slug: 'transfer-assessment', title: 'Transfer assessment', icon: 'globe',
     summary: 'Map data flows and transfer routes, and check recipients, roles and safeguards route by route.',
@@ -35,7 +35,7 @@ export const STAGES = [
 ];
 
 /* Steps that are live in this build. */
-export const BUILT_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+export const BUILT_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24];
 export const stageStatus = s => {
   const done = s.steps.filter(([n]) => BUILT_STEPS.includes(n)).length;
   return done === 0 ? 'not-started' : done === s.steps.length ? 'available' : 'partial';
@@ -49,7 +49,7 @@ export const VENDOR_JOURNEY = [
     text: 'Hold one reusable, verified company profile that can be presented to any UK buyer on the platform.', steps: [] },
   { stage: 3, slug: 'assessments', title: 'Assessments', icon: 'shield', path: '/vendor/assessments',
     text: 'See buyers that invited or selected your company; then answer the buyer’s questionnaire and upload certificates, policies and insurance evidence (Stage 3).', steps: [12, 13] },
-  { stage: 5, slug: 'obligations', title: 'Obligations', icon: 'list',
+  { stage: 5, slug: 'obligations', title: 'Obligations', icon: 'list', path: '/vendor/obligations',
     text: 'See the obligations drawn from the signed agreement, stated plainly.', steps: [] },
   { stage: 6, slug: 'access', title: 'Scoped access', icon: 'globe',
     text: 'Receive the access the current assessment supports, with the reason for any limit.', steps: [] },
