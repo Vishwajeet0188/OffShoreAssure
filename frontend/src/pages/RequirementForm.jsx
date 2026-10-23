@@ -10,6 +10,9 @@ import RequirementField from '../components/requirements/RequirementField.jsx';
 import AssessmentResult from '../components/requirements/AssessmentResult.jsx';
 import ProfilePanel from '../components/requirements/ProfilePanel.jsx';
 import InformationRequired from '../components/requirements/InformationRequired.jsx';
+import Loading from '../components/extras/Loading.jsx';
+import { ReferenceTag } from '../components/extras/CopyButton.jsx';
+import { confirmAction } from '../components/extras/ConfirmDialog.jsx';
 
 /* Stage 1 · Step 1 — Submit outsourcing requirement (buyer → OffshoreAssure engine).
    32 fields in six groups. Save draft at any time; Submit is accepted only when every mandatory and conditional answer is complete. */
@@ -147,7 +150,7 @@ export default function RequirementForm() {
   const jump = key => { const el = document.querySelector(`[data-field="${key}"]`); el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); el?.querySelector('input,select,textarea,button')?.focus({ preventScroll: true }); };
 
   if (loadErr) return <><Link className="link" to="/requirements"><BackArrow s={14} /> Requirements</Link><p className="form-err">{loadErr}</p></>;
-  if (!form || (routeId && !rec)) return <p className="note">Loading…</p>;
+  if (!form || (routeId && !rec)) return <Loading />;
   if (rec?.status === 'submitted' && !correcting) return <SubmittedView form={form} rec={rec} docs={docs} msg={msg} reqId={reqId} assessment={assessment} prof={prof} onCorrect={assessment && prof ? startCorrect : null} />;
   const nextVersion = prof ? (v => { const [a, b] = v.split('.').map(Number); return `${a}.${b + 1}`; })(prof.profiles[prof.profiles.length - 1].version) : '';
 
@@ -158,7 +161,7 @@ export default function RequirementForm() {
       <PageHead eyebrow={correcting ? `Buyer · Stage 1 · ${assessment.reference} · Correction` : 'Buyer · Stage 1 · Requirement · Step 1'} title={reqId ? (data.assessmentTitle || 'Untitled requirement') : 'New outsourcing requirement'}
         lead={correcting ? `Change the answers that need correcting. Saving creates requirement profile v${nextVersion}; version ${prof.profiles[prof.profiles.length - 1].version} and earlier stay unchanged in the evidence record. The Assessment ID stays ${assessment.reference}.`
           : 'Tell us what you plan to outsource. OffshoreAssure uses these answers to work out which jurisdictions, data-protection checks and supplier assurance controls apply. Save a draft at any time; submit when all required answers are complete.'}
-        right={<div className="row">{correcting ? <span className="mono asr-tag">{assessment.reference}</span> : <Badge s="Draft" label={'Draft' + (rec ? ' · saved ' + fmtTime(rec.updatedAt) : ' · not saved yet')} />}
+        right={<div className="row">{correcting ? <ReferenceTag value={assessment.reference} /> : <Badge s="Draft" label={'Draft' + (rec ? ' · saved ' + fmtTime(rec.updatedAt) : ' · not saved yet')} />}
           {import.meta.env.DEV && !correcting ? <button type="button" className="btn demo sm" onClick={fillExample} title="Development only: fill the worked example from the Stage 1 specification">Fill example (dev)</button> : null}</div>} />
 
       {msg ? (
@@ -208,7 +211,7 @@ export default function RequirementForm() {
                   <div key={t.id} className="rq-doc">
                     <div><b>{t.label}</b>{mine.map(d => (
                       <div key={d.id} className="rq-file"><Icon n="doc" s={15} /><a href={docUrl(reqId, d.id)}>{d.fileName}</a><span className="note">{fmtBytes(d.size)} · SHA-256 {d.sha256.slice(0, 12)}…</span>
-                        {correcting ? null : <button type="button" className="link" onClick={() => removeDoc(d)} aria-label={'Remove ' + d.fileName}>Remove</button>}</div>))}
+                        {correcting ? null : <button type="button" className="link" onClick={async () => { if (await confirmAction({ title: `Remove ${d.fileName}?`, message: 'The document will be deleted from this requirement.', confirmLabel: 'Remove' })) removeDoc(d); }} aria-label={'Remove ' + d.fileName}>Remove</button>}</div>))}
                     </div>
                     {correcting ? null : <label className={'btn sm' + (busy === 'doc-' + t.id ? ' busy' : '')}>
                       {busy === 'doc-' + t.id ? 'Uploading…' : <><Icon n="upload" s={14} /> Upload</>}
@@ -261,7 +264,7 @@ function SubmittedView({ form, rec, docs, msg, reqId, assessment, prof, onCorrec
     <div className="rq">
       <Link className="link" to="/requirements" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><BackArrow s={14} /> Requirements</Link>
       <PageHead eyebrow={assessment ? `Buyer · Stage 1 · Requirement · ${prof?.summary ? 'Stage 1 complete' : `Steps 1–${prof ? 3 : 2} complete`}` : 'Buyer · Stage 1 · Requirement · Step 1 complete'} title={d.assessmentTitle} lead={`${d.buyerLegalName} · ${d.serviceCategory} · submitted ${fmtTime(rec.submittedAt)}`}
-        right={assessment ? <span className="mono asr-tag">{assessment.reference}</span> : <Badge s="Submitted" label="Submitted · accepted" />} />
+        right={assessment ? <ReferenceTag value={assessment.reference} /> : <Badge s="Submitted" label="Submitted · accepted" />} />
       {msg ? <div className={'rq-msg ' + msg.tone} role="status"><b>{msg.text}</b></div> : null}
       {prof?.summary ? <InformationRequired s={prof.summary} onCorrect={onCorrect} /> : null}
       {assessment ? <AssessmentResult a={assessment} buyerName={d.buyerLegalName} /> : (

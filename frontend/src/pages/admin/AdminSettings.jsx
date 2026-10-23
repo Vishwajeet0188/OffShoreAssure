@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../lib/api.js';
 import { PageHead } from '../../components/common/PageHead.jsx';
 import { Badge } from '../../components/common/Badges.jsx';
+import Loading from '../../components/extras/Loading.jsx';
 
 /* Read-only view of the platform configuration (values come from the server's .env; no secrets are shown). */
 export default function AdminSettings() {
@@ -9,7 +10,7 @@ export default function AdminSettings() {
   const [err, setErr] = useState('');
   useEffect(() => { api('/admin/settings').then(setD).catch(x => setErr(x.message)); }, []);
   if (err) return <p className="form-err">{err}</p>;
-  if (!d) return <p className="note">Loading…</p>;
+  if (!d) return <Loading />;
   const yes = v => (v ? 'Yes' : 'No');
   return (
     <>

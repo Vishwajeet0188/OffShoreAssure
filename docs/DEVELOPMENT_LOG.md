@@ -80,6 +80,14 @@ Short notes written when a stage is finished: what it does, how to check it, and
   - *How to check:* Requirement → New requirement → "Fill example" (dev only) → Submit. The page shows the box at the top, then the Step 2 result and the Step 3 profile. The dashboard shows Stage 1 as "Complete · available".
   - *Next:* Stage 2, Vendor selection.
 
+### UI update branch `ui-brand-updates` (23 Oct 2026)
+Built on `stage-0-3` (the live version), so the website and Stages 0–3 can be updated and pushed without Stages 4–6.
+- **Brand colours** from the client's design: Aubergine `#30233F`, Copper `#D66A4A`, Sage `#71806A`, Charcoal `#242329`; status Compliant `#71806A`, Attention `#C48342`, High risk `#AF4343`.
+- **Page background `#FAF5EC`** (as chosen); cards slightly lighter (`#FFFDF9`) so they still stand out; the home-page hero tint is softer so the background reads as the true colour.
+- **Site extras:** dark mode toggle, cookie notice, site search (Ctrl+K), back to top, loading spinner, scroll progress bar, copy button for the Assessment ID, print stylesheet, skip to content, UTM capture at sign-up (admin sees "Came from"), confirmation dialogs before deactivating or removing, last updated date in the footer, floating "Contact us" button. Already there: mobile menu, hover states, sticky headers, password eye, form success/error states, expandable FAQ.
+- Database: `014_signup_source.sql` (adds `users.signup_source`).
+- Tests: API 52; browser Stage 0 49, Stage 1 48, roles 31, Stage 2 22, Stage 3 20, website 24, extras 24. All pass.
+
 ## 2. Source documents (the specification)
 
 Development follows only these documents:

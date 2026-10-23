@@ -1,9 +1,10 @@
 /* Brand marks and the decorative wave pattern in the sidebar. */
 export function Logo({ dark = false, w = 40, h = 30 }) {
-  const ink = dark ? '#271A38' : '#F5F2EB';
+  // On light backgrounds the "A" follows the text colour, so it also works in dark mode.
+  const ink = dark ? 'var(--ink)' : '#F7F3EC';
   return (
     <svg width={w} height={h} viewBox="0 0 40 30" aria-hidden="true">
-      <path d="M15 3.5a11.5 11.5 0 1 0 8.6 19.2" fill="none" stroke="#B95F50" strokeWidth="4" strokeLinecap="round" />
+      <path d="M15 3.5a11.5 11.5 0 1 0 8.6 19.2" fill="none" stroke="#D66A4A" strokeWidth="4" strokeLinecap="round" />
       <path d="M18 26L28 4l10 22" fill="none" stroke={ink} strokeWidth="3.4" strokeLinejoin="round" strokeLinecap="round" />
       <path d="M22.5 18h11" stroke={ink} strokeWidth="2.6" strokeLinecap="round" />
     </svg>
@@ -22,7 +23,7 @@ const WAVE_PATHS = (() => {
 export function Waves() {
   return (
     <svg className="waves" viewBox="0 0 250 230" preserveAspectRatio="none" aria-hidden="true">
-      {WAVE_PATHS.map((p, i) => <path key={i} d={p.d} fill="none" stroke="#B95F50" strokeWidth=".8" opacity={p.o} />)}
+      {WAVE_PATHS.map((p, i) => <path key={i} d={p.d} fill="none" stroke="#D66A4A" strokeWidth=".8" opacity={p.o} />)}
     </svg>
   );
 }

@@ -6,6 +6,8 @@ import { eventLabel, eventTone, eventDetail, STATUS_BADGE } from '../../lib/even
 import { useAuth } from '../../context/AuthContext.jsx';
 import { Badge } from '../../components/common/Badges.jsx';
 import { BackArrow } from '../../components/common/Icon.jsx';
+import Loading from '../../components/extras/Loading.jsx';
+import { confirmAction } from '../../components/extras/ConfirmDialog.jsx';
 
 /* One customer: profile, account status and full audit history. */
 export default function AdminUserDetail() {
@@ -24,7 +26,7 @@ export default function AdminUserDetail() {
   };
 
   if (err && !d) return <><Link className="link" to="/admin/users"><BackArrow s={14} /> All users</Link><p className="form-err">{err}</p></>;
-  if (!d) return <p className="note">Loading…</p>;
+  if (!d) return <Loading />;
   const u = d.user; const [tone, label] = STATUS_BADGE[u.status];
   const locked = u.lockedUntil && new Date(u.lockedUntil) > new Date();
   return (
@@ -39,7 +41,7 @@ export default function AdminUserDetail() {
         <div className="row">
           <Badge s={tone} label={label} />
           {u.id === me.id || u.status === 'unverified' ? null : u.status === 'active'
-            ? <button className="btn" disabled={busy} onClick={() => setStatus('inactive')}>Deactivate account</button>
+            ? <button className="btn" disabled={busy} onClick={async () => { if (await confirmAction({ title: 'Deactivate this account?', message: 'The user will be signed out and will not be able to sign in. You can activate the account again later.', confirmLabel: 'Deactivate' })) setStatus('inactive'); }}>Deactivate account</button>
             : <button className="btn primary" disabled={busy} onClick={() => setStatus('active')}>{u.status === 'pending' ? 'Approve account' : 'Activate account'}</button>}
         </div>
       </div>
@@ -63,6 +65,7 @@ export default function AdminUserDetail() {
             <dt>Last sign-in</dt><dd className="mono">{u.lastLoginAt ? fmtTime(u.lastLoginAt) : 'Never'}</dd>
             <dt>Failed sign-ins</dt><dd>{u.failedLogins}{locked ? <> · <span className="b b-coral">Locked until {fmtTime(u.lockedUntil)}</span></> : null}</dd>
             <dt>Account type</dt><dd>{u.isAdmin ? 'OffshoreAssure admin' : 'Customer'}</dd>
+            <dt>Came from</dt><dd data-field="signup-source">{describeSource(u.signupSource)}</dd>
           </dl>
         </div>
       </div>
@@ -78,4 +81,12 @@ export default function AdminUserDetail() {
       </div>
     </>
   );
+}
+
+/* "linkedin / social · campaign launch-2026" from the UTM tags saved at sign-up. */
+function describeSource(source) {
+  if (!source) return 'Direct (no campaign link)';
+  const channel = [source.utm_source, source.utm_medium].filter(Boolean).join(' / ');
+  const campaign = source.utm_campaign ? ` · campaign ${source.utm_campaign}` : '';
+  return (channel || 'Campaign link') + campaign;
 }

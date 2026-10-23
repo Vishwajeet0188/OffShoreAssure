@@ -10,6 +10,7 @@ import AssessmentResult from '../../components/requirements/AssessmentResult.jsx
 import ProfilePanel from '../../components/requirements/ProfilePanel.jsx';
 import { MATCH_LABEL, CHECK_SHORT } from '../../lib/selection.js';
 import InformationRequired from '../../components/requirements/InformationRequired.jsx';
+import Loading from '../../components/extras/Loading.jsx';
 
 /* Admin · Assessments across every buyer organisation (Stage 1 · Step 2 onwards). */
 export default function AdminAssessments() {
@@ -51,7 +52,7 @@ export function AdminAssessmentDetail() {
   useEffect(() => { api('/admin/assessments/' + encodeURIComponent(ref)).then(setD).catch(x => setErr(x.message)); }, [ref]);
   const back = <Link className="link" to="/admin/assessments" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><BackArrow s={14} /> Assessments</Link>;
   if (err) return <>{back}<p className="form-err">{err}</p></>;
-  if (!d) return <p className="note">Loading…</p>;
+  if (!d) return <Loading />;
   const a = d.assessment;
   return (
     <>

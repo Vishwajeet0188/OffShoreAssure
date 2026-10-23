@@ -3,6 +3,7 @@ import { api } from '../../lib/api.js';
 import { fmtTime } from '../../lib/format.js';
 import { PageHead } from '../../components/common/PageHead.jsx';
 import { Badge } from '../../components/common/Badges.jsx';
+import Loading from '../../components/extras/Loading.jsx';
 
 const KIND = { feedback: 'Feedback', question: 'Question', problem: 'Problem', idea: 'Idea' };
 
@@ -13,7 +14,7 @@ export default function AdminFeedback() {
   useEffect(() => { load(); }, [load]);
   const mark = async (f, body) => { setErr(''); try { await api('/admin/feedback/' + f.id, { method: 'PATCH', body: typeof body === 'string' ? { status: body } : body }); load(); } catch (x) { setErr(x.message); } };
   if (err && !d) return <p className="form-err">{err}</p>;
-  if (!d) return <p className="note">Loading…</p>;
+  if (!d) return <Loading />;
   return (
     <>
       <PageHead eyebrow="Admin console · Platform" title="Website feedback" lead="Messages sent from the feedback form on the website's home page. A message can be published as a review on the home page only if the sender agreed." right={<div className="row"><Badge s={d.unread ? 'Pending' : 'Complete'} label={`${d.unread} unread`} /><Badge s="Info" label={`${d.published} on the website`} /></div>} />

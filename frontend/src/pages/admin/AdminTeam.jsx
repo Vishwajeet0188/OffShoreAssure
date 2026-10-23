@@ -4,6 +4,7 @@ import { fmtDate, fmtTime } from '../../lib/format.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { PageHead } from '../../components/common/PageHead.jsx';
 import { Badge } from '../../components/common/Badges.jsx';
+import { confirmAction } from '../../components/extras/ConfirmDialog.jsx';
 
 /* OffshoreAssure staff who can use the admin console. */
 export default function AdminTeam() {
@@ -55,7 +56,7 @@ export default function AdminTeam() {
                 <td className="mono" style={{ whiteSpace: 'nowrap' }}>{fmtDate(a.createdAt)}</td>
                 <td className="mono">{a.lastLoginAt ? fmtTime(a.lastLoginAt) : 'Never'}</td>
                 <td style={{ textAlign: 'right' }}>{a.id === me.id ? null : a.status === 'active'
-                  ? <button className="btn sm" onClick={() => setStatus(a, 'inactive')}>Deactivate</button>
+                  ? <button className="btn sm" onClick={async () => { if (await confirmAction({ title: `Deactivate ${a.email}?`, message: 'They will no longer be able to sign in to the admin console. You can activate the account again later.', confirmLabel: 'Deactivate' })) setStatus(a, 'inactive'); }}>Deactivate</button>
                   : <button className="btn sm primary" onClick={() => setStatus(a, 'active')}>Reactivate</button>}</td>
               </tr>))}</tbody>
           </table></div>

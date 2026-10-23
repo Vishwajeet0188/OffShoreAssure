@@ -4,6 +4,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Icon } from '../components/common/Icon.jsx';
 import VerifyCodeModal from '../components/auth/VerifyCodeModal.jsx';
+import { clearSignupSource } from '../lib/utm.js';
 
 /* Stage 0 · Registration (same pattern as ScotWarm): email + password → Register →
    6-digit code emailed → verification popup → account created. Other details are collected afterwards. */
@@ -41,6 +42,7 @@ export default function Signup() {
     const r = await auth.verify(pending.email, code);
     setPending(null);
     if (r.status === 'pending_approval') { setDone(r.message); return; }
+    clearSignupSource(); // recorded with the new account; not needed any more
     navigate('/complete-profile', { replace: true });
   };
 

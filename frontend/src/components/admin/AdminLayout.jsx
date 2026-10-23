@@ -3,6 +3,9 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { Icon } from '../common/Icon.jsx';
 import { Logo } from '../layout/Brand.jsx';
 import ErrorBoundary from '../common/ErrorBoundary.jsx';
+import ThemeToggle from '../extras/ThemeToggle.jsx';
+import SkipLink from '../extras/SkipLink.jsx';
+import FloatingActions from '../extras/FloatingActions.jsx';
 
 /* Grouped by party. `stage` marks pages whose data arrives with a later build stage. */
 const NAV = [
@@ -20,6 +23,7 @@ export default function AdminLayout() {
   const { pathname } = useLocation();
   return (
     <div className="adm">
+      <SkipLink target="admin-content" />
       <header className="adm-top">
         <div className="adm-brand">
           <Logo w={34} h={26} />
@@ -27,6 +31,7 @@ export default function AdminLayout() {
         </div>
         <span className="adm-env">Internal · OffshoreAssure team</span>
         <div className="adm-user">
+          <ThemeToggle className="on-dark" />
           <span className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>AD</span>
           <span className="adm-email">{user?.email}</span>
           <button className="btn sm" onClick={() => { navigate('/'); logout(); }}>Sign out</button>
@@ -46,10 +51,11 @@ export default function AdminLayout() {
           ))}
           <div className="adm-navfoot note">Changes made here are recorded in the audit log.</div>
         </nav>
-        <main className="adm-main" id="admin-content">
+        <main className="adm-main" id="admin-content" tabIndex={-1}>
           <ErrorBoundary resetKey={pathname}><Outlet /></ErrorBoundary>
         </main>
       </div>
+      <FloatingActions showContact={false} />
     </div>
   );
 }

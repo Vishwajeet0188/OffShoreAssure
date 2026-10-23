@@ -94,7 +94,7 @@ adminRouter.get('/overview', async (_req, res) => {
 adminRouter.get('/users/:id', async (req, res) => {
   if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) return res.status(404).json({ error: 'not_found', message: 'User not found.' });
   const u = (await query(
-    `SELECT u.id, u.email, u.status, u.is_admin, u.role, u.created_at, u.email_verified_at, u.last_login_at, u.failed_logins, u.locked_until,
+    `SELECT u.id, u.email, u.status, u.is_admin, u.role, u.created_at, u.email_verified_at, u.last_login_at, u.failed_logins, u.locked_until, u.signup_source,
             p.full_name, p.organisation_name, p.sector, p.job_role, p.phone, p.updated_at AS profile_updated_at
        FROM users u LEFT JOIN user_profiles p ON p.user_id = u.id WHERE u.id = $1`, [req.params.id])).rows[0];
   if (!u) return res.status(404).json({ error: 'not_found', message: 'User not found.' });
@@ -103,7 +103,7 @@ adminRouter.get('/users/:id', async (req, res) => {
       WHERE actor_id = $1 OR detail->>'userId' = $2 ORDER BY id DESC LIMIT 100`, [u.id, u.id])).rows;
   res.json({
     user: {
-      id: u.id, email: u.email, status: u.status, isAdmin: u.is_admin, role: u.role, createdAt: u.created_at, emailVerifiedAt: u.email_verified_at,
+      id: u.id, email: u.email, status: u.status, isAdmin: u.is_admin, role: u.role, createdAt: u.created_at, emailVerifiedAt: u.email_verified_at, signupSource: u.signup_source,
       lastLoginAt: u.last_login_at, failedLogins: u.failed_logins, lockedUntil: u.locked_until,
       fullName: u.full_name, organisationName: u.organisation_name, sector: u.sector, jobRole: u.job_role, phone: u.phone, profileUpdatedAt: u.profile_updated_at
     },

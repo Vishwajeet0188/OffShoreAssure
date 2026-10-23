@@ -32,7 +32,7 @@ const WHY = [
   ['scale', 'Fair to both sides', 'Vendors see what is asked of them and can build a verified track record.']
 ];
 
-const FAQ = [
+export const FAQ = [
   ['Who is OffshoreAssure for?', 'UK organisations that outsource services such as IT support, software development or back-office work to companies in other countries, and the vendors that deliver those services.'],
   ['Does OffshoreAssure give legal advice?', 'No. It gives clear risk indicators and the evidence behind them to support your decision. Your own legal and compliance teams make the final call.'],
   ['How do vendors join?', 'A vendor registers its company, and our team checks its identity and registration. Only verified vendors appear in buyers’ searches. Buyers can also invite a vendor by email.'],
@@ -124,7 +124,7 @@ export default function Home() {
         <ol className="lp-why">{WHY.map(([ic, t, d], i) => <li key={t} className="card lp-card"><div className="row" style={{ justifyContent: 'space-between' }}><span className="lp-oi"><Icon n={ic} s={19} /></span><span className="lp-why-n">0{i + 1}</span></div><h3 className="lp-h3">{t}</h3><p className="note">{d}</p></li>)}</ol>
       </div></section>
 
-      <section className="lp-sec" data-section="faq"><div className="lp-wrap lp-splitsec">
+      <section className="lp-sec" id="faq" data-section="faq"><div className="lp-wrap lp-splitsec">
         <div className="lp-split-l">
           <SectionHead left eyebrow="Questions" title="Frequently asked questions." sub="Short answers to what people ask most." />
           <div className="card lp-askbox"><b>Still have a question?</b><span className="note">Sign in and send it to us. We will reply to your account email.</span><Link className="link" to="/#feedback">Ask a question <Icon n="arrow" s={13} /></Link></div>

@@ -4,6 +4,7 @@ import { fmtDate, fmtTime } from '../lib/format.js';
 import { MEMBERSHIP } from '../lib/membership.js';
 import { PageHead } from '../components/common/PageHead.jsx';
 import { Badge } from '../components/common/Badges.jsx';
+import Loading from '../components/extras/Loading.jsx';
 
 /* Buyer organisation: members and join requests. Only the owner can approve or reject. */
 export default function Organisation() {
@@ -16,7 +17,7 @@ export default function Organisation() {
     catch (x) { setErr(x.message); } finally { setBusy(''); }
   };
   if (err && !d) return <p className="form-err">{err}</p>;
-  if (!d) return <p className="note">Loading…</p>;
+  if (!d) return <Loading />;
   if (!d.organisation) return <p className="note">No organisation yet.</p>;
   const owner = d.membership === 'owner';
   const pending = d.members.filter(m => m.membership === 'pending');

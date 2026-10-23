@@ -15,8 +15,19 @@ export const SERVICE_CATEGORIES = ['IT Support', 'Software development', 'Cloud 
 export const ROLES = ['buyer', 'vendor'];
 const country = z.string().refine(c => COUNTRY_CODES.includes(c), 'Choose a valid country.');
 
+/* UTM tags from the link the person first opened (all optional, short text only). */
+const utmValue = z.string().trim().max(100).optional();
+const signupSource = z.object({
+  utm_source: utmValue,
+  utm_medium: utmValue,
+  utm_campaign: utmValue,
+  utm_term: utmValue,
+  utm_content: utmValue,
+  landingPage: z.string().trim().max(200).optional(),
+}).optional().catch(undefined);
+
 export const schemas = {
-  register: z.object({ email, password, role: z.enum(ROLES, { message: 'Choose buyer or vendor.' }).default('buyer') }),
+  register: z.object({ email, password, role: z.enum(ROLES, { message: 'Choose buyer or vendor.' }).default('buyer'), source: signupSource }),
   verify: z.object({ email, code }),
   resend: z.object({ email, purpose: z.enum(['register', 'reset']).default('register') }),
   login: z.object({ email, password: z.string().min(1, 'Enter your password.').max(128) }),

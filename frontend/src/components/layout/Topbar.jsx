@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth, displayName } from '../../context/AuthContext.jsx';
 import { VERIFY_LABEL } from '../../lib/roles.js';
 import { Badge } from '../common/Badges.jsx';
+import ThemeToggle from '../extras/ThemeToggle.jsx';
 
 /* Top bar: the role, the organisation, the signed-in user and sign out. */
 export default function Topbar({ portal = 'buyer' }) {
@@ -20,6 +21,7 @@ export default function Topbar({ portal = 'buyer' }) {
         {vendor && v ? <Badge s={VERIFY_LABEL[v][0]} label={VERIFY_LABEL[v][1]} /> : null}
       </div>
       <div className="right">
+        <ThemeToggle />
         <div className="user">
           <span className="avatar">{initials}</span>
           <div><b className="top-name">{name}</b><div className="role">{auth.profile?.jobRole || ''}</div></div>

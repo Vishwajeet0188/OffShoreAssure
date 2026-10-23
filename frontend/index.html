@@ -4,7 +4,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>OffshoreAssure</title>
-    <meta name="description" content="OffshoreAssure Phase 1 functional prototype: compliance and assurance for outsourced services (sample data, simulated interactions)." />
+    <meta name="description" content="OffshoreAssure: assurance for UK organisations that outsource services offshore. Requirement, vendor selection, compliance, contract, obligations and data transfers in one traceable assessment." />
+    <script>
+      // Apply the saved light/dark choice before the page is drawn (see src/lib/theme.js).
+      try {
+        var saved = localStorage.getItem('oa-theme');
+        var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      } catch (e) { /* storage blocked: the page follows the default */ }
+    </script>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

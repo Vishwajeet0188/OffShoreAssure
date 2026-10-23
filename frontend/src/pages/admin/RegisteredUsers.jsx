@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { PageHead } from '../../components/common/PageHead.jsx';
 import { Badge } from '../../components/common/Badges.jsx';
 import { STATUS_BADGE as STATUS } from '../../lib/events.js';
+import { confirmAction } from '../../components/extras/ConfirmDialog.jsx';
 const TABS = [['', 'All'], ['active', 'Active'], ['unverified', 'Email not verified'], ['pending', 'Pending approval'], ['inactive', 'Inactive']];
 
 /* Stage 0 · Admin: Registered Users. Visible only to the OffshoreAssure team (server checks is_admin). */
@@ -71,7 +72,7 @@ export default function RegisteredUsers() {
                   <td style={{ textAlign: 'right' }}>
                     {u.id === me.id || u.status === 'unverified' ? null
                       : u.status === 'active'
-                        ? <button className="btn sm" disabled={busyId === u.id} onClick={() => setUserStatus(u, 'inactive')}>Deactivate</button>
+                        ? <button className="btn sm" disabled={busyId === u.id} onClick={async () => { if (await confirmAction({ title: `Deactivate ${u.email}?`, message: 'They will be signed out and will not be able to sign in. You can activate the account again later.', confirmLabel: 'Deactivate' })) setUserStatus(u, 'inactive'); }}>Deactivate</button>
                         : <button className="btn sm primary" disabled={busyId === u.id} onClick={() => setUserStatus(u, 'active')}>{u.status === 'pending' ? 'Approve' : 'Activate'}</button>}
                   </td>
                 </tr>))}

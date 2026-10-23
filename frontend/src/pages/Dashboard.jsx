@@ -8,6 +8,7 @@ import { PageHead } from '../components/common/PageHead.jsx';
 import { Badge } from '../components/common/Badges.jsx';
 import { Icon } from '../components/common/Icon.jsx';
 import { activeMember } from '../lib/membership.js';
+import Loading from '../components/extras/Loading.jsx';
 
 /* Buyer dashboard: only real data from the API, plus where each stage of the assessment stands. */
 export default function Dashboard() {
@@ -47,7 +48,7 @@ export default function Dashboard() {
       </div>
       <div className="card">
         <div className="ch"><div><h2>Your requirements</h2><div className="sub">Stage 1 · Requirement</div></div><Link className="link" to="/requirements">View all <Icon n="arrow" s={13} /></Link></div>
-        {!list ? <p className="note pad">Loading…</p> : list.length === 0 ? (
+        {!list ? <Loading pad /> : list.length === 0 ? (
           <div className="pad stack" style={{ alignItems: 'flex-start' }}>
             <p className="note" style={{ margin: 0 }}>You have not started a requirement yet.</p>
             <Link className="btn primary" to="/requirements/new">Start your first requirement</Link>

@@ -6,6 +6,7 @@ import { eventLabel, eventTone, eventDetail } from '../../lib/events.js';
 import { PageHead } from '../../components/common/PageHead.jsx';
 import { Icon } from '../../components/common/Icon.jsx';
 import { LATER_PAGES } from './ComingStage.jsx';
+import Loading from '../../components/extras/Loading.jsx';
 
 function Tile({ label, value, foot, tone, to }) {
   const body = (<>
@@ -51,7 +52,7 @@ export default function AdminOverview() {
   const [err, setErr] = useState('');
   useEffect(() => { api('/admin/overview').then(setD).catch(x => setErr(x.message)); }, []);
   if (err) return <p className="form-err">{err}</p>;
-  if (!d) return <p className="note">Loading…</p>;
+  if (!d) return <Loading />;
   const u = d.users;
   const maxSector = Math.max(1, ...d.sectors.map(s => s.n));
   return (
