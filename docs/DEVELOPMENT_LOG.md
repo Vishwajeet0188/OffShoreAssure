@@ -319,9 +319,9 @@ Specifications for Stages 2–9 (field lists, rules) will come from the client s
 - **Tests:** API 45 (Stage 2: 8 new); browser 49 / 47 / 31 / 22 (new Stage 2 run). All pass.
 
 ### Feedback only from registered users (23 Oct 2026)
-- Only signed-in **buyers and vendors** can send feedback or a review. Visitors who are not signed in see "Sign in to share your feedback" with Login and Create an account buttons; admins are pointed to Admin → Feedback.
-- The form no longer asks for a name or email: both come from the account (the name from the profile). Reviews show that name and the role (Buyer / Vendor), never the email.
-- The server refuses feedback without a session (401) and from admin accounts (403). The bot trap field is no longer needed and was removed.
+- The feedback form is shown to everyone, but only signed-in **buyers and vendors** can send it. Anyone else who presses "Send feedback" sees "Please register yourself first, then you can send feedback." with links to Create an account and Log in; what they typed is kept. Admins are pointed to Admin → Feedback.
+- Signed-in users do not type a name or email: both come from the account (the name from the profile). Reviews show that name and the role (Buyer / Vendor), never the email.
+- The server also refuses feedback without a session (401) and from admin accounts (403). The bot trap field is no longer needed and was removed.
 - Files: `server/src/feedback/routes.js`, `frontend/src/pages/site/parts.jsx`, `frontend/src/pages/site/Home.jsx`, `server/test/site.test.js` (committed on `stage-0-3`, merged into Stage 4).
 
 ### Friendlier messages when the service is unreachable (23 Oct 2026)
