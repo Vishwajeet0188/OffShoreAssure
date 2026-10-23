@@ -127,7 +127,7 @@ export default function Home() {
       <section className="lp-sec" data-section="faq"><div className="lp-wrap lp-splitsec">
         <div className="lp-split-l">
           <SectionHead left eyebrow="Questions" title="Frequently asked questions." sub="Short answers to what people ask most." />
-          <div className="card lp-askbox"><b>Still have a question?</b><span className="note">Send it to us and we will reply if you leave your email.</span><Link className="link" to="/#feedback">Ask a question <Icon n="arrow" s={13} /></Link></div>
+          <div className="card lp-askbox"><b>Still have a question?</b><span className="note">Sign in and send it to us. We will reply to your account email.</span><Link className="link" to="/#feedback">Ask a question <Icon n="arrow" s={13} /></Link></div>
         </div>
         <div className="lp-faq">{FAQ.map(([q, a]) => <details key={q} className="card"><summary>{q}</summary><p>{a}</p></details>)}</div>
       </div></section>
