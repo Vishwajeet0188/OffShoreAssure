@@ -1,0 +1,42 @@
+IT SUPPORT SERVICES AGREEMENT
+
+This Agreement is made between UK Company Ltd (the "Customer") and Vendor A Test Ltd (the "Supplier").
+
+1. Definitions
+1.1 In this Agreement, "Personal Data" has the meaning given in the UK GDPR.
+
+2. Services
+2.1 The Supplier shall provide first and second line IT support to the Customer's staff from its delivery centre in Bengaluru, India.
+
+3. Service Levels
+3.1 The Supplier shall respond to priority 1 incidents within 30 minutes and resolve them within 4 hours.
+3.2 The Supplier shall maintain availability of the service desk of 99.5% each month. Service credits apply where a service level is missed.
+
+4. Data Protection
+4.1 The Supplier shall process Personal Data only on the documented instructions of the Customer and in accordance with Data Protection Legislation.
+4.2 The Supplier shall ensure that persons authorised to process Personal Data are bound by confidentiality.
+
+5. Security
+5.1 The Supplier shall implement appropriate technical and organisational measures, including encryption, multi-factor authentication and access controls, to protect Personal Data.
+
+6. Personal Data Breach
+6.1 The Supplier shall notify the Customer without undue delay and in any event within 24 hours of becoming aware of a Personal Data Breach.
+
+7. Sub-processors
+7.1 The Supplier shall not engage any sub-processor without the prior written consent of the Customer, and shall impose the same data protection obligations on any sub-processor.
+
+8. International Transfers
+8.1 The Supplier shall not transfer Personal Data outside the United Kingdom except to India, and only under the International Data Transfer Agreement or another appropriate safeguard.
+
+9. Audit
+9.1 The Customer may audit the Supplier's compliance with this Agreement on 30 days' written notice, no more than once in any 12 month period.
+
+10. Term and Termination
+10.1 Either party may terminate this Agreement on 90 days' written notice.
+10.2 On termination, the Supplier shall return or securely delete all Personal Data within 30 days and certify the deletion in writing.
+
+11. Liability
+11.1 Each party's total liability under this Agreement shall not exceed the fees paid in the 12 months before the claim.
+
+12. Governing Law
+12.1 This Agreement is governed by the laws of England and Wales.

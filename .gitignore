@@ -15,4 +15,5 @@ server/storage/
 Claude outputs/
 *.xlsx
 
+# Editor settings
 .vscode/
