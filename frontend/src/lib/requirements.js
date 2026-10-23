@@ -1,7 +1,7 @@
 /* Stage 1 · Step 1 helpers. The field definitions come from the API (/api/requirements/form);
    these mirror the server's condition rules so the form can show/hide conditional fields as you type. */
 const BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
-import { ApiError } from './api.js';
+import { ApiError, readResponse, unavailableError } from './api.js';
 
 export const isEmpty = v => v == null || v === '' || (Array.isArray(v) && v.length === 0);
 export function holds(cond, d) {
@@ -24,10 +24,11 @@ export async function uploadDocument(reqId, type, file) {
     res = await fetch(`${BASE}/requirements/${reqId}/documents?type=${encodeURIComponent(type)}&name=${encodeURIComponent(file.name)}`, {
       method: 'POST', credentials: 'include', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file
     });
-  } catch { throw new ApiError(0, { error: 'network', message: 'Cannot reach the OffshoreAssure server.' }); }
-  const data = await res.json().catch(() => null);
-  if (!res.ok) throw new ApiError(res.status, data || { message: res.status === 413 ? 'The file is larger than 10 MB.' : undefined });
-  return data;
+  } catch (error) {
+    throw unavailableError(0, error.message);
+  }
+  if (res.status === 413) throw new ApiError(413, { message: 'The file is larger than 10 MB.' });
+  return readResponse(res);
 }
 export const docUrl = (reqId, docId) => `${BASE}/requirements/${reqId}/documents/${docId}`;
 export const fmtBytes = n => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : (n / 1048576).toFixed(1) + ' MB';

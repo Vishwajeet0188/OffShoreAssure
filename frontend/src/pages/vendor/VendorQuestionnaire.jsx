@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api } from '../../lib/api.js';
+import { api, readResponse, unavailableError } from '../../lib/api.js';
 import { fmtDate, fmtTime } from '../../lib/format.js';
 import { fmtBytes } from '../../lib/requirements.js';
 import { STATUS, GAP_KIND, vendorEvidenceUrl } from '../../lib/compliance.js';
@@ -23,10 +23,16 @@ function Uploader({ refId, control, types, expiring, onDone }) {
     setBusy(true);
     try {
       const q = new URLSearchParams({ control, type, name: file.name, ...(expires ? { expires } : {}) });
-      const r = await fetch(`${BASE}/vendor/compliance/${refId}/evidence?${q}`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file });
-      const b = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(b.message || 'Upload failed.');
-      setType(''); setExpires(''); onDone(b.evidence);
+      let response;
+      try {
+        response = await fetch(`${BASE}/vendor/compliance/${refId}/evidence?${q}`, {
+          method: 'POST', credentials: 'include', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file,
+        });
+      } catch (error) {
+        throw unavailableError(0, error.message);
+      }
+      const result = await readResponse(response);
+      setType(''); setExpires(''); onDone(result.evidence);
     } catch (x) { setErr(x.message); } finally { setBusy(false); if (fileRef.current) fileRef.current.value = ''; }
   };
   return (

@@ -102,29 +102,88 @@ export function FeedbackForm() {
   );
 }
 
-const Stars = ({ n }) => <span className="lp-rstars" aria-label={`${n} out of 5 stars`}>{[1, 2, 3, 4, 5].map(i => <span key={i} className={i <= n ? 'on' : ''}>★</span>)}</span>;
-
-/* Published reviews, scrolling right to left. Real feedback only: shown when the sender agreed and an admin published it.
-   Pauses on hover/focus; with "reduce motion" it becomes a normal horizontal list. Renders nothing when there are no reviews. */
-export function ReviewsMarquee() {
-  const [reviews, setReviews] = useState(null);
-  useEffect(() => { api('/feedback/public').then(r => setReviews(r.reviews)).catch(() => setReviews([])); }, []);
-  if (!reviews || !reviews.length) return null;
-  // Repeat the set so one half of the track is always wider than the screen; the second half makes the loop seamless.
-  const set = []; while (set.length < Math.max(6, reviews.length)) set.push(...reviews);
-  const card = (r, i, hidden) => (
-    <figure key={i} className="lp-review card" aria-hidden={hidden || undefined}>
-      {r.rating ? <Stars n={r.rating} /> : null}
-      <blockquote>“{r.message}”</blockquote>
-      <figcaption><span className="lp-ravatar">{r.name[0]}</span><span><b>{r.name}</b><span className="note">{r.role}</span></span></figcaption>
-    </figure>);
+function Stars({ rating }) {
   return (
-    <section className="lp-sec lp-alt lp-reviews" data-section="reviews"><div className="lp-wrap">
-      <SectionHead eyebrow="What people say" title="Feedback from our users." sub="Real comments sent through the form below, shared with the sender’s permission." />
-    </div>
-      <div className="lp-marquee" style={{ '--lp-dur': `${set.length * 7}s` }} tabIndex={0} aria-label="User reviews">
-        <div className="lp-mtrack">{set.map((r, i) => card(r, 'a' + i, i >= reviews.length))}{set.map((r, i) => card(r, 'b' + i, true))}</div>
+    <span className="lp-rstars" aria-label={`${rating} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map(star => <span key={star} className={star <= rating ? 'on' : ''}>★</span>)}
+    </span>
+  );
+}
+
+function ReviewCard({ review, hidden }) {
+  return (
+    <figure className="lp-review card" aria-hidden={hidden || undefined}>
+      {review.rating ? <Stars rating={review.rating} /> : null}
+      <blockquote>“{review.message}”</blockquote>
+      <figcaption>
+        <span className="lp-ravatar">{review.name[0]}</span>
+        <span><b>{review.name}</b><span className="note">{review.role}</span></span>
+      </figcaption>
+    </figure>
+  );
+}
+
+/*
+ * The reviews section on the home page.
+ *
+ * Only real feedback is shown: the sender agreed to it being published and an
+ * admin approved it. The cards scroll from right to left and pause on hover.
+ * With "reduce motion" switched on they become a normal list.
+ *
+ * The section is always shown. When there are no published reviews yet (or the
+ * server cannot be reached) it invites visitors to leave the first one.
+ */
+export function ReviewsMarquee() {
+  const [reviews, setReviews] = useState([]);
+
+  useEffect(() => {
+    api('/feedback/public')
+      .then(result => setReviews(result.reviews || []))
+      .catch(() => setReviews([]));
+  }, []);
+
+  return (
+    <section className="lp-sec lp-alt lp-reviews" data-section="reviews">
+      <div className="lp-wrap">
+        <SectionHead
+          eyebrow="What people say"
+          title="Feedback from our users."
+          sub="Real comments sent through the form below, shared with the sender’s permission."
+        />
       </div>
+      {reviews.length > 0 ? <ScrollingReviews reviews={reviews} /> : <NoReviewsYet />}
     </section>
+  );
+}
+
+function ScrollingReviews({ reviews }) {
+  // Repeat the reviews until there are at least six cards, so the row is always
+  // wider than the screen. The row is then drawn twice, which makes the loop seamless.
+  const row = [];
+  while (row.length < Math.max(6, reviews.length)) row.push(...reviews);
+
+  return (
+    <div className="lp-marquee" style={{ '--lp-dur': `${row.length * 7}s` }} tabIndex={0} aria-label="User reviews">
+      <div className="lp-mtrack">
+        {row.map((review, index) => (
+          <ReviewCard key={'first-' + index} review={review} hidden={index >= reviews.length} />
+        ))}
+        {row.map((review, index) => (
+          <ReviewCard key={'second-' + index} review={review} hidden />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NoReviewsYet() {
+  return (
+    <div className="lp-wrap">
+      <div className="card lp-askbox" data-section="no-reviews">
+        <b>No reviews yet.</b>
+        <span className="note">Be the first to tell us what you think. Reviews appear here once you agree to share them and our team has checked them.</span>
+        <Link className="link" to="/#feedback">Leave feedback <Icon n="arrow" s={13} /></Link>
+      </div>
+    </div>
   );
 }

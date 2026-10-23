@@ -31,7 +31,7 @@ export default function Sidebar({ portal = 'buyer' }) {
         })}
       </nav>
       <NavLink className="mod" to="/" style={{ marginTop: 'auto' }} title="Public home page"><BackArrow s={17} /><span className="lbl">Back to home page</span></NavLink>
-      <div className="foot" style={{ marginTop: 0 }}><span>Development build</span></div>
+      {import.meta.env.DEV ? <div className="foot" style={{ marginTop: 0 }}><span>Development build</span></div> : null}
     </aside>
   );
 }
