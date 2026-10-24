@@ -8,7 +8,7 @@ import { Badge } from '../../components/common/Badges.jsx';
 import { BackArrow } from '../../components/common/Icon.jsx';
 import AssessmentResult from '../../components/requirements/AssessmentResult.jsx';
 import ProfilePanel from '../../components/requirements/ProfilePanel.jsx';
-import { MATCH_LABEL, CHECK_SHORT } from '../../lib/selection.js';
+import { ELIGIBILITY, SELECTION_STATUS, SOURCE_LABEL } from '../../lib/selection.js';
 import InformationRequired from '../../components/requirements/InformationRequired.jsx';
 import Loading from '../../components/extras/Loading.jsx';
 
@@ -67,18 +67,24 @@ export function AdminAssessmentDetail() {
   );
 }
 
-/* Stage 2 for the admin: shortlist and the saved selection (read-only). */
+/* Stage 2 for the admin: candidates and the saved Vendor Selection Record (read-only). */
 function SelectionPanel({ s }) {
   const cur = s.current;
+  const status = cur && SELECTION_STATUS[cur.status];
   return (
     <section className="card" data-section="admin-selection">
-      <div className="ch"><div><h2>Stage 2 · Vendor selection</h2><div className="sub">{cur ? `Selection v${cur.version} saved ${fmtTime(cur.selectedAt)} by ${cur.selectedByEmail}` : 'No vendor selected yet'}</div></div>
-        {cur ? <Badge s="Complete" label={'Selected: ' + cur.vendor.name} /> : <Badge s="Pending" label={`${s.shortlist.length} on shortlist`} />}</div>
-      {cur ? <div className="asr-block"><h3>Reason</h3><p style={{ margin: 0 }}>{cur.rationale}</p>{cur.acceptedFlags.length ? <p className="note">Accepted issues: {cur.acceptedFlags.map(f => CHECK_SHORT[f] || f).join(', ')}</p> : null}{cur.changeReason ? <p className="note">Change reason: {cur.changeReason}</p> : null}</div> : null}
-      {s.shortlist.length ? <div className="tw"><table><thead><tr><th>Shortlisted vendor</th><th>Match</th><th>Added</th></tr></thead>
-        <tbody>{s.shortlist.map(v => <tr key={v.id}><td><Link className="adm-ulink" to={'/admin/vendors/' + v.id}><b>{v.name}</b></Link>{cur?.vendorId === v.id ? <span className="b b-plum" style={{ marginLeft: 8 }}>Selected</span> : null}</td>
-          <td><Badge s={MATCH_LABEL[v.match.result][0]} label={MATCH_LABEL[v.match.result][1]} /></td><td className="mono">{fmtTime(v.addedAt)} · {v.addedByEmail}</td></tr>)}</tbody></table></div> : null}
-      {s.versions.length > 1 ? <div className="asr-block"><h3>Earlier selections</h3><ul>{s.versions.slice(0, -1).map(v => <li key={v.id}>v{v.version} · {v.vendor.name} · {fmtTime(v.selectedAt)}</li>)}</ul></div> : null}
+      <div className="ch"><div><h2>Stage 2 · Vendor selection</h2><div className="sub">{cur ? `Vendor Selection Record v${cur.recordVersion} saved ${fmtTime(cur.selectedAt)} by ${cur.selectedByEmail}` : 'No vendor selected yet'}</div></div>
+        {cur ? <Badge s={status ? status[0] : 'Complete'} label={`${status ? status[1] : 'Selected'}: ${cur.vendor.name}`} /> : <Badge s="Pending" label={`${s.candidates.length} candidate${s.candidates.length === 1 ? '' : 's'}`} />}</div>
+      {cur ? <div className="asr-block"><h3>Reason</h3><p style={{ margin: 0 }}>{cur.rationale}</p>
+        <p className="note">Source: {SOURCE_LABEL[cur.source] || cur.source}{cur.approver ? ` · approved by ${cur.approver.fullName || cur.approver.email}` : ''}</p>
+        {cur.exceptionReason ? <p className="note">Exception: {cur.exceptionReason}</p> : null}
+        {cur.conditions.length ? <p className="note">Conditions: {cur.conditions.join(' ')}</p> : null}
+        {cur.changeReason ? <p className="note">Change reason: {cur.changeReason}</p> : null}</div> : null}
+      {s.candidates.length ? <div className="tw"><table><thead><tr><th>Candidate</th><th>Source</th><th>Eligibility</th><th>Added</th></tr></thead>
+        <tbody>{s.candidates.map(v => <tr key={v.id}><td><Link className="adm-ulink" to={'/admin/vendors/' + v.id}><b>{v.name}</b></Link>{cur?.vendorId === v.id ? <span className="b b-plum" style={{ marginLeft: 8 }}>Selected</span> : null}</td>
+          <td>{SOURCE_LABEL[v.candidateSource]}{v.rank ? ` · #${v.rank}` : ''}</td>
+          <td><Badge s={ELIGIBILITY[v.fit.eligibility][0]} label={ELIGIBILITY[v.fit.eligibility][1]} /></td><td className="mono">{fmtTime(v.addedAt)} · {v.addedByEmail}</td></tr>)}</tbody></table></div> : null}
+      {s.versions.length > 1 ? <div className="asr-block"><h3>Earlier records</h3><ul>{s.versions.slice(0, -1).map(v => <li key={v.id}>v{v.recordVersion} · {v.vendor.name} · {fmtTime(v.selectedAt)}</li>)}</ul></div> : null}
     </section>
   );
 }

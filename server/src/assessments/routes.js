@@ -79,7 +79,7 @@ assessmentsRouter.get('/', async (req, res) => {
         c.status AS compliance_status, (SELECT cr.overall_score FROM compliance_results cr WHERE cr.compliance_id = c.id ORDER BY version DESC LIMIT 1) AS compliance_score
       FROM assessments a JOIN requirements r ON r.id = a.requirement_id LEFT JOIN organisations sv ON sv.id = a.selected_vendor_id
       LEFT JOIN compliance_assessments c ON c.assessment_id = a.id WHERE a.buyer_id = $1 ORDER BY a.created_at DESC`, [buyerId])).rows;
-  res.json({ assessments: rows.map(a => shapeAssessment(a, { title: a.title, selectedVendor: a.selected_vendor, selectionVersion: a.selection_version, shortlisted: a.shortlisted,
+  res.json({ assessments: rows.map(a => shapeAssessment(a, { title: a.title, selectedVendor: a.selected_vendor, selectionVersion: a.selection_version, selectionStatus: a.selection_status, shortlisted: a.shortlisted,
     compliance: a.compliance_status ? { status: a.compliance_status, overall: a.compliance_score } : null })) });
 });
 

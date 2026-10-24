@@ -105,8 +105,9 @@ export const isRequired = (f, d) => isVisible(f, d) && (f.required === true || (
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const UK_COMPANY = /^([A-Z]{2}\d{6}|\d{8})$/;
 
-/* Normalises one value; returns [value] or [undefined, error message]. Empty values come back as undefined. */
-function clean(f, raw, d) {
+/* Normalises one value; returns [value] or [undefined, error message]. Empty values come back as undefined.
+   Also used by Stage 2 for the buyer-provided vendor fields. */
+export function clean(f, raw, d) {
   if (isEmpty(raw)) return [undefined];
   const s = typeof raw === 'string' ? raw.trim() : raw;
   switch (f.type) {

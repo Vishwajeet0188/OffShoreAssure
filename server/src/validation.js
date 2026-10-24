@@ -26,6 +26,28 @@ const signupSource = z.object({
   landingPage: z.string().trim().max(200).optional(),
 }).optional().catch(undefined);
 
+/* Optional vendor details used by the Stage 2 directory filters. */
+const optionalInt = (min, max, msg) => z.preprocess(v => v === '' || v == null ? undefined : Number(v), z.number({ message: msg }).int(msg).min(min, msg).max(max, msg).optional());
+const optionalMoney = msg => z.preprocess(v => v === '' || v == null ? undefined : Number(v), z.number({ message: msg }).min(0, msg).max(1e12, msg).optional());
+const optionalCurrency = z.string().trim().toUpperCase().refine(c => !c || Intl.supportedValuesOf('currency').includes(c), 'Choose a valid currency.').optional().or(z.literal(''));
+export const VENDOR_CERTIFICATIONS = ['ISO 27001', 'SOC 2 Type II', 'Cyber Essentials', 'Cyber Essentials Plus', 'ISO 27701', 'ISO 9001', 'PCI DSS'];
+export const VENDOR_LANGUAGES = ['English', 'Hindi', 'Polish', 'Portuguese', 'Spanish', 'Tagalog', 'French', 'German', 'Arabic', 'Mandarin'];
+const vendorDirectory = z.object({
+  deliveryModel: z.enum(['Remote', 'Onsite', 'Hybrid']).optional().or(z.literal('')),
+  industries: z.array(z.enum(SECTORS)).max(SECTORS.length).optional(),
+  staffCount: optionalInt(0, 1000000, 'Enter a whole number of staff.'),
+  foundedYear: optionalInt(1800, new Date().getUTCFullYear(), 'Enter a valid year.'),
+  certifications: z.array(z.enum(VENDOR_CERTIFICATIONS)).optional(),
+  insuranceCover: optionalMoney('Enter a valid amount.'),
+  insuranceCurrency: optionalCurrency,
+  supportHours: z.enum(['Business hours', 'Extended hours', '24/7']).optional().or(z.literal('')),
+  languages: z.array(z.enum(VENDOR_LANGUAGES)).optional(),
+  minAnnualValue: optionalMoney('Enter a valid amount.'),
+  valueCurrency: optionalCurrency,
+  usesSubprocessors: z.enum(['Yes', 'No', 'Unknown']).optional().or(z.literal(''))
+}).refine(d => d.insuranceCover == null || !!d.insuranceCurrency, { message: 'Choose the currency.', path: ['insuranceCurrency'] })
+  .refine(d => d.minAnnualValue == null || !!d.valueCurrency, { message: 'Choose the currency.', path: ['valueCurrency'] });
+
 export const schemas = {
   register: z.object({ email, password, role: z.enum(ROLES, { message: 'Choose buyer or vendor.' }).default('buyer'), source: signupSource }),
   verify: z.object({ email, code }),
@@ -50,7 +72,9 @@ export const schemas = {
     services: z.array(z.enum(SERVICE_CATEGORIES)).min(1, 'Choose at least one service you provide.').max(SERVICE_CATEGORIES.length),
     deliveryCountries: z.array(country).min(1, 'Choose at least one country you deliver from.').max(50),
     website: z.string().trim().max(200).regex(/^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/\S*)?$/i, 'Enter a valid website address.').optional().or(z.literal('')),
-    description: z.string().trim().max(1000, 'Use at most 1,000 characters.').optional().or(z.literal(''))
+    description: z.string().trim().max(1000, 'Use at most 1,000 characters.').optional().or(z.literal('')),
+    // Optional directory details (Stage 2 Route A filters). Empty means "not stated".
+    directory: vendorDirectory.optional()
   }),
   vendorDecision: z.object({ status: z.enum(['approved', 'rejected']), note: z.string().trim().max(500).optional().or(z.literal('')) }),
   adminStatus: z.object({ status: z.enum(['active', 'inactive']) }),

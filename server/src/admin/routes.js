@@ -238,24 +238,26 @@ adminRouter.get('/assessments/:ref', async (req, res) => {
 const vendorShape = o => ({
   id: o.id, name: o.name, registrationNumber: o.registration_number, country: o.country, website: o.website, description: o.description,
   services: o.services, deliveryCountries: o.delivery_countries, verificationStatus: o.verification_status, verificationNote: o.verification_note,
-  verifiedAt: o.verified_at, verifiedByEmail: o.verified_by_email || null, createdAt: o.created_at, updatedAt: o.updated_at, users: o.users ?? undefined
+  verifiedAt: o.verified_at, verifiedByEmail: o.verified_by_email || null, createdAt: o.created_at, updatedAt: o.updated_at, users: o.users ?? undefined,
+  source: o.source === 'buyer_provided' ? 'BUYER_PROVIDED' : 'DIRECTORY', addedByBuyer: o.owner_name || null, contactEmail: o.contact_email || null
 });
 
 adminRouter.get('/vendors', async (req, res) => {
-  const status = ['pending', 'approved', 'rejected'].includes(req.query.status) ? req.query.status : null;
+  const status = ['unverified', 'pending', 'approved', 'rejected'].includes(req.query.status) ? req.query.status : null;
   const search = String(req.query.search || '').trim().slice(0, 100);
   const params = []; const where = ["o.kind = 'vendor'"];
   if (status) { params.push(status); where.push(`o.verification_status = $${params.length}`); }
   if (search) { params.push(`%${search}%`); where.push(`(o.name ILIKE $${params.length} OR o.registration_number ILIKE $${params.length})`); }
-  const rows = (await query(`SELECT o.*, (SELECT count(*)::int FROM user_profiles p WHERE p.organisation_id = o.id) AS users
-      FROM organisations o WHERE ${where.join(' AND ')} ORDER BY (o.verification_status = 'pending') DESC, o.created_at DESC`, params)).rows;
+  const rows = (await query(`SELECT o.*, (SELECT count(*)::int FROM user_profiles p WHERE p.organisation_id = o.id) AS users, b.name AS owner_name
+      FROM organisations o LEFT JOIN organisations b ON b.id = o.owner_buyer_id WHERE ${where.join(' AND ')} ORDER BY (o.verification_status = 'pending') DESC, o.created_at DESC`, params)).rows;
   const counts = Object.fromEntries((await query(`SELECT verification_status, count(*)::int AS n FROM organisations WHERE kind = 'vendor' GROUP BY 1`)).rows.map(r => [r.verification_status, r.n]));
-  res.json({ vendors: rows.map(vendorShape), counts: { pending: counts.pending || 0, approved: counts.approved || 0, rejected: counts.rejected || 0 } });
+  res.json({ vendors: rows.map(vendorShape), counts: { pending: counts.pending || 0, approved: counts.approved || 0, rejected: counts.rejected || 0, unverified: counts.unverified || 0 } });
 });
 
 adminRouter.get('/vendors/:id', async (req, res) => {
   if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) return res.status(404).json({ error: 'not_found', message: 'Vendor not found.' });
-  const o = (await query(`SELECT o.*, v.email AS verified_by_email FROM organisations o LEFT JOIN users v ON v.id = o.verified_by WHERE o.id = $1 AND o.kind = 'vendor'`, [req.params.id])).rows[0];
+  const o = (await query(`SELECT o.*, v.email AS verified_by_email, b.name AS owner_name FROM organisations o LEFT JOIN users v ON v.id = o.verified_by
+      LEFT JOIN organisations b ON b.id = o.owner_buyer_id WHERE o.id = $1 AND o.kind = 'vendor'`, [req.params.id])).rows[0];
   if (!o) return res.status(404).json({ error: 'not_found', message: 'Vendor not found.' });
   const users = (await query(`SELECT u.id, u.email, u.status, u.created_at, u.last_login_at, p.full_name, p.job_role, p.phone
       FROM user_profiles p JOIN users u ON u.id = p.user_id WHERE p.organisation_id = $1 ORDER BY u.created_at`, [o.id])).rows;

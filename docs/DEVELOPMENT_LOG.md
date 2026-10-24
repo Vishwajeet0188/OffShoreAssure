@@ -40,15 +40,15 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 | 3 | Save requirement profile and timeline | Engine → Evidence Record | The answers are saved as a locked version (v1.0); corrections make v1.1, v1.2 … | ✅ Done |
 | 4 | Requirement profile and gaps | Engine → Buyer | The "Information Required" box: what is known, what is missing, what happens next | ✅ Done |
 
-### Stage 2 step by step
+### Stage 2 step by step (updated to the client's v2 spec, 23 Oct 2026)
 
 | Step | Title (diagram) | Who | What it means in simple words | Status |
 |---|---|---|---|---|
-| 5 | Search or select vendor | Buyer → Engine | Search verified vendors by name, service or country, or invite one by email | ✅ Done |
-| 6 | Match service, location and scope | Engine | Each vendor is checked on 5 points and gets Good / Partial / Not a match, with reasons | ✅ Done |
-| 7 | Candidate list and comparison | Engine → Buyer | A shortlist shows the vendors side by side | ✅ Done |
-| 8 | Confirm selected vendor | Buyer → Engine | The buyer picks one vendor and writes why (weak matches need an extra "I accept" tick) | ✅ Done |
-| 9 | Save selection and decision rationale | Engine → Evidence Record | The decision is saved as a locked record (v1); changing vendor makes v2 with a reason | ✅ Done |
+| 5 | Search, select or add a vendor | Buyer → Engine | Three ways: search the OffshoreAssure directory (15 inputs), reuse a vendor our organisation added before, or add our own vendor (25 fields) | ✅ Done |
+| 6 | Match service, location and scope | Engine | Each vendor is checked on 9 points (identity, service, delivery country, data access locations, certifications, subprocessors, contract, buyer restrictions, assurance readiness) | ✅ Done |
+| 7 | Candidate list and comparison | Engine → Buyer | Directory vendors are ranked by a weighted fit score; a buyer-added or reused vendor gets a single summary, never a rank | ✅ Done |
+| 8 | Confirm selected vendor | Buyer → Engine | 8 inputs (vendor, source, decision, reason, approver, exception reason, time). Result: Selected pending assessment, Conditionally selected, or Selection blocked | ✅ Done |
+| 9 | Save selection and decision rationale | Engine → Evidence Record | Vendor Selection Record v1.0 with 12 stored fields, locked; Stage 3 starts | ✅ Done |
 
 ### Stage 3 step by step
 
@@ -279,6 +279,21 @@ Specifications for Stages 2–9 (field lists, rules) will come from the client s
 - **Database:** `006_org_membership.sql` adds `membership` (owner / member / pending / rejected), `membership_decided_by`, `membership_decided_at`. Existing data: the earliest user of each organisation becomes its owner, everyone else a member.
 - **API:** `GET /api/organisation`, `PATCH /api/organisation/members/:userId`, `PATCH /api/admin/buyers/members/:userId`.
 - **Tests:** API 34; browser 49 / 41 / 30, all pass (the roles run now covers a join request, the blocked pending member, and owner approval).
+
+### Stage 2 rewritten to the client's v2 spec — three routes (23 Oct 2026) ✅
+Source: *Offshore Assure – Stage 2 Inputs and Outputs (2).pdf*. Branch: `stage-2-vendor-routes` (made from `ui-brand-updates`).
+- **Step 5 — vendor_selection_mode** (`DIRECTORY_SEARCH`, `EXISTING_VENDOR`, `ADD_NEW_VENDOR`), shown as three cards:
+  - **Route A · Search the directory:** 15 inputs (Assessment ID, search text, service category, supplier countries or "Any country", delivery model, industry experience, minimum staff, minimum years operating, certification preferences, assurance threshold, insurance + currency, support hours, languages, budget range + currency, subprocessor restrictions). Service and countries start from the requirement. Only self-registered, verified vendors are listed. A vendor that has **not stated** something is kept and labelled "Not stated"; only a stated value that fails a filter hides it. Vendors in a restricted country stay visible as **Excluded**. Every search is recorded.
+  - **Route B · Add our own vendor:** the 25 onboarding fields in 5 groups (legal identity, contact, service and locations, relationship and data, documents and status). Checks: registration number format for UK, India, Ireland and Poland; postcode must suit the registered country; phone in international format; description 20–3,000 characters; remote access countries required when personal-data access is Yes/Unknown; hosting countries required for cloud or data-processing services. Existing contract and DPA upload as PDF or DOCX (encrypted). The vendor is created as **BUYER_PROVIDED** and **UNVERIFIED**; no certificate or signed DPA is needed. Duplicates are caught (the organisation's own vendors, and directory vendors with the same name or registration).
+  - **Route C · Existing vendor:** choose a vendor the organisation added or selected before, give the service scope and review reason, optionally update the contact (makes a new profile version). The engine reports **material changes** since the last selection.
+- **Step 6 — VendorFitAssessment** (`server/src/engine/vendorFit.js`): 9 checks with reasons, eligibility (Eligible / Eligible with gaps / Excluded), matched requirements, missing information, review status (Verified / Preliminary, unverified). Missing information is never treated as a failure; restricted countries and a rejected verification are hard exclusions.
+- **Step 7:** directory candidates ranked by the example weights (service 30%, security 25%, geography 20%, sector 15%, commercial 10%) with the rationale written out; marked "not a legal compliance score". Buyer-added and reused vendors get a single-vendor summary with "Required before approval".
+- **Step 8:** decision "Select" or "Select with conditions"; the approver must be an active member, and an **owner** for High/Critical services; an exception reason is needed when the vendor fails part of the requirement; blocked vendors are refused (and audited) without being saved.
+- **Step 9 — Vendor Selection Record v1.0:** selection ID, assessment ID, vendor ID, source (DIRECTORY / EXISTING / BUYER_PROVIDED), selection criteria, comparison reference (fingerprint), rationale, approver, exceptions, timestamp, vendor profile version, plus status, decision and conditions. Locked; changing vendor makes v2.0.
+- **Buyer-added vendor → Stage 3:** the contact email is invited to register. When that person registers as a vendor with the same email, they take over the company record, so the selection and the Stage 3 questionnaire reach them.
+- **Vendor profile:** optional "Directory details" (delivery model, support hours, staff, year started, insurance, minimum contract, subprocessors, industries, certifications, languages). Every profile change is kept as a version.
+- The old "Invite a vendor" box is replaced by Route B; invitations already sent still link up when the vendor registers.
+- **Database:** `015_stage2_vendor_routes.sql`. **Tests:** API 57 (Stage 2: 13); browser Stage 2 29, plus Stage 0 49, website 24, Stage 1 48, roles 31, Stage 3 20, extras 24. All pass.
 
 ### Stage 2 — Vendor selection, Steps 5–9 (21 Oct 2026) ✅ — Stage 2 complete
 - **Where:** sidebar **Vendor selection** (Stage 2). It lists the organisation's assessments and, for each, "Not started", "N on shortlist" or the selected vendor. Also reachable from the Information Required box ("Open vendor selection").

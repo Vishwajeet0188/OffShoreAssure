@@ -107,6 +107,18 @@ complianceBuyerRouter.post('/:ref/compliance', ...buyerOnly, async (req, res) =>
         { kicker: 'COMPLIANCE ASSESSMENT', title: 'Questionnaire waiting for you', action: { label: 'Open the questionnaire', url: appLink('/vendor/assessments/' + a.reference) } });
     } catch (e) { console.error('[EMAIL] compliance request failed:', e.message); }
   }
+  // A vendor the buyer added itself (Stage 2 Route B) may have nobody on OffshoreAssure yet: ask its contact to register.
+  if (!people.length) {
+    const contact = (await query(`SELECT contact_email FROM organisations WHERE id = $1 AND source = 'buyer_provided'`, [a.selected_vendor_id])).rows[0]?.contact_email;
+    if (contact) {
+      try {
+        await sendNotice(contact, `${a.buyer_name} has sent ${a.vendor_name} a compliance questionnaire`,
+          ['Hello,', `${a.buyer_name} has started the compliance assessment for "${a.title}" (${a.reference}) with ${a.vendor_name}.`,
+            `Register on OffshoreAssure as a vendor with this email address (${contact}) to answer ${qn} questions across ${n} controls by ${c.due_on}.`],
+          { kicker: 'COMPLIANCE ASSESSMENT', title: 'Questionnaire waiting for you', action: { label: 'Register on OffshoreAssure', url: appLink('/signup?role=vendor&email=' + encodeURIComponent(contact)) } });
+      } catch (e) { console.error('[EMAIL] compliance request failed:', e.message); }
+    }
+  }
   res.status(201).json(await complianceState({ query }, a));
 });
 

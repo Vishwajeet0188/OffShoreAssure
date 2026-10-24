@@ -1,4 +1,5 @@
 import { linkInvitationsForVendor } from '../selection/routes.js';
+import { latestProfile, saveProfileVersion, ownProfileOf } from '../selection/vendors.js';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { config } from '../config.js';
@@ -42,7 +43,9 @@ export async function userPayload(db, userId) {
     `SELECT u.id, u.email, u.status, u.is_admin, u.role, u.created_at, u.last_login_at,
             p.full_name, p.organisation_name, p.sector, p.job_role, p.phone,
             o.id AS org_id, o.registration_number, o.country, o.website, o.description, o.services, o.delivery_countries,
-            o.verification_status, o.verification_note, o.verified_at, p.membership
+            o.verification_status, o.verification_note, o.verified_at, p.membership, o.source AS org_source,
+            o.delivery_model, o.industries, o.staff_count, o.founded_year, o.certifications, o.insurance_cover, o.insurance_currency,
+            o.support_hours, o.languages, o.min_annual_value, o.value_currency, o.uses_subprocessors
        FROM users u LEFT JOIN user_profiles p ON p.user_id = u.id LEFT JOIN organisations o ON o.id = p.organisation_id
       WHERE u.id = $1`, [userId]);
   const u = r.rows[0];
@@ -56,7 +59,14 @@ export async function userPayload(db, userId) {
     vendor = u.org_id ? {
       organisationId: u.org_id, registrationNumber: u.registration_number, country: u.country, website: u.website || '', description: u.description || '',
       services: u.services || [], deliveryCountries: u.delivery_countries || [],
-      verificationStatus: u.verification_status, verificationNote: u.verification_note, verifiedAt: u.verified_at
+      verificationStatus: u.verification_status, verificationNote: u.verification_note, verifiedAt: u.verified_at,
+      addedByBuyer: u.org_source === 'buyer_provided',
+      directory: {
+        deliveryModel: u.delivery_model || '', industries: u.industries || [], staffCount: u.staff_count ?? '', foundedYear: u.founded_year ?? '',
+        certifications: u.certifications || [], insuranceCover: u.insurance_cover ?? '', insuranceCurrency: u.insurance_currency || '',
+        supportHours: u.support_hours || '', languages: u.languages || [], minAnnualValue: u.min_annual_value ?? '', valueCurrency: u.value_currency || '',
+        usesSubprocessors: u.uses_subprocessors || ''
+      }
     } : null;
   }
   return {
@@ -252,35 +262,56 @@ meRouter.put('/profile', requireAuth, async (req, res) => {
 
 /* Vendor (supplier) profile: the person plus the company's reusable profile. A new company starts as "pending"
    until the OffshoreAssure team verifies it (ASS-001 Legal Entity Verification). A company name already registered
-   by another vendor cannot be claimed: colleagues will join through an invitation (later stage). */
+   by another vendor cannot be claimed: colleagues will join through an invitation (later stage).
+   Stage 2 Route B: when a buyer added this company itself and named this person's email as the contact, the person
+   takes over that company record (so the buyer's selection and the Stage 3 questionnaire reach them). */
 async function saveVendorProfile(req, res) {
   const body = parse(schemas.vendorProfile, req, res); if (!body) return;
+  const dir = body.directory || {};
   const out = await tx(async db => {
-    const mine = (await db.query('SELECT organisation_id FROM user_profiles WHERE user_id = $1', [req.user.id])).rows[0]?.organisation_id || null;
-    const clash = (await db.query(`SELECT id FROM organisations WHERE kind = 'vendor' AND lower(name) = lower($1) AND id IS DISTINCT FROM $2`, [body.organisationName, mine])).rows[0];
+    let mine = (await db.query('SELECT organisation_id FROM user_profiles WHERE user_id = $1', [req.user.id])).rows[0]?.organisation_id || null;
+    let claimed = false;
+    if (!mine) {
+      const offered = (await db.query(
+        `SELECT o.id FROM organisations o WHERE o.kind = 'vendor' AND o.source = 'buyer_provided' AND lower(o.contact_email) = lower($1)
+            AND NOT EXISTS (SELECT 1 FROM user_profiles p WHERE p.organisation_id = o.id) ORDER BY o.created_at LIMIT 1`, [req.user.email])).rows[0];
+      if (offered) { mine = offered.id; claimed = true; }
+    }
+    const clash = (await db.query(`SELECT id FROM organisations WHERE kind = 'vendor' AND source = 'self_registered' AND lower(name) = lower($1) AND id IS DISTINCT FROM $2`, [body.organisationName, mine])).rows[0];
     if (clash) return { error: 'company_taken' };
     let orgId = mine, created = false, reverify = false;
-    const vals = [body.organisationName, body.registrationNumber, body.country, body.website || null, body.description || null, body.services, body.deliveryCountries];
+    const vals = [body.organisationName, body.registrationNumber, body.country, body.website || null, body.description || null, body.services, body.deliveryCountries,
+      dir.deliveryModel || null, dir.industries || [], dir.staffCount ?? null, dir.foundedYear ?? null, dir.certifications || [], dir.insuranceCover ?? null,
+      dir.insuranceCover != null ? dir.insuranceCurrency : null, dir.supportHours || null, dir.languages || [], dir.minAnnualValue ?? null,
+      dir.minAnnualValue != null ? dir.valueCurrency : null, dir.usesSubprocessors || null];
+    const directoryCols = `delivery_model = $8, industries = $9, staff_count = $10, founded_year = $11, certifications = $12, insurance_cover = $13,
+        insurance_currency = $14, support_hours = $15, languages = $16, min_annual_value = $17, value_currency = $18, uses_subprocessors = $19`;
     if (!orgId) {
-      orgId = (await db.query(`INSERT INTO organisations (kind, name, registration_number, country, website, description, services, delivery_countries, verification_status)
-        VALUES ('vendor', $1, $2, $3, $4, $5, $6, $7, 'pending') RETURNING id`, vals)).rows[0].id;
+      orgId = (await db.query(`INSERT INTO organisations (kind, name, registration_number, country, website, description, services, delivery_countries,
+          delivery_model, industries, staff_count, founded_year, certifications, insurance_cover, insurance_currency, support_hours, languages, min_annual_value, value_currency, uses_subprocessors, verification_status)
+        VALUES ('vendor', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 'pending') RETURNING id`, vals)).rows[0].id;
       created = true;
     } else {
       const o = (await db.query('SELECT name, registration_number, country, verification_status FROM organisations WHERE id = $1', [orgId])).rows[0];
-      // Changing the legal identity of a verified company sends it back for verification.
-      reverify = o.verification_status !== 'pending' && (o.name.toLowerCase() !== body.organisationName.toLowerCase() || o.registration_number !== body.registrationNumber || o.country !== body.country);
+      // Changing the legal identity of a verified company sends it back for verification; a claimed buyer-added company is checked for the first time.
+      reverify = claimed || (o.verification_status !== 'pending' && (o.name.toLowerCase() !== body.organisationName.toLowerCase() || o.registration_number !== body.registrationNumber || o.country !== body.country));
       await db.query(`UPDATE organisations SET name = $1, registration_number = $2, country = $3, website = $4, description = $5, services = $6, delivery_countries = $7,
-          verification_status = CASE WHEN $9 THEN 'pending' ELSE verification_status END, verification_note = CASE WHEN $9 THEN NULL ELSE verification_note END,
-          updated_at = now() WHERE id = $8`, [...vals, orgId, reverify]);
+          ${directoryCols},
+          verification_status = CASE WHEN $21 THEN 'pending' ELSE verification_status END, verification_note = CASE WHEN $21 THEN NULL ELSE verification_note END,
+          updated_at = now() WHERE id = $20`, [...vals, orgId, reverify]);
     }
+    const org = (await db.query('SELECT * FROM organisations WHERE id = $1', [orgId])).rows[0];
+    const earlier = org.source === 'buyer_provided' ? (await latestProfile(db, orgId))?.profile || {} : {};
+    await saveProfileVersion(db, orgId, { ...earlier, ...ownProfileOf(org) }, req.user.id,
+      created ? 'Registered by the vendor' : claimed ? 'Vendor took over the company record added by a buyer' : 'Updated by the vendor');
     await db.query(
       `INSERT INTO user_profiles (user_id, full_name, organisation_name, job_role, phone, organisation_id, updated_at) VALUES ($1,$2,$3,$4,$5,$6, now())
        ON CONFLICT (user_id) DO UPDATE SET full_name = EXCLUDED.full_name, organisation_name = EXCLUDED.organisation_name, job_role = EXCLUDED.job_role,
          phone = EXCLUDED.phone, organisation_id = EXCLUDED.organisation_id, updated_at = now()`,
       [req.user.id, body.fullName, body.organisationName, body.jobRole, body.phone || null, orgId]);
-    if (created) await db.query(`UPDATE user_profiles SET membership = 'owner' WHERE user_id = $1`, [req.user.id]);
+    if (created || claimed) await db.query(`UPDATE user_profiles SET membership = 'owner' WHERE user_id = $1`, [req.user.id]);
     await linkInvitationsForVendor(db, req, req.user.email, orgId);   // Stage 2: buyer invitations sent to this email
-    await audit(req, created ? 'vendor.company_registered' : 'vendor.profile_updated', { db, stage: 'stage-0',
+    await audit(req, created ? 'vendor.company_registered' : claimed ? 'vendor.company_claimed' : 'vendor.profile_updated', { db, stage: 'stage-0',
       detail: { organisationId: orgId, organisationName: body.organisationName, country: body.country, services: body.services, reverify } });
     return { ok: true };
   });
