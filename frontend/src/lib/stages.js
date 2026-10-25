@@ -25,7 +25,7 @@ export const STAGES = [
   { n: 7, slug: 'risk-identification', title: 'Risk identification', icon: 'alert', path: '/risks',
     summary: 'Consolidate risks and gaps, apply scoring and evidence rules, and produce the risk register with its rationale.',
     steps: [[29, 'Consolidate risks and gaps', 'E', 'E'], [30, 'Apply scoring and evidence rules', 'E', 'E'], [31, 'Risk register and rationale', 'E', 'B'], [32, 'Save risk snapshot and linked sources', 'E', 'R']] },
-  { n: 8, slug: 'remediation', title: 'Remediation', icon: 'flow',
+  { n: 8, slug: 'remediation', title: 'Remediation', icon: 'flow', path: '/remediation',
     summary: 'Approve or assign actions, request corrections from the vendor and re-run the affected checks.',
     steps: [[33, 'Approve or assign actions', 'B', 'E'], [34, 'Request corrections and missing documents', 'E', 'V'], [35, 'Submit evidence and response', 'V', 'E'], [36, 'Re-run affected checks', 'E', 'E'],
       [37, 'Save action and reassessment history', 'E', 'R'], [38, 'Updated status and outstanding actions', 'E', 'B']] },
@@ -35,7 +35,7 @@ export const STAGES = [
 ];
 
 /* Steps that are live in this build. */
-export const BUILT_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
+export const BUILT_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38];
 export const stageStatus = s => {
   const done = s.steps.filter(([n]) => BUILT_STEPS.includes(n)).length;
   return done === 0 ? 'not-started' : done === s.steps.length ? 'available' : 'partial';
@@ -53,7 +53,7 @@ export const VENDOR_JOURNEY = [
     text: 'See the obligations drawn from the signed agreement, stated plainly.', steps: [] },
   { stage: 6, slug: 'access', title: 'Scoped access', icon: 'globe',
     text: 'Receive the access the current assessment supports, with the reason for any limit.', steps: [] },
-  { stage: 8, slug: 'actions', title: 'Actions', icon: 'flow',
+  { stage: 8, slug: 'actions', title: 'Actions', icon: 'flow', path: '/vendor/actions',
     text: 'Receive correction requests, supply renewed certificates or corrected terms, and close the action.', steps: [34, 35] },
   { stage: 9, slug: 'track-record', title: 'Track record', icon: 'report',
     text: 'Build a verified delivery and compliance history that strengthens your next UK bid; respond to ongoing requests and renewals.', steps: [43] }

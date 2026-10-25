@@ -1525,3 +1525,27 @@ main:focus{outline:none}
   .rk-risk-h > .note{display:none}
   .rk-findings li{flex-direction:column;gap:4px}
 }
+
+/* ---------- Stage 8 · Remediation ---------- */
+.rm-decisions{display:flex;flex-direction:column}
+.rm-decision{padding:14px 22px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.rm-decision-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.rm-decision-head .b{margin-left:auto}
+.rm-requests{margin:6px 0 0;padding-left:18px;line-height:1.55;color:var(--ink-2);font-size:14px}
+.rm-decision-form{display:grid;grid-template-columns:200px 170px 160px minmax(0,1fr);gap:10px;align-items:end}
+.rm-decision-form label{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.rm-decision-form select,.rm-decision-form input,.rm-review input,.rm-review textarea{font:inherit;font-weight:400;font-size:13.5px;padding:8px 10px;border:1px solid var(--line-2);border-radius:8px;background:var(--card);color:var(--ink)}
+.rm-note{grid-column:auto}
+.cp-ctl-h.rm-action-h{grid-template-columns:64px minmax(0,1fr) auto auto}
+.rm-quote{margin:0;padding:10px 14px;border-left:3px solid var(--copper-line);background:var(--card-2);border-radius:0 8px 8px 0;line-height:1.55}
+.rm-files{list-style:none;margin:6px 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rm-files li{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rm-file{cursor:pointer;align-self:flex-start;display:inline-flex}
+.rm-review{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px dashed var(--copper-line);border-radius:10px;background:var(--copper-soft)}
+.rm-history{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:13px}
+@media (max-width:860px){
+  .rm-decision-form{grid-template-columns:1fr 1fr}
+  .rm-note{grid-column:1/-1}
+  .cp-ctl-h.rm-action-h{grid-template-columns:52px minmax(0,1fr) auto}
+  .rm-action-h > .note{display:none}
+}

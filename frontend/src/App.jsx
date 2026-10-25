@@ -23,6 +23,8 @@ import ContractAnalysis, { ContractList } from './pages/ContractAnalysis.jsx';
 import Obligations, { ObligationsList } from './pages/Obligations.jsx';
 import Transfers, { TransfersList } from './pages/Transfers.jsx';
 import Risks, { RisksList } from './pages/Risks.jsx';
+import Remediation, { RemediationList } from './pages/Remediation.jsx';
+import VendorActions, { VendorActionsList } from './pages/vendor/VendorActions.jsx';
 import VendorObligations, { VendorObligationsList } from './pages/vendor/VendorObligations.jsx';
 import Organisation from './pages/Organisation.jsx';
 import RegisteredUsers from './pages/admin/RegisteredUsers.jsx';
@@ -90,6 +92,8 @@ export default function App() {
           <Route path="transfers/:ref" element={<Transfers />} />
           <Route path="risks" element={<RisksList />} />
           <Route path="risks/:ref" element={<Risks />} />
+          <Route path="remediation" element={<RemediationList />} />
+          <Route path="remediation/:ref" element={<Remediation />} />
         </Route>
         {/* Vendor (supplier) portal */}
         <Route path="vendor" element={<RequireVendorArea><AppLayout portal="vendor" /></RequireVendorArea>}>
@@ -99,6 +103,8 @@ export default function App() {
           <Route path="assessments/:ref" element={<VendorQuestionnaire />} />
           <Route path="obligations" element={<VendorObligationsList />} />
           <Route path="obligations/:ref" element={<VendorObligations />} />
+          <Route path="actions" element={<VendorActionsList />} />
+          <Route path="actions/:ref" element={<VendorActions />} />
           <Route path="stage/:slug" element={<VendorStagePage />} />
         </Route>
         {/* Old prototype addresses */}

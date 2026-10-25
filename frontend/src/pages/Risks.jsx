@@ -155,8 +155,9 @@ export default function Risks() {
             <Icon n="clock" s={20} />
             <div>
               <b>Stage 7 is complete for this assessment. Next: Stage 8 — Remediation.</b>{' '}
-              <span className="note">Each risk will become an action for the buyer or the vendor, with proof to upload. Not available yet (next build stage).</span>
+              <span className="note">Each risk becomes an action for you or the vendor, with proof to upload.</span>
             </div>
+            <Link className="btn primary" to={'/remediation/' + ref} data-act="go-remediation">Open remediation</Link>
           </div>
         </>
       ) : null}
@@ -247,7 +248,7 @@ function SummaryCard({ register }) {
 }
 
 /* 5 × 5 grid: likelihood up the side (5 at the top), impact along the bottom, the number of risks in each cell. */
-function RiskGrid({ grid }) {
+export function RiskGrid({ grid }) {
   const rows = [5, 4, 3, 2, 1];
   const cols = [1, 2, 3, 4, 5];
   return (

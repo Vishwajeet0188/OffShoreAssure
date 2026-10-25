@@ -65,6 +65,7 @@ export function AdminAssessmentDetail() {
       {d.obligations?.register ? <ObligationsPanel state={d.obligations} /> : null}
       {d.transfers?.result ? <TransfersPanel state={d.transfers} /> : null}
       {d.risks?.register ? <RisksPanel state={d.risks} /> : null}
+      {d.remediation?.actions?.length ? <RemediationPanel state={d.remediation} /> : null}
       <AssessmentResult a={a} buyerName={a.buyerName} />
       {d.profiles ? <ProfilePanel profiles={d.profiles} timeline={d.timeline} catalogue={d.controlCatalogue} /> : null}
     </>
@@ -205,6 +206,26 @@ function RisksPanel({ state }) {
       <div className="asr-block">
         <h3>Risks</h3>
         <ul>{register.risks.map(risk => <li key={risk.id}>{risk.id} · {risk.title}: {word[risk.rating]} ({risk.likelihood} × {risk.impact} = {risk.score})</li>)}</ul>
+      </div>
+    </section>
+  );
+}
+
+/* Stage 8 for the admin: actions and the remaining risk (read-only). */
+function RemediationPanel({ state }) {
+  const t = state.residual.totals;
+  return (
+    <section className="card" data-section="admin-remediation">
+      <div className="ch">
+        <div>
+          <h2>Stage 8 · Remediation</h2>
+          <div className="sub">{t.actions} actions · {t.open + t.proposed} outstanding · {t.awaitingReview} to review · {t.closed} closed · {t.accepted} accepted · {state.snapshots.length} snapshots</div>
+        </div>
+        <Badge s={t.open + t.proposed + t.awaitingReview ? 'Attention' : 'Complete'} label={'Remaining highest: ' + state.residual.overall.label} />
+      </div>
+      <div className="asr-block">
+        <h3>Actions</h3>
+        <ul>{state.actions.map(a => <li key={a.number}>{a.code} · {a.title} ({a.owner}): {a.statusLabel}{a.dueOn ? ` · due ${a.dueOn}` : ''}</li>)}</ul>
       </div>
     </section>
   );
