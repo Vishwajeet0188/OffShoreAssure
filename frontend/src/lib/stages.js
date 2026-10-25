@@ -19,7 +19,7 @@ export const STAGES = [
   { n: 5, slug: 'obligation-extraction', title: 'Obligation extraction', icon: 'list', path: '/obligations',
     summary: 'Extract obligations and parties from the contract clauses, map them to the requirement’s controls and rules, and save the obligation register.',
     steps: [[21, 'Extract obligations and parties', 'E', 'E'], [22, 'Map clauses to requirements and rules', 'E', 'E'], [23, 'Obligations, sources and confidence', 'E', 'B'], [24, 'Save obligation register and rule trace', 'E', 'R']] },
-  { n: 6, slug: 'transfer-assessment', title: 'Transfer assessment', icon: 'globe',
+  { n: 6, slug: 'transfer-assessment', title: 'Transfer assessment', icon: 'globe', path: '/transfers',
     summary: 'Map data flows and transfer routes, and check recipients, roles and safeguards route by route.',
     steps: [[25, 'Map data flows and transfer routes', 'E', 'E'], [26, 'Check recipients, roles and safeguards', 'E', 'E'], [27, 'Transfer findings and questions', 'E', 'B'], [28, 'Save route-by-route assessment', 'E', 'R']] },
   { n: 7, slug: 'risk-identification', title: 'Risk identification', icon: 'alert',
@@ -35,7 +35,7 @@ export const STAGES = [
 ];
 
 /* Steps that are live in this build. */
-export const BUILT_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24];
+export const BUILT_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28];
 export const stageStatus = s => {
   const done = s.steps.filter(([n]) => BUILT_STEPS.includes(n)).length;
   return done === 0 ? 'not-started' : done === s.steps.length ? 'available' : 'partial';

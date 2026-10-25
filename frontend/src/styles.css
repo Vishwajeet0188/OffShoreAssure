@@ -1484,3 +1484,19 @@ main:focus{outline:none}
 }
 .ob-table td.mono{white-space:nowrap}
 .ca-filters select{width:auto;flex:none}
+
+/* ---------- Stage 6 · Transfer assessment ---------- */
+.cp-ctl-h.tr-route-h{grid-template-columns:56px minmax(0,1fr) auto auto}
+.tr-checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:var(--ink-2)}
+.tr-checks li{display:flex;gap:10px;align-items:flex-start}
+.tr-checks .b{flex:none;min-width:92px;justify-content:center}
+.tr-qcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.tr-questions{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:var(--ink-2)}
+.tr-questions li{display:flex;gap:10px;align-items:baseline}
+.tr-questions li > .mono{flex:none}
+@media (max-width:640px){
+  .cp-ctl-h.tr-route-h{grid-template-columns:48px minmax(0,1fr)}
+  .tr-route-h > .note{display:none}
+  .tr-route-h > .b{grid-column:2;justify-self:start}
+}
+.tr-route-h > .b,[data-section=transfers-summary] .asr-head > .b{white-space:normal;text-align:left}
