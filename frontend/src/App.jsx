@@ -19,6 +19,7 @@ import VendorSelection, { VendorSelectionList } from './pages/VendorSelection.js
 import VendorAssessments from './pages/vendor/VendorAssessments.jsx';
 import VendorQuestionnaire from './pages/vendor/VendorQuestionnaire.jsx';
 import Compliance, { ComplianceList } from './pages/Compliance.jsx';
+import ContractAnalysis, { ContractList } from './pages/ContractAnalysis.jsx';
 import Organisation from './pages/Organisation.jsx';
 import RegisteredUsers from './pages/admin/RegisteredUsers.jsx';
 import AdminLayout from './components/admin/AdminLayout.jsx';
@@ -77,6 +78,8 @@ export default function App() {
           <Route path="vendor-selection/:ref" element={<VendorSelection />} />
           <Route path="compliance" element={<ComplianceList />} />
           <Route path="compliance/:ref" element={<Compliance />} />
+          <Route path="contract" element={<ContractList />} />
+          <Route path="contract/:ref" element={<ContractAnalysis />} />
         </Route>
         {/* Vendor (supplier) portal */}
         <Route path="vendor" element={<RequireVendorArea><AppLayout portal="vendor" /></RequireVendorArea>}>

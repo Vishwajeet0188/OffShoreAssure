@@ -61,6 +61,7 @@ export function AdminAssessmentDetail() {
       {d.summary ? <InformationRequired s={d.summary} link={false} /> : null}
       {d.selection ? <SelectionPanel s={d.selection} /> : null}
       {d.compliance?.compliance ? <CompliancePanel s={d.compliance} /> : null}
+      {d.contract?.versions.length ? <ContractPanel state={d.contract} /> : null}
       <AssessmentResult a={a} buyerName={a.buyerName} />
       {d.profiles ? <ProfilePanel profiles={d.profiles} timeline={d.timeline} catalogue={d.controlCatalogue} /> : null}
     </>
@@ -100,6 +101,41 @@ function CompliancePanel({ s }) {
         <div className="asr-block"><h3>Score by area</h3><ul className="cp-bars">{r.areas.map(a => <li key={a.id}><span className="cp-bar-l">{a.label}</span><span className="cp-bar-t"><i style={{ width: Math.max(a.score, 2) + '%' }} className={a.score < 60 ? 'low' : ''} /></span><b className="mono">{a.score}</b></li>)}</ul></div>
         <div className="asr-block"><h3>Gaps ({r.gaps.length})</h3>{r.gaps.length ? <ul>{r.gaps.map((g, i) => <li key={i}>{g.text}</li>)}</ul> : <p className="note" style={{ margin: 0 }}>None.</p>}</div>
       </> : null}
+    </section>
+  );
+}
+
+/* Stage 4 for the admin: contract versions and the latest analysis (read-only). */
+function ContractPanel({ state }) {
+  const latest = state.versions[0];
+  const { totals, notFound } = state.analysis;
+
+  return (
+    <section className="card" data-section="admin-contract">
+      <div className="ch">
+        <div>
+          <h2>Stage 4 · Contract analysis</h2>
+          <div className="sub">
+            {latest.fileName} · version {latest.version} of {state.versions.length} · uploaded {fmtTime(latest.uploadedAt)} by {latest.uploadedBy}
+          </div>
+        </div>
+        <Badge s="Complete" label={`${totals.clauses} clauses · ${totals.relevant} relevant`} />
+      </div>
+      <div className="asr-block">
+        <h3>Topics not found ({notFound.length})</h3>
+        {notFound.length ? <ul>{notFound.map(item => <li key={item.topicId}>{item.name}</li>)}</ul> : <p className="note" style={{ margin: 0 }}>None.</p>}
+      </div>
+      <div className="asr-block">
+        <h3>Versions</h3>
+        <ul>
+          {state.versions.map(v => (
+            <li key={v.version}>
+              v{v.version} · {v.fileName}{v.label ? ` (${v.label})` : ''} · {fmtTime(v.uploadedAt)}
+              {v.changeReason ? <span className="note"> · {v.changeReason}</span> : null}
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }

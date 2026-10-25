@@ -4,28 +4,31 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 
 - **Client:** ABC (contact: Moumita Saha Choudhury)
 - **Delivered by:** Novtek Consulting. Senior: Mukesh Bansal. Developer: Vishwajeet Kumar.
-- **Repository:** `Vishwajeet0188/OffShoreAssure`. Web app in `offshoreassure/`, API in `server/`.
+- **Repository:** `Vishwajeet0188/OffShoreAssure`. Web app in `frontend/` (renamed from `offshoreassure/` on 23 Oct), API in `server/`.
 - **Live prototype:** https://off-shore-assure.vercel.app (the Phase 1 prototype, from `main`)
-- **Development branch:** `stage-0-registration` (not pushed yet; the plan is to push everything together)
-- **Last updated:** 22 Oct 2026, after Stage 3 (Compliance assessment complete)
+- **Branches:** one branch per stage, each built on the one before.
+  - `stage-0-3`: Stages 0–3 (pushed 23 Oct)
+  - `stage-4-contract-analysis`: Stage 4 (current work)
+  - `main` stays on the Phase 1 prototype (the live Vercel site) until the client is ready.
+- **Last updated:** 23 Oct 2026, after Stage 4 (Contract analysis complete)
 
 ---
 
 ## 1. Where we are
 
 ### In plain words
-- **Done:** sign-up and login for buyers and vendors, the admin console, the public website, and **Stages 1–3**. A buyer describes the service and gets an Assessment ID with an "Information Required" summary, selects a verified vendor with a recorded reason, and sends that vendor a compliance questionnaire. The vendor answers it and uploads evidence; the buyer gets a provisional score with the gaps.
-- **Next:** **Stage 4 — Contract analysis.** The buyer uploads the contract; the system extracts the text and finds the important clauses.
-- **Waiting on the client:** rule questions for Stages 1–3 (see section 5). The build uses provisional rules until they answer.
+- **Done:** sign-up and login for buyers and vendors, the admin console, the public website, and **Stages 1–4**. A buyer describes the service and gets an Assessment ID with an "Information Required" summary, selects a verified vendor with a recorded reason, and sends that vendor a compliance questionnaire. The vendor answers it and uploads evidence; the buyer gets a provisional score with the gaps. The buyer then uploads the contract, and OffshoreAssure lists every clause and shows which important topics are covered or missing.
+- **Next:** **Stage 5 — Obligation extraction.** Turn the clauses into a list of who must do what, and by when.
+- **Waiting on the client:** rule questions for Stages 1–4 (see section 5). The build uses provisional rules until they answer.
 
 | Stage (sequence diagram) | Steps | Status |
 |---|---|---|
 | 0 · Registration, roles and admin | — | ✅ Done |
 | 1 · Requirement | 1–4 | ✅ Done (21 Oct) |
 | 2 · Vendor selection | 5–9 | ✅ Done (21 Oct) |
-| **3 · Compliance assessment** | 10–16 | ✅ **Done (22 Oct)** |
-| **4 · Contract analysis** | 17–20 | ⏭️ **Next** |
-| 5 · Obligation extraction | 21–24 | ⬜ Not started |
+| 3 · Compliance assessment | 10–16 | ✅ Done (22 Oct) |
+| **4 · Contract analysis** | 17–20 | ✅ **Done (23 Oct)** |
+| **5 · Obligation extraction** | 21–24 | ⏭️ **Next** |
 | 6 · Transfer assessment | 25–28 | ⬜ Not started |
 | 7 · Risk identification | 29–32 | ⬜ Not started |
 | 8 · Remediation | 33–38 | ⬜ Not started |
@@ -62,8 +65,22 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 | 15 | Save responses, evidence and gaps | Engine → Evidence Record | Locked result v1 with a fingerprint | ✅ Done |
 | 16 | Assessment results and missing items | Engine → Buyer | The buyer sees the score, the gaps, the answers and the documents | ✅ Done |
 
+### Stage 4 step by step
+
+| Step | Title (diagram) | Who | What it means in simple words | Status |
+|---|---|---|---|---|
+| 17 | Upload or select contract | Buyer → Engine | The buyer uploads the contract (PDF, Word or text) | ✅ Done |
+| 18 | Extract text and identify clauses | Engine | The text is read, split into numbered clauses, and each clause is linked to topics (data protection, security, breach notice …) | ✅ Done |
+| 19 | Save original file and extraction | Engine → Evidence Record | The original file (encrypted) and the analysis are saved and locked; a new upload becomes v2 | ✅ Done |
+| 20 | Contract analysis and clause list | Engine → Buyer | The buyer sees the totals, the topics found or missing, and every clause | ✅ Done |
+
 ### Stage completion notes
 Short notes written when a stage is finished: what it does, how to check it, and what comes next.
+
+- **Stage 4 — Contract analysis (completed 23 Oct 2026, branch `stage-4-contract-analysis`).**
+  - *What it does:* the buyer uploads the contract with the selected vendor; OffshoreAssure reads it, lists every clause, links each clause to topics, picks out time limits and figures, and lists the expected topics it could not find.
+  - *How to check:* buyer → sidebar **Contract analysis** → open the assessment (the vendor must have submitted Stage 3) → **Choose contract file** → see the totals, Topics, "Not found" and the Clause list. Upload again with a reason to make v2.
+  - *Next:* Stage 5, Obligation extraction.
 
 - **Stage 3 — Compliance assessment (completed 22 Oct 2026).**
   - *What it does:* the selected vendor answers a questionnaire built from the applicable controls and uploads evidence; OffshoreAssure scores it and lists the gaps for the buyer.
@@ -324,6 +341,46 @@ Source: *Offshore Assure – Stage 2 Inputs and Outputs (2).pdf*. Branch: `stage
 - **Database:** `007_stage2_vendor_selection.sql` (vendor_invitations, vendor_shortlist, vendor_selections, and the selected vendor on each assessment).
 - **Tests:** API 45 (Stage 2: 8 new); browser 49 / 47 / 31 / 22 (new Stage 2 run). All pass.
 
+### Feedback only from registered users (23 Oct 2026)
+- The feedback form is shown to everyone, but only signed-in **buyers and vendors** can send it. Anyone else who presses "Send feedback" sees "Please register yourself first, then you can send feedback." with links to Create an account and Log in; what they typed is kept. Admins are pointed to Admin → Feedback.
+- Signed-in users do not type a name or email: both come from the account (the name from the profile). Reviews show that name and the role (Buyer / Vendor), never the email.
+- The server also refuses feedback without a session (401) and from admin accounts (403). The bot trap field is no longer needed and was removed.
+- Files: `server/src/feedback/routes.js`, `frontend/src/pages/site/parts.jsx`, `frontend/src/pages/site/Home.jsx`, `server/test/site.test.js` (committed on `stage-0-3`, merged into Stage 4).
+
+### Friendlier messages when the service is unreachable (23 Oct 2026)
+- Users no longer see technical text such as "Make sure the API is running (cd server, npm run dev)". Every page now shows: "We could not connect to OffshoreAssure just now. Please try again in a moment."
+- The technical hint is written to the browser console in development only.
+- All requests go through one place (`frontend/src/lib/api.js`: `api`, `readResponse`, `unavailableError`), including the file uploads (requirement documents, vendor evidence, contracts).
+- The "Development build" label in the sidebar is shown only in development.
+
+### Home page reviews always shown (23 Oct 2026)
+- The scrolling reviews section on the home page was hidden whenever there were no published reviews, or the API could not be reached (for example on the Vercel preview without a hosted API). It now always shows: the scrolling cards when there are reviews, otherwise a short "No reviews yet" box with a link to the feedback form.
+- File: `frontend/src/pages/site/parts.jsx` (committed on `stage-0-3`, then merged into `stage-4-contract-analysis`).
+
+### Branches and folder rename (23 Oct 2026)
+- The web app folder was renamed from `offshoreassure/` to `frontend/`.
+- Stages 0–3 were committed and pushed on the branch `stage-0-3`; the old prototype files were removed in that commit. `main` is unchanged (live prototype).
+- Stage 4 is built on a new branch, `stage-4-contract-analysis`, created from `stage-0-3`.
+- A root `.gitignore` keeps `.env`, `node_modules`, `.vscode`, `Claude outputs` and spreadsheets out of git.
+- From Stage 4 the code is written in a plainer style: clear names, short functions, comments only where the reason is not obvious.
+
+### Stage 4 — Contract analysis, Steps 17–20 (23 Oct 2026) ✅ — Stage 4 complete
+- **When:** available once a vendor is selected (Stage 2) and has submitted its compliance answers (Stage 3), following the diagram order.
+- **Step 17 · Upload:** PDF (with text), Word (.docx) or plain text, up to 15 MB, with an optional label (e.g. "Signed copy"). A scanned PDF without text is refused with a clear message.
+- **Step 18 · Extract and identify:**
+  - The text is read page by page and split into numbered clauses (`4.`, `4.1`, `Clause 7` …); the section heading is carried to its sub-clauses. With no numbering, it falls back to paragraphs.
+  - Each clause is checked against 14 topics, each linked to the assurance controls: data protection (ASS-004), security (ASS-002/003/009), breach notification (ASS-007), sub-processors (ASS-006), international transfers (ASS-005), audit rights (ASS-013), return and deletion (ASS-014), service levels (ASS-012), business continuity (ASS-008), confidentiality (ASS-010), insurance (ASS-011), liability, termination, governing law.
+  - Confidence High / Medium / Low, with the words it matched on.
+  - Key terms: time limits ("within 24 hours"), percentages ("99.5%"), money amounts.
+  - **Not found:** the core topics for personal data, plus any topic linked to a control that applies to this requirement, are listed when no clause covers them ("Check the contract and its schedules manually").
+  - Rules are provisional (rule pack `RP-2026.10-S4-draft`, file `server/src/engine/clauses.js`).
+- **Step 19 · Saved:** the original file (encrypted, SHA-256), the extracted-text fingerprint and the full analysis, locked in the database. A new upload needs a reason and becomes v2; earlier versions stay and can be viewed.
+- **Step 20 · Shown to the buyer:** file details and download, 4 totals, "Not found" list, Topics grid with clause numbers, and the Clause list (filter by topic, search, open a clause to read it). The page says it is a reading aid, not a legal opinion or compliance conclusion.
+- **Timeline and audit:** steps 17–20 on the timeline, Stage 5 becomes "Next"; audit events "Contract uploaded", "New contract version uploaded", "Contract analysed". Admin sees a Stage 4 panel on the assessment.
+- **Database:** `011_stage4_contracts.sql` (contract_documents, contract_analyses; both append-only).
+- **New libraries (server):** `unpdf` (PDF text) and `mammoth` (Word text). Run `npm install` in `server` after pulling.
+- **Tests:** API 57 (Stage 4: 6 new); browser 49 / 48 / 31 / 22 / 20 / 22, and a new Stage 4 run with 19 checks. All pass.
+
 ### Stage 3 — Compliance assessment, Steps 10–16 (22 Oct 2026) ✅ — Stage 3 complete
 - **Buyer (sidebar → Compliance assessment):** a list of assessments with their status; for one assessment:
   - **Start** (step 10) once a vendor is selected and the requirement has no contradictions. After starting, the vendor cannot be changed in Stage 2.
@@ -356,7 +413,7 @@ Each section below the hero now has its own layout instead of the same "centred 
 - **Heading area:** the heading with **"outsourced"** highlighted in copper with an animated underline, a shorter intro, the two buttons, and three ticks (verified vendors only, evidence for every result, built for UK organisations). No label pill above the heading.
 - **Illustration made for OffshoreAssure** (original SVG drawn in code; no stock images, nothing loaded from outside): a globe with the **UK buyer** linked to offshore delivery locations (Poland, India, Philippines, Brazil) by flowing lines with travelling dots, surrounded by the **assessment ring**: the nine stages light up one after another, a progress line moves round to the current stage, and its name is shown underneath ("Stage 5 of 9 · Obligation extraction"). No floating cards (Vishwajeet asked for a design that does not repeat the previous project).
 - **"Who takes part"** is a row of four cards just below the hero, with the register links.
-- With "reduce motion" everything is still. File: `offshoreassure/src/pages/site/HeroScene.jsx`.
+- With "reduce motion" everything is still. File: `frontend/src/pages/site/HeroScene.jsx`.
 
 ### Website motion and hover effects (22 Oct 2026) ✅
 - **Hover:** cards lift slightly with a soft shadow and a copper edge; their icon turns copper and tilts; step numbers grow; problem items slide; chips and badges highlight; buttons lift and their arrows nudge forward; menu links get a copper underline (also marks the current page); footer links slide.
@@ -391,7 +448,7 @@ Requested by Vishwajeet before starting Stage 3: make the user-facing site clear
 - **No invented content:** no customer testimonials, figures, prices or company history were made up. Feedback is collected from real users instead.
 - **Database:** `008_feedback.sql`. **API:** `POST /api/feedback`, `GET/PATCH /api/admin/feedback`.
 - **Tests:** API 46 (new website test); browser 49 / 48 / 31 / 22, plus a new website run with 15 checks (each page, navigation, feedback, admin view, mobile). All pass.
-- The old single landing page (`offshoreassure/src/pages/Landing.jsx`) is no longer used and can be deleted.
+- The old single landing page (`frontend/src/pages/Landing.jsx`) is no longer used and can be deleted.
 
 ### Stage 2 checked on the user's machine + 4 small fixes (21 Oct 2026) ✅
 - **Checked by Vishwajeet, step by step:** two vendors (Vendor A Test Ltd, Demo) verified by the admin; search showed only verified vendors with Good/Partial match and reasons; shortlist and comparison; the confirm rules (reason needed, "I accept these issues" for a partial match); selection v1 (Demo), then change to v2 (Vendor A) with "Earlier selections"; Demo stopped seeing the assessment and Vendor A started seeing it; admin saw the Vendor column, the Stage 2 panel and the timeline.
@@ -490,6 +547,7 @@ Requested by Vishwajeet before starting Stage 3: make the user-facing site clear
 | 4 | **Delivery Assurance** was in the prototype but is not in the diagram. Drop it, or include it under Stage 9? | 20 Oct | Stage 9 scope |
 | 5 | Revised Step 5 (Stage 2) specification from Moumita. Stage 2 is built with provisional match rules; this will confirm or adjust them | Oct 2026 | Final Stage 2 match rules |
 | 8 | Stage 3 questionnaire questions per control (ASS-001 … ASS-015), evidence rules, scoring weights and bands, response deadline | 21 Oct | Final Stage 3 rules (provisional ones are built and in use) |
+| 9 | Stage 4: which clause topics to look for, which are mandatory, and whether the contract must wait for Stage 3 | 23 Oct | Final Stage 4 rules (provisional ones are built and in use) |
 | 6 | Production hosting (UK region) for the API and database | Oct 2026 | Going live |
 | 7 | Evidence retention period (how long requirement documents and profiles are kept) | 20 Oct | Retention policy (Step 3 boundary) |
 
@@ -523,12 +581,13 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 
 | Suite | Count | Last result |
 |---|---|---|
-| API (`server`, `npm test`) | 51 (Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 8, Stage 3: 4, Website: 2) | ✅ all pass |
+| API (`server`, `npm test`) | 57 (Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 8, Stage 3: 4, Stage 4: 6, Website: 2) | ✅ all pass |
 | Browser, Stage 0 + admin console | 49 checks | ✅ all pass |
 | Browser, Stage 1 (Steps 1–4) + clean build | 48 checks | ✅ all pass |
 | Browser, roles (buyer / vendor / admin / membership) | 31 checks | ✅ all pass |
 | Browser, Stage 2 vendor selection | 22 checks | ✅ all pass |
 | Browser, Stage 3 compliance assessment | 20 checks | ✅ all pass |
+| Browser, Stage 4 contract analysis | 19 checks | ✅ all pass |
 | Browser, public website pages, feedback, reviews + footer | 22 checks | ✅ all pass |
 
 ---
@@ -544,24 +603,25 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 | Stage 1 requirement API | `server/src/requirements/routes.js` |
 | Stage 1 Step 2 engine rules | `server/src/engine/rulepack.js` |
 | Assessments (Step 2) | `server/src/assessments/service.js`, `routes.js` |
-| Stage 3 compliance assessment | `server/src/compliance/routes.js` (buyer + vendor APIs), `server/src/engine/questionnaire.js` (questions, evidence, scoring); `offshoreassure/src/pages/Compliance.jsx`, `src/pages/vendor/VendorQuestionnaire.jsx`, `src/lib/compliance.js` |
-| Public website pages and feedback | `offshoreassure/src/pages/site/*` (Home, HowItWorks, Solutions, About, parts), `src/components/layout/PublicLayout.jsx`, `src/pages/admin/AdminFeedback.jsx`; server `src/feedback/routes.js` |
-| Stage 2 vendor selection | `server/src/selection/routes.js` (APIs + vendor portal), `server/src/engine/matching.js` (match rules); `offshoreassure/src/pages/VendorSelection.jsx`, `src/pages/vendor/VendorAssessments.jsx`, `src/lib/selection.js` |
-| Information Required box (Step 4) | `server/src/engine/gaps.js`, `server/src/assessments/profile.js` (`issueSummary`, `buildSummary`); `offshoreassure/src/components/requirements/InformationRequired.jsx` |
+| Stage 4 contract analysis | `server/src/contracts/routes.js` (APIs), `server/src/contracts/extract.js` (PDF/Word text), `server/src/engine/clauses.js` (clause rules); `frontend/src/pages/ContractAnalysis.jsx`, `src/lib/contracts.js` |
+| Stage 3 compliance assessment | `server/src/compliance/routes.js` (buyer + vendor APIs), `server/src/engine/questionnaire.js` (questions, evidence, scoring); `frontend/src/pages/Compliance.jsx`, `src/pages/vendor/VendorQuestionnaire.jsx`, `src/lib/compliance.js` |
+| Public website pages and feedback | `frontend/src/pages/site/*` (Home, HowItWorks, Solutions, About, parts), `src/components/layout/PublicLayout.jsx`, `src/pages/admin/AdminFeedback.jsx`; server `src/feedback/routes.js` |
+| Stage 2 vendor selection | `server/src/selection/routes.js` (APIs + vendor portal), `server/src/engine/matching.js` (match rules); `frontend/src/pages/VendorSelection.jsx`, `src/pages/vendor/VendorAssessments.jsx`, `src/lib/selection.js` |
+| Information Required box (Step 4) | `server/src/engine/gaps.js`, `server/src/assessments/profile.js` (`issueSummary`, `buildSummary`); `frontend/src/components/requirements/InformationRequired.jsx` |
 | Profile, controls, timeline (Step 3) | `server/src/assessments/profile.js`, `server/src/engine/controls.js`, `server/src/storage.js` (encryption) |
-| Stage map (9 stages, 43 steps, built steps) | `offshoreassure/src/lib/stages.js` |
-| Buyer pages | `offshoreassure/src/pages/Dashboard.jsx`, `Requirements.jsx`, `RequirementForm.jsx`, `StagePage.jsx` |
-| Admin console | `offshoreassure/src/components/admin/AdminLayout.jsx`, `offshoreassure/src/pages/admin/*` |
-| Roles and vendor portal | `offshoreassure/src/lib/roles.js`, `src/pages/vendor/*`, `src/components/auth/VendorProfileForm.jsx`, `src/pages/admin/AdminVendors.jsx`; server: `auth/routes.js` (`saveVendorProfile`), `admin/routes.js` (vendors), `auth/session.js` (`requireRole`) |
-| Buyer organisation membership | `server/src/organisation/routes.js`, `server/src/assessments/service.js` (`membershipFor`, `requireActiveMembership`); `offshoreassure/src/pages/Organisation.jsx`, `src/lib/membership.js` |
+| Stage map (9 stages, 43 steps, built steps) | `frontend/src/lib/stages.js` |
+| Buyer pages | `frontend/src/pages/Dashboard.jsx`, `Requirements.jsx`, `RequirementForm.jsx`, `StagePage.jsx` |
+| Admin console | `frontend/src/components/admin/AdminLayout.jsx`, `frontend/src/pages/admin/*` |
+| Roles and vendor portal | `frontend/src/lib/roles.js`, `src/pages/vendor/*`, `src/components/auth/VendorProfileForm.jsx`, `src/pages/admin/AdminVendors.jsx`; server: `auth/routes.js` (`saveVendorProfile`), `admin/routes.js` (vendors), `auth/session.js` (`requireRole`) |
+| Buyer organisation membership | `server/src/organisation/routes.js`, `server/src/assessments/service.js` (`membershipFor`, `requireActiveMembership`); `frontend/src/pages/Organisation.jsx`, `src/lib/membership.js` |
 
 ---
 
 ## 9. Next
 
-1. **Stage 4 · Contract analysis (Steps 17–20):**
-   - Step 17: the buyer uploads (or selects) the contract
-   - Step 18: the engine extracts the text and identifies the clauses
-   - Step 19: the original file and the extraction are saved to the evidence record
-   - Step 20: the buyer sees the contract analysis and the clause list
-2. Needed from the client for Stage 4: which clause types to look for and how to classify them (we will start from the Use Case 1 prototype: data protection, security, incident notification, subcontractors, audit rights, data deletion, service levels).
+1. **Stage 5 · Obligation extraction (Steps 21–24):**
+   - Step 21: extract obligations and parties from the clauses (who must do what, by when)
+   - Step 22: map clauses to the requirement and the rules
+   - Step 23: show the obligations with their source clause and confidence
+   - Step 24: save the obligation register and the rule trace
+2. Needed from the client for Stage 5: the obligation categories and how a deadline or frequency should be recorded.

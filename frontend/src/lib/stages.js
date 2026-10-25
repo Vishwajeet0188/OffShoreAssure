@@ -13,8 +13,8 @@ export const STAGES = [
     summary: 'Generate the control set and questionnaire, collect the vendor’s policies, certificates and answers, and calculate a provisional score.',
     steps: [[10, 'Start compliance assessment', 'B', 'E'], [11, 'Generate control set and questionnaire', 'E', 'E'], [12, 'Request answers and evidence', 'E', 'V'], [13, 'Submit policies, certificates and answers', 'V', 'E'],
       [14, 'Validate and calculate provisional score', 'E', 'E'], [15, 'Save responses, evidence and gaps', 'E', 'R'], [16, 'Assessment results and missing items', 'E', 'B']] },
-  { n: 4, slug: 'contract-analysis', title: 'Contract analysis', icon: 'file',
-    summary: 'Upload the contract; OffshoreAssure extracts the text and identifies the clauses.',
+  { n: 4, slug: 'contract-analysis', title: 'Contract analysis', icon: 'file', path: '/contract',
+    summary: 'Upload the contract with the selected vendor; OffshoreAssure extracts the text, identifies the clauses and shows which topics are covered.',
     steps: [[17, 'Upload or select contract', 'B', 'E'], [18, 'Extract text and identify clauses', 'E', 'E'], [19, 'Save original file and extraction', 'E', 'R'], [20, 'Contract analysis and clause list', 'E', 'B']] },
   { n: 5, slug: 'obligation-extraction', title: 'Obligation extraction', icon: 'list',
     summary: 'Extract obligations and parties from the clauses and map them to requirements and rules.',
@@ -35,7 +35,7 @@ export const STAGES = [
 ];
 
 /* Steps that are live in this build. */
-export const BUILT_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+export const BUILT_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 export const stageStatus = s => {
   const done = s.steps.filter(([n]) => BUILT_STEPS.includes(n)).length;
   return done === 0 ? 'not-started' : done === s.steps.length ? 'available' : 'partial';

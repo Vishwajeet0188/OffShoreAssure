@@ -147,7 +147,7 @@ export default function Compliance() {
                 </div>);
             })}</div>
           </section>
-          <div className="card rq-next"><Icon n="clock" s={20} /><div><b>Stage 3 is complete for this assessment. Next: Stage 4 — Contract analysis.</b> <span className="note">Upload the contract so its clauses can be checked. Not available yet (next build stage).</span></div></div>
+          <div className="card rq-next"><Icon n="clock" s={20} /><div><b>Stage 3 is complete for this assessment. Next: Stage 4 — Contract analysis.</b> <span className="note">Upload the contract so its clauses can be checked.</span></div><Link className="btn primary" to={'/contract/' + ref} data-act="go-contract">Open contract analysis</Link></div>
         </>
       )}
     </div>

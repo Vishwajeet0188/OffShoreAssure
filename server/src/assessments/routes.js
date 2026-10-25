@@ -76,11 +76,14 @@ export async function submitRequirement(req, requirementId, data, idempotencyKey
 assessmentsRouter.get('/', async (req, res) => {
   const buyerId = await buyerOrganisation({ query }, req.user.id); if (!buyerId) return res.json({ assessments: [] });
   const rows = (await query(`SELECT a.*, r.title, sv.name AS selected_vendor, (SELECT count(*)::int FROM vendor_shortlist s WHERE s.assessment_id = a.id) AS shortlisted,
-        c.status AS compliance_status, (SELECT cr.overall_score FROM compliance_results cr WHERE cr.compliance_id = c.id ORDER BY version DESC LIMIT 1) AS compliance_score
+        c.status AS compliance_status, (SELECT cr.overall_score FROM compliance_results cr WHERE cr.compliance_id = c.id ORDER BY version DESC LIMIT 1) AS compliance_score,
+        (SELECT json_build_object('version', d.version, 'fileName', d.file_name, 'uploadedAt', d.uploaded_at, 'totals', ca.totals)
+           FROM contract_documents d JOIN contract_analyses ca ON ca.contract_id = d.id
+          WHERE d.assessment_id = a.id ORDER BY d.version DESC LIMIT 1) AS contract
       FROM assessments a JOIN requirements r ON r.id = a.requirement_id LEFT JOIN organisations sv ON sv.id = a.selected_vendor_id
       LEFT JOIN compliance_assessments c ON c.assessment_id = a.id WHERE a.buyer_id = $1 ORDER BY a.created_at DESC`, [buyerId])).rows;
   res.json({ assessments: rows.map(a => shapeAssessment(a, { title: a.title, selectedVendor: a.selected_vendor, selectionVersion: a.selection_version, selectionStatus: a.selection_status, shortlisted: a.shortlisted,
-    compliance: a.compliance_status ? { status: a.compliance_status, overall: a.compliance_score } : null })) });
+    compliance: a.compliance_status ? { status: a.compliance_status, overall: a.compliance_score } : null, contract: a.contract || null })) });
 });
 
 assessmentsRouter.get('/:ref', async (req, res) => {
