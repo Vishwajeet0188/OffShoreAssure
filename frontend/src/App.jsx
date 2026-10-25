@@ -20,6 +20,8 @@ import VendorAssessments from './pages/vendor/VendorAssessments.jsx';
 import VendorQuestionnaire from './pages/vendor/VendorQuestionnaire.jsx';
 import Compliance, { ComplianceList } from './pages/Compliance.jsx';
 import ContractAnalysis, { ContractList } from './pages/ContractAnalysis.jsx';
+import Obligations, { ObligationsList } from './pages/Obligations.jsx';
+import VendorObligations, { VendorObligationsList } from './pages/vendor/VendorObligations.jsx';
 import Organisation from './pages/Organisation.jsx';
 import RegisteredUsers from './pages/admin/RegisteredUsers.jsx';
 import AdminLayout from './components/admin/AdminLayout.jsx';
@@ -80,6 +82,8 @@ export default function App() {
           <Route path="compliance/:ref" element={<Compliance />} />
           <Route path="contract" element={<ContractList />} />
           <Route path="contract/:ref" element={<ContractAnalysis />} />
+          <Route path="obligations" element={<ObligationsList />} />
+          <Route path="obligations/:ref" element={<Obligations />} />
         </Route>
         {/* Vendor (supplier) portal */}
         <Route path="vendor" element={<RequireVendorArea><AppLayout portal="vendor" /></RequireVendorArea>}>
@@ -87,6 +91,8 @@ export default function App() {
           <Route path="profile" element={<VendorProfile />} />
           <Route path="assessments" element={<VendorAssessments />} />
           <Route path="assessments/:ref" element={<VendorQuestionnaire />} />
+          <Route path="obligations" element={<VendorObligationsList />} />
+          <Route path="obligations/:ref" element={<VendorObligations />} />
           <Route path="stage/:slug" element={<VendorStagePage />} />
         </Route>
         {/* Old prototype addresses */}

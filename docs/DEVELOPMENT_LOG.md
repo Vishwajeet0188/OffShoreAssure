@@ -8,18 +8,20 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 - **Live prototype:** https://off-shore-assure.vercel.app (the Phase 1 prototype, from `main`)
 - **Branches:** one branch per stage, each built on the one before.
   - `stage-0-3`: Stages 0–3 (pushed 23 Oct)
-  - `stage-4-contract-analysis`: Stage 4 (current work)
+  - `stage-4-contract-analysis`: Stage 4 (local; not pushed yet)
+  - `stage-5-obligation-extraction`: Stage 5 (current work, built on Stage 4)
   - `main` stays on the Phase 1 prototype (the live Vercel site) until the client is ready.
-- **Last updated:** 23 Oct 2026, after Stage 4 (Contract analysis complete)
+- **Last updated:** 23 Oct 2026, after Stage 5 (Obligation extraction complete)
 
 ---
 
 ## 1. Where we are
 
 ### In plain words
-- **Done:** sign-up and login for buyers and vendors, the admin console, the public website, and **Stages 1–4**. A buyer describes the service and gets an Assessment ID with an "Information Required" summary, selects a verified vendor with a recorded reason, and sends that vendor a compliance questionnaire. The vendor answers it and uploads evidence; the buyer gets a provisional score with the gaps. The buyer then uploads the contract, and OffshoreAssure lists every clause and shows which important topics are covered or missing.
-- **Next:** **Stage 5 — Obligation extraction.** Turn the clauses into a list of who must do what, and by when.
-- **Waiting on the client:** rule questions for Stages 1–4 (see section 5). The build uses provisional rules until they answer.
+- **Done:** sign-up and login for buyers and vendors, the admin console, the public website, and **Stages 1–5**. A buyer describes the service and gets an Assessment ID with an "Information Required" summary, selects a verified vendor with a recorded reason, and sends that vendor a compliance questionnaire. The vendor answers it and uploads evidence; the buyer gets a provisional score with the gaps. The buyer then uploads the contract, and OffshoreAssure lists every clause and shows which important topics are covered or missing. OffshoreAssure then lists every obligation in the contract (who must do what, by when), checks it against the rules and shows the gaps; the vendor sees its own obligations.
+- **Next:** **Stage 6 — Transfer assessment.** Map the data flows and check each transfer route.
+- **Live site:** https://off-shore-assure.vercel.app runs `stage-0-3` (Vercel website, Render API, Neon database).
+- **Waiting on the client:** rule questions for Stages 1–5 (see section 5). The build uses provisional rules until they answer.
 
 | Stage (sequence diagram) | Steps | Status |
 |---|---|---|
@@ -27,9 +29,9 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 | 1 · Requirement | 1–4 | ✅ Done (21 Oct) |
 | 2 · Vendor selection | 5–9 | ✅ Done (21 Oct) |
 | 3 · Compliance assessment | 10–16 | ✅ Done (22 Oct) |
-| **4 · Contract analysis** | 17–20 | ✅ **Done (23 Oct)** |
-| **5 · Obligation extraction** | 21–24 | ⏭️ **Next** |
-| 6 · Transfer assessment | 25–28 | ⬜ Not started |
+| 4 · Contract analysis | 17–20 | ✅ Done (23 Oct) |
+| **5 · Obligation extraction** | 21–24 | ✅ **Done (23 Oct)** |
+| **6 · Transfer assessment** | 25–28 | ⏭️ **Next** |
 | 7 · Risk identification | 29–32 | ⬜ Not started |
 | 8 · Remediation | 33–38 | ⬜ Not started |
 | 9 · Monitoring and audit | 39–43 | ⬜ Not started |
@@ -74,8 +76,22 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 | 19 | Save original file and extraction | Engine → Evidence Record | The original file (encrypted) and the analysis are saved and locked; a new upload becomes v2 | ✅ Done |
 | 20 | Contract analysis and clause list | Engine → Buyer | The buyer sees the totals, the topics found or missing, and every clause | ✅ Done |
 
+### Stage 5 step by step
+
+| Step | Title (diagram) | Who | What it means in simple words | Status |
+|---|---|---|---|---|
+| 21 | Extract obligations and parties | Engine | Each clause is read sentence by sentence; "shall/must" = obligation, "shall not" = prohibition, "may" = right; who it applies to, deadline, how often, condition | ✅ Done |
+| 22 | Map clauses to requirements and rules | Engine | Each obligation is linked to its topics, the controls (ASS-xxx) and 9 rules (UK GDPR processor terms + service levels); rules with no obligation are gaps | ✅ Done |
+| 23 | Obligations, sources and confidence | Engine → Buyer | The register: who, what, when, source clause, confidence, with filters | ✅ Done |
+| 24 | Save obligation register and rule trace | Engine → Evidence Record | Saved as a locked version with a fingerprint; a new contract version gives v2 | ✅ Done |
+
 ### Stage completion notes
 Short notes written when a stage is finished: what it does, how to check it, and what comes next.
+
+- **Stage 5 — Obligation extraction (completed 23 Oct 2026, branch `stage-5-obligation-extraction`).**
+  - *What it does:* turns the contract clauses into an obligation register (who must do what, by when), links each obligation to the controls and rules, and lists the rules no obligation covers. The vendor sees its own obligations.
+  - *How to check:* buyer → Contract analysis → **Open obligations** (or sidebar **5 · Obligation extraction**) → **Extract obligations**. Vendor → sidebar **Obligations** → **View**.
+  - *Next:* Stage 6, Transfer assessment.
 
 - **Stage 4 — Contract analysis (completed 23 Oct 2026, branch `stage-4-contract-analysis`).**
   - *What it does:* the buyer uploads the contract with the selected vendor; OffshoreAssure reads it, lists every clause, links each clause to topics, picks out time limits and figures, and lists the expected topics it could not find.
@@ -353,6 +369,22 @@ Source: *Offshore Assure – Stage 2 Inputs and Outputs (2).pdf*. Branch: `stage
 - All requests go through one place (`frontend/src/lib/api.js`: `api`, `readResponse`, `unavailableError`), including the file uploads (requirement documents, vendor evidence, contracts).
 - The "Development build" label in the sidebar is shown only in development.
 
+### Stage 5 — Obligation extraction, Steps 21–24 (23 Oct 2026) ✅ — Stage 5 complete
+- **When:** once the contract has been analysed (Stage 4). The buyer clicks **Extract obligations**; it runs again only when a newer contract version is uploaded.
+- **Step 21 · Extract:**
+  - Each clause is split into sentences. "shall", "must", "will", "agrees to" = **Obligation**; "shall not", "must not" = **Prohibition**; "may", "is entitled to" = **Right**.
+  - **Who:** the words before the verb. The contract's defined names (e.g. *UK Company Ltd (the "Customer")*) and common words (Supplier, Provider, Processor / Customer, Client, Controller) decide Vendor or Buyer; "either party / each party" = Both.
+  - **When:** deadlines ("within 24 hours", "without undue delay"), how often ("each month", "once in any 12 month period") and conditions ("On termination").
+  - **Confidence:** High (party and topic known), Medium (party known), Low (party unclear).
+- **Step 22 · Map:** each obligation gets the topics of its clause, the controls (ASS-xxx) and the requirement's own controls. 9 rules are checked: documented instructions, confidentiality, security measures, sub-processors, breach notification, international transfers, audit rights, return/deletion (UK GDPR Art. 28, 32, 33, Chapter V) and service levels. A rule with no obligation is a **gap** when it applies to the requirement.
+- **Step 23 · Shown to the buyer:** counts by type and party, gaps, the rule trace (each rule → the obligations covering it), and the register table with filters (party, topic, search).
+- **Step 24 · Saved:** register v1 with a fingerprint, locked in the database; a new contract version gives v2, and earlier versions stay viewable. Timeline steps 21–24; Stage 6 becomes "Next"; audit event "Obligations extracted".
+- **Vendor portal:** new **Obligations** page (sidebar). The vendor sees only its own obligations and the shared ones, grouped by topic, in plain words ("Must", "Must not", "May") with the clause and deadline. The buyer's own rights (e.g. audit) are not shown as vendor obligations.
+- **Admin:** a Stage 5 panel on the assessment.
+- Rules are provisional (rule pack `RP-2026.10-S5-draft`, file `server/src/engine/obligations.js`). Not a legal opinion.
+- **Database:** `012_stage5_obligations.sql` (obligation_registers, append-only).
+- **Tests:** API 63 (Stage 5: 6 new); browser 49 / 48 / 31 / 22 / 20 / 19 / 24, and a new Stage 5 run with 15 checks. All pass.
+
 ### Home page reviews always shown (23 Oct 2026)
 - The scrolling reviews section on the home page was hidden whenever there were no published reviews, or the API could not be reached (for example on the Vercel preview without a hosted API). It now always shows: the scrolling cards when there are reviews, otherwise a short "No reviews yet" box with a link to the feedback form.
 - File: `frontend/src/pages/site/parts.jsx` (committed on `stage-0-3`, then merged into `stage-4-contract-analysis`).
@@ -548,6 +580,7 @@ Requested by Vishwajeet before starting Stage 3: make the user-facing site clear
 | 5 | Revised Step 5 (Stage 2) specification from Moumita. Stage 2 is built with provisional match rules; this will confirm or adjust them | Oct 2026 | Final Stage 2 match rules |
 | 8 | Stage 3 questionnaire questions per control (ASS-001 … ASS-015), evidence rules, scoring weights and bands, response deadline | 21 Oct | Final Stage 3 rules (provisional ones are built and in use) |
 | 9 | Stage 4: which clause topics to look for, which are mandatory, and whether the contract must wait for Stage 3 | 23 Oct | Final Stage 4 rules (provisional ones are built and in use) |
+| 10 | Stage 5: which rules each obligation is checked against, obligation categories, and how deadlines and frequencies are recorded | 23 Oct | Final Stage 5 rules (provisional ones are built and in use) |
 | 6 | Production hosting (UK region) for the API and database | Oct 2026 | Going live |
 | 7 | Evidence retention period (how long requirement documents and profiles are kept) | 20 Oct | Retention policy (Step 3 boundary) |
 
@@ -581,13 +614,14 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 
 | Suite | Count | Last result |
 |---|---|---|
-| API (`server`, `npm test`) | 57 (Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 8, Stage 3: 4, Stage 4: 6, Website: 2) | ✅ all pass |
+| API (`server`, `npm test`) | 63 (Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 8, Stage 3: 4, Stage 4: 6, Stage 5: 6, Website: 2) | ✅ all pass |
 | Browser, Stage 0 + admin console | 49 checks | ✅ all pass |
 | Browser, Stage 1 (Steps 1–4) + clean build | 48 checks | ✅ all pass |
 | Browser, roles (buyer / vendor / admin / membership) | 31 checks | ✅ all pass |
 | Browser, Stage 2 vendor selection | 22 checks | ✅ all pass |
 | Browser, Stage 3 compliance assessment | 20 checks | ✅ all pass |
 | Browser, Stage 4 contract analysis | 19 checks | ✅ all pass |
+| Browser, Stage 5 obligation extraction | 15 checks | ✅ all pass |
 | Browser, public website pages, feedback, reviews + footer | 22 checks | ✅ all pass |
 
 ---
@@ -603,6 +637,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 | Stage 1 requirement API | `server/src/requirements/routes.js` |
 | Stage 1 Step 2 engine rules | `server/src/engine/rulepack.js` |
 | Assessments (Step 2) | `server/src/assessments/service.js`, `routes.js` |
+| Stage 5 obligation extraction | `server/src/obligations/routes.js` (buyer + vendor APIs), `server/src/engine/obligations.js` (extraction and rules); `frontend/src/pages/Obligations.jsx`, `src/pages/vendor/VendorObligations.jsx`, `src/lib/obligations.js` |
 | Stage 4 contract analysis | `server/src/contracts/routes.js` (APIs), `server/src/contracts/extract.js` (PDF/Word text), `server/src/engine/clauses.js` (clause rules); `frontend/src/pages/ContractAnalysis.jsx`, `src/lib/contracts.js` |
 | Stage 3 compliance assessment | `server/src/compliance/routes.js` (buyer + vendor APIs), `server/src/engine/questionnaire.js` (questions, evidence, scoring); `frontend/src/pages/Compliance.jsx`, `src/pages/vendor/VendorQuestionnaire.jsx`, `src/lib/compliance.js` |
 | Public website pages and feedback | `frontend/src/pages/site/*` (Home, HowItWorks, Solutions, About, parts), `src/components/layout/PublicLayout.jsx`, `src/pages/admin/AdminFeedback.jsx`; server `src/feedback/routes.js` |
@@ -619,9 +654,9 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 
 ## 9. Next
 
-1. **Stage 5 · Obligation extraction (Steps 21–24):**
-   - Step 21: extract obligations and parties from the clauses (who must do what, by when)
-   - Step 22: map clauses to the requirement and the rules
-   - Step 23: show the obligations with their source clause and confidence
-   - Step 24: save the obligation register and the rule trace
-2. Needed from the client for Stage 5: the obligation categories and how a deadline or frequency should be recorded.
+1. **Stage 6 · Transfer assessment (Steps 25–28):**
+   - Step 25: map the data flows and transfer routes (where data is stored and accessed from, sub-processors)
+   - Step 26: check recipients, roles and safeguards for each route
+   - Step 27: show the transfer findings and questions to the buyer
+   - Step 28: save the route-by-route assessment
+2. Needed from the client for Stage 6: the transfer rules (adequacy list, IDTA / Addendum, transfer risk assessment questions).

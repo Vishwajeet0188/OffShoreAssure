@@ -143,8 +143,9 @@ export default function ContractAnalysis() {
             <Icon n="clock" s={20} />
             <div>
               <b>Stage 4 is complete for this assessment. Next: Stage 5 — Obligation extraction.</b>{' '}
-              <span className="note">The obligations in these clauses will be listed with who must do what. Not available yet (next build stage).</span>
+              <span className="note">List who must do what, and by when, from these clauses.</span>
             </div>
+            <Link className="btn primary" to={'/obligations/' + ref} data-act="go-obligations">Open obligations</Link>
           </div>
         </>
       ) : null}

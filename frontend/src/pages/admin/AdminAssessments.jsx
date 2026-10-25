@@ -62,6 +62,7 @@ export function AdminAssessmentDetail() {
       {d.selection ? <SelectionPanel s={d.selection} /> : null}
       {d.compliance?.compliance ? <CompliancePanel s={d.compliance} /> : null}
       {d.contract?.versions.length ? <ContractPanel state={d.contract} /> : null}
+      {d.obligations?.register ? <ObligationsPanel state={d.obligations} /> : null}
       <AssessmentResult a={a} buyerName={a.buyerName} />
       {d.profiles ? <ProfilePanel profiles={d.profiles} timeline={d.timeline} catalogue={d.controlCatalogue} /> : null}
     </>
@@ -135,6 +136,32 @@ function ContractPanel({ state }) {
             </li>
           ))}
         </ul>
+      </div>
+    </section>
+  );
+}
+
+/* Stage 5 for the admin: the latest obligation register (read-only). */
+function ObligationsPanel({ state }) {
+  const register = state.register;
+  const { totals } = register;
+
+  return (
+    <section className="card" data-section="admin-obligations">
+      <div className="ch">
+        <div>
+          <h2>Stage 5 · Obligation extraction</h2>
+          <div className="sub">Register v{register.version} from contract v{register.contractVersion} · saved {fmtTime(register.createdAt)}</div>
+        </div>
+        <Badge s="Complete" label={`${totals.obligations + totals.prohibitions + totals.rights} items · ${totals.rulesCovered}/${totals.rulesTotal} rules`} />
+      </div>
+      <div className="asr-block">
+        <h3>By party</h3>
+        <p style={{ margin: 0 }}>Vendor {totals.vendor} · Buyer {totals.buyer} · Both {totals.both} · Not clear {totals.unclear}</p>
+      </div>
+      <div className="asr-block">
+        <h3>Gaps ({register.gaps.length})</h3>
+        {register.gaps.length ? <ul>{register.gaps.map(gap => <li key={gap.ruleId}>{gap.text}</li>)}</ul> : <p className="note" style={{ margin: 0 }}>None.</p>}
       </div>
     </section>
   );

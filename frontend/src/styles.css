@@ -1466,3 +1466,21 @@ main:focus{outline:none}
   .rq-next{flex-wrap:wrap}
   .rq-next > .btn{margin-left:0}
 }
+
+/* ---------- Stage 5 · Obligation extraction ---------- */
+.ob-parties{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ob-rules{list-style:none;margin:0;padding:4px 22px 18px;display:flex;flex-direction:column;gap:8px}
+.ob-rules li{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card-2);font-size:13.5px}
+.ob-rules li.covered{border-left:3px solid var(--sage)}
+.ob-rules li.missing{border-left:3px solid var(--coral);background:var(--coral-soft)}
+.ob-table td{vertical-align:top}
+.ob-text{min-width:280px;line-height:1.5;color:var(--ink-2)}
+.ob-vlist{list-style:none;margin:0;padding:4px 22px 18px;display:flex;flex-direction:column;gap:12px}
+.ob-vlist li{display:flex;gap:12px;align-items:flex-start}
+.ob-vlist li > .b{flex:none;min-width:64px;justify-content:center}
+.ob-vlist p{margin:0 0 4px;color:var(--ink-2);line-height:1.55}
+@media (max-width:640px){
+  .ob-rules li{flex-direction:column;align-items:flex-start}
+}
+.ob-table td.mono{white-space:nowrap}
+.ca-filters select{width:auto;flex:none}

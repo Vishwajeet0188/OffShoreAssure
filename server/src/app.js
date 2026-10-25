@@ -12,6 +12,7 @@ import { assessmentsRouter } from './assessments/routes.js';
 import { selectionRouter, vendorPortalRouter } from './selection/routes.js';
 import { complianceBuyerRouter, complianceVendorRouter } from './compliance/routes.js';
 import { contractRouter } from './contracts/routes.js';
+import { obligationsBuyerRouter, obligationsVendorRouter } from './obligations/routes.js';
 import { feedbackRouter } from './feedback/routes.js';
 import { organisationRouter } from './organisation/routes.js';
 import { COUNTRIES, CURRENCIES } from './reference/countries.js';
@@ -48,8 +49,10 @@ export function createApp() {
   api.use('/assessments', selectionRouter);
   api.use('/assessments', complianceBuyerRouter);
   api.use('/assessments', contractRouter);
+  api.use('/assessments', obligationsBuyerRouter);
   api.use('/vendor', vendorPortalRouter);
   api.use('/vendor', complianceVendorRouter);
+  api.use('/vendor', obligationsVendorRouter);
   api.use('/organisation', organisationRouter);
   api.use('/feedback', feedbackRouter);
   api.use((_req, res) => res.status(404).json({ error: 'not_found', message: 'Not found.' }));
