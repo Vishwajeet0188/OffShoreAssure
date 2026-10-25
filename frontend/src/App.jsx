@@ -22,6 +22,7 @@ import Compliance, { ComplianceList } from './pages/Compliance.jsx';
 import ContractAnalysis, { ContractList } from './pages/ContractAnalysis.jsx';
 import Obligations, { ObligationsList } from './pages/Obligations.jsx';
 import Transfers, { TransfersList } from './pages/Transfers.jsx';
+import Risks, { RisksList } from './pages/Risks.jsx';
 import VendorObligations, { VendorObligationsList } from './pages/vendor/VendorObligations.jsx';
 import Organisation from './pages/Organisation.jsx';
 import RegisteredUsers from './pages/admin/RegisteredUsers.jsx';
@@ -87,6 +88,8 @@ export default function App() {
           <Route path="obligations/:ref" element={<Obligations />} />
           <Route path="transfers" element={<TransfersList />} />
           <Route path="transfers/:ref" element={<Transfers />} />
+          <Route path="risks" element={<RisksList />} />
+          <Route path="risks/:ref" element={<Risks />} />
         </Route>
         {/* Vendor (supplier) portal */}
         <Route path="vendor" element={<RequireVendorArea><AppLayout portal="vendor" /></RequireVendorArea>}>

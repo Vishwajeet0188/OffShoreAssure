@@ -22,7 +22,7 @@ export const STAGES = [
   { n: 6, slug: 'transfer-assessment', title: 'Transfer assessment', icon: 'globe', path: '/transfers',
     summary: 'Map data flows and transfer routes, and check recipients, roles and safeguards route by route.',
     steps: [[25, 'Map data flows and transfer routes', 'E', 'E'], [26, 'Check recipients, roles and safeguards', 'E', 'E'], [27, 'Transfer findings and questions', 'E', 'B'], [28, 'Save route-by-route assessment', 'E', 'R']] },
-  { n: 7, slug: 'risk-identification', title: 'Risk identification', icon: 'alert',
+  { n: 7, slug: 'risk-identification', title: 'Risk identification', icon: 'alert', path: '/risks',
     summary: 'Consolidate risks and gaps, apply scoring and evidence rules, and produce the risk register with its rationale.',
     steps: [[29, 'Consolidate risks and gaps', 'E', 'E'], [30, 'Apply scoring and evidence rules', 'E', 'E'], [31, 'Risk register and rationale', 'E', 'B'], [32, 'Save risk snapshot and linked sources', 'E', 'R']] },
   { n: 8, slug: 'remediation', title: 'Remediation', icon: 'flow',
@@ -35,7 +35,7 @@ export const STAGES = [
 ];
 
 /* Steps that are live in this build. */
-export const BUILT_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28];
+export const BUILT_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
 export const stageStatus = s => {
   const done = s.steps.filter(([n]) => BUILT_STEPS.includes(n)).length;
   return done === 0 ? 'not-started' : done === s.steps.length ? 'available' : 'partial';

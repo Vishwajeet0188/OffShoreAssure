@@ -64,6 +64,7 @@ export function AdminAssessmentDetail() {
       {d.contract?.versions.length ? <ContractPanel state={d.contract} /> : null}
       {d.obligations?.register ? <ObligationsPanel state={d.obligations} /> : null}
       {d.transfers?.result ? <TransfersPanel state={d.transfers} /> : null}
+      {d.risks?.register ? <RisksPanel state={d.risks} /> : null}
       <AssessmentResult a={a} buyerName={a.buyerName} />
       {d.profiles ? <ProfilePanel profiles={d.profiles} timeline={d.timeline} catalogue={d.controlCatalogue} /> : null}
     </>
@@ -183,6 +184,27 @@ function TransfersPanel({ state }) {
       <div className="asr-block">
         <h3>Routes</h3>
         <ul>{result.routes.map(route => <li key={route.id}>{route.fromName} → {route.toName}: {route.statusLabel}</li>)}</ul>
+      </div>
+    </section>
+  );
+}
+
+/* Stage 7 for the admin: the latest risk register (read-only). */
+function RisksPanel({ state }) {
+  const register = state.register;
+  const word = { CRITICAL: 'Critical', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' };
+  return (
+    <section className="card" data-section="admin-risks">
+      <div className="ch">
+        <div>
+          <h2>Stage 7 · Risk identification</h2>
+          <div className="sub">Version {register.version} · saved {fmtTime(register.createdAt)} · {register.totals.risks} risks from {register.totals.findings} findings</div>
+        </div>
+        <Badge s={register.totals.critical || register.totals.high ? 'Restricted' : register.totals.risks ? 'Attention' : 'Complete'} label={'Highest: ' + register.overall.label} />
+      </div>
+      <div className="asr-block">
+        <h3>Risks</h3>
+        <ul>{register.risks.map(risk => <li key={risk.id}>{risk.id} · {risk.title}: {word[risk.rating]} ({risk.likelihood} × {risk.impact} = {risk.score})</li>)}</ul>
       </div>
     </section>
   );

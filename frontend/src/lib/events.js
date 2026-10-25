@@ -45,6 +45,7 @@ export const EVENT_LABELS = {
   'contract.analysed': ['Contract analysed', 'sage'],
   'obligations.extracted': ['Obligations extracted', 'sage'],
   'transfers.assessed': ['Transfer assessment saved', 'sage'],
+  'risks.registered': ['Risk register saved', 'sage'],
   'requirement.corrected': ['Requirement corrected (new version)', 'amber'],
   'vendor.company_registered': ['Vendor company registered', 'plum'],
   'vendor.profile_updated': ['Vendor profile updated', 'mute'],

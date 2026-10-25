@@ -13,6 +13,7 @@ import { complianceState } from '../compliance/routes.js';
 import { contractState } from '../contracts/routes.js';
 import { obligationsState } from '../obligations/routes.js';
 import { transfersState } from '../transfers/routes.js';
+import { risksState } from '../risks/routes.js';
 import { tx } from '../db.js';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
@@ -234,7 +235,7 @@ adminRouter.get('/assessments/:ref', async (req, res) => {
   if (!a) return res.status(404).json({ error: 'not_found', message: 'Assessment not found.' });
   await tx(db => ensureProfile(db, req, a.id));
   res.json({ assessment: shapeAssessment(a, { title: a.title, buyerName: a.buyer_name, createdByEmail: a.created_by_email }), requirement: { id: a.requirement_id, data: a.data },
-    ...(await loadProfiles({ query }, a.id)), selection: await selectionState({ query }, a), compliance: await complianceState({ query }, a), contract: await contractState(query, a), obligations: await obligationsState(query, a), transfers: await transfersState(query, a) });
+    ...(await loadProfiles({ query }, a.id)), selection: await selectionState({ query }, a), compliance: await complianceState({ query }, a), contract: await contractState(query, a), obligations: await obligationsState(query, a), transfers: await transfersState(query, a), risks: await risksState(query, a) });
 });
 
 /* ---------------- Vendors (suppliers): companies and their verification (ASS-001) ---------------- */

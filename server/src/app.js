@@ -14,6 +14,7 @@ import { complianceBuyerRouter, complianceVendorRouter } from './compliance/rout
 import { contractRouter } from './contracts/routes.js';
 import { obligationsBuyerRouter, obligationsVendorRouter } from './obligations/routes.js';
 import { transfersRouter } from './transfers/routes.js';
+import { risksRouter } from './risks/routes.js';
 import { feedbackRouter } from './feedback/routes.js';
 import { organisationRouter } from './organisation/routes.js';
 import { COUNTRIES, CURRENCIES } from './reference/countries.js';
@@ -52,6 +53,7 @@ export function createApp() {
   api.use('/assessments', contractRouter);
   api.use('/assessments', obligationsBuyerRouter);
   api.use('/assessments', transfersRouter);
+  api.use('/assessments', risksRouter);
   api.use('/vendor', vendorPortalRouter);
   api.use('/vendor', complianceVendorRouter);
   api.use('/vendor', obligationsVendorRouter);

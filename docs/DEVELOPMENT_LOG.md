@@ -8,19 +8,21 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 - **Live prototype:** https://off-shore-assure.vercel.app (the Phase 1 prototype, from `main`)
 - **Branches:** one branch per stage, each built on the one before.
   - `stage-0-3`: Stages 0–3 (pushed 23 Oct)
-  - `stage-4-contract-analysis`: Stage 4 (local; not pushed yet)
-  - `stage-5-obligation-extraction`: Stage 5 (local; not pushed yet)
-  - `stage-6-transfer-assessment`: Stage 6 (current work, built on Stage 5)
-  - `main` stays on the Phase 1 prototype (the live Vercel site) until the client is ready.
-- **Last updated:** 23 Oct 2026, after Stage 6 (Transfer assessment complete)
+  - `ui-brand-updates`: brand colours, background `#FAF5EC`, site extras (pushed 24 Oct)
+  - `stage-2-vendor-routes`: Stage 2 rewritten to the client's v2 spec (pushed 24 Oct)
+  - `stage-4-contract-analysis`, `stage-5-obligation-extraction`, `stage-6-transfer-assessment`: rebuilt on `stage-2-vendor-routes` on 25 Oct (local; not pushed yet)
+  - `stage-7-risk-identification`: Stage 7 (current work, built on Stage 6)
+  - `main` stays on the Phase 1 prototype until the client is ready.
+- **Last updated:** 25 Oct 2026, after Stage 7 (Risk identification complete)
 
 ---
 
 ## 1. Where we are
 
 ### In plain words
-- **Done:** sign-up and login for buyers and vendors, the admin console, the public website, and **Stages 1–6**. A buyer describes the service and gets an Assessment ID with an "Information Required" summary, selects a verified vendor with a recorded reason, and sends that vendor a compliance questionnaire. The vendor answers it and uploads evidence; the buyer gets a provisional score with the gaps. The buyer then uploads the contract, and OffshoreAssure lists every clause and shows which important topics are covered or missing. OffshoreAssure then lists every obligation in the contract (who must do what, by when), checks it against the rules and shows the gaps; the vendor sees its own obligations. Finally it maps every route the data takes out of the UK and checks each one (adequacy, contract safeguard, risk assessment), with the questions to resolve.
-- **Next:** **Stage 7 — Risk identification.** Bring the gaps from Stages 3–6 together in one risk register.
+- **Done:** sign-up and login for buyers and vendors, the admin console, the public website, and **Stages 1–7**. A buyer describes the service and gets an Assessment ID with an "Information Required" summary, selects a verified vendor with a recorded reason, and sends that vendor a compliance questionnaire. The vendor answers it and uploads evidence; the buyer gets a provisional score with the gaps. The buyer then uploads the contract, and OffshoreAssure lists every clause and shows which important topics are covered or missing. OffshoreAssure then lists every obligation in the contract (who must do what, by when), checks it against the rules and shows the gaps; the vendor sees its own obligations. Finally it maps every route the data takes out of the UK and checks each one (adequacy, contract safeguard, risk assessment), with the questions to resolve.
+- **Also done (Stage 7):** every gap from Stages 1–6 is brought into one risk register, scored likelihood × impact, with the reason for each score and a link to where each finding came from.
+- **Next:** **Stage 8 — Remediation.** Turn each risk into an action for the buyer or vendor, collect proof, and re-check.
 - **Live site:** https://off-shore-assure.vercel.app runs `stage-0-3` (Vercel website, Render API, Neon database).
 - **Waiting on the client:** rule questions for Stages 1–6 (see section 5). The build uses provisional rules until they answer.
 
@@ -32,9 +34,9 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 | 3 · Compliance assessment | 10–16 | ✅ Done (22 Oct) |
 | 4 · Contract analysis | 17–20 | ✅ Done (23 Oct) |
 | 5 · Obligation extraction | 21–24 | ✅ Done (23 Oct) |
-| **6 · Transfer assessment** | 25–28 | ✅ **Done (23 Oct)** |
-| **7 · Risk identification** | 29–32 | ⏭️ **Next** |
-| 8 · Remediation | 33–38 | ⬜ Not started |
+| 6 · Transfer assessment | 25–28 | ✅ Done (23 Oct) |
+| **7 · Risk identification** | 29–32 | ✅ **Done (25 Oct)** |
+| **8 · Remediation** | 33–38 | ⏭️ **Next** |
 | 9 · Monitoring and audit | 39–43 | ⬜ Not started |
 
 ### Stage 1 step by step
@@ -95,8 +97,22 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 | 27 | Transfer findings and questions | Engine → Buyer | Status per route, findings, and the questions for the buyer and for the vendor | ✅ Done |
 | 28 | Save route-by-route assessment | Engine → Evidence Record | Saved as a locked version with the inputs it used and a fingerprint | ✅ Done |
 
+### Stage 7 step by step
+
+| Step | Title (diagram) | Who | What it means in simple words | Status |
+|---|---|---|---|---|
+| 29 | Consolidate risks and gaps | Engine | Every gap from Stages 1–6 is collected and grouped by subject (sub-processors, transfers, security …), so one subject = one risk | ✅ Done |
+| 30 | Apply scoring and evidence rules | Engine | Likelihood (1–5) × impact (1–5) = score (1–25); good Stage 3 evidence lowers the likelihood, sensitive data or a critical service raises the impact | ✅ Done |
+| 31 | Risk register and rationale | Engine → Buyer | The buyer sees the risks highest first, a 5 × 5 grid, the reason for each score and a link to each source | ✅ Done |
+| 32 | Save risk snapshot and linked sources | Engine → Evidence Record | Saved as a locked version with the versions of every source it read | ✅ Done |
+
 ### Stage completion notes
 Short notes written when a stage is finished: what it does, how to check it, and what comes next.
+
+- **Stage 7 — Risk identification (completed 25 Oct 2026, branch `stage-7-risk-identification`).**
+  - *What it does:* brings every gap from Stages 1–6 into one risk register, one risk per subject, scored likelihood × impact with the reason written out and each finding linked to its stage.
+  - *How to check:* buyer → Transfer assessment → **Open risk register** (or sidebar **7 · Risk identification**) → **Build risk register** → open a risk to see "Why this score" and its sources.
+  - *Next:* Stage 8, Remediation.
 
 - **Stage 6 — Transfer assessment (completed 23 Oct 2026, branch `stage-6-transfer-assessment`).**
   - *What it does:* lists every route personal data takes out of the UK and checks each one: restricted countries, who receives it, UK adequacy, the contract's transfer safeguard, the need for a transfer risk assessment, and the vendor's Stage 3 answers. Shows the findings and the questions to resolve.
@@ -327,6 +343,28 @@ Specifications for Stages 2–9 (field lists, rules) will come from the client s
 - **Database:** `006_org_membership.sql` adds `membership` (owner / member / pending / rejected), `membership_decided_by`, `membership_decided_at`. Existing data: the earliest user of each organisation becomes its owner, everyone else a member.
 - **API:** `GET /api/organisation`, `PATCH /api/organisation/members/:userId`, `PATCH /api/admin/buyers/members/:userId`.
 - **Tests:** API 34; browser 49 / 41 / 30, all pass (the roles run now covers a join request, the blocked pending member, and owner approval).
+
+### Stage 7 — Risk identification, Steps 29–32 (25 Oct 2026) ✅ — Stage 7 complete
+- **When:** after the transfer assessment (Stage 6) is saved. It runs again only when a source changes (requirement, selection, compliance result, contract, obligations or transfers).
+- **Step 29 · Consolidate:** reads the latest saved result of each stage:
+  - Stage 1: answers still "Unknown"
+  - Stage 2: open conditions and accepted exceptions of a conditional selection
+  - Stage 3: "No" and "Partly" answers, "Yes" without evidence, expired certificates
+  - Stage 4: expected contract topics not found
+  - Stage 5: rules with no obligation
+  - Stage 6: routes that are not permitted, missing a safeguard, need a risk assessment or need information
+  - Each finding goes under one of 15 subjects (international transfers, data protection terms, information security, breach handling, sub-processors, vendor identity, staff and confidentiality, data return and deletion, business continuity, sector rules, audit, service levels, insurance, general contract terms, unconfirmed requirement details). One subject = one risk, with all its findings.
+- **Step 30 · Score (5 × 5):**
+  - *Likelihood* from the worst finding: not permitted 5, missing or failed 4, partly in place 3, not confirmed 3; +1 when two or more stages point at it; −1 when the vendor scored 80+ on that subject's controls in Stage 3.
+  - *Impact* from the subject (e.g. transfers, data protection, security 4; sub-processors, continuity 3; audit, service levels 2); +1 for special-category or criminal-offence data on a data subject; +1 for a Critical service; never above 5.
+  - *Score* = likelihood × impact. Bands: **Low** 1–4, **Medium** 5–9, **High** 10–19, **Critical** 20–25.
+  - Each risk also shows the evidence held (Evidence held / Partly evidenced / No evidence / Not assessed) and who must act (buyer, vendor or both).
+- **Step 31 · Shown to the buyer:** totals, the highest rating, a 5 × 5 grid, and the register highest score first. Open a risk to see "Why this score" in plain words and each finding with a link back to its stage. Filters: rating, vendor to act, you to act.
+- **Step 32 · Saved:** register v1 with the version of each source and a fingerprint; locked in the database; a change in an earlier stage allows v2. Timeline steps 29–32; Stage 8 becomes "Next"; audit "Risk register saved". Admin sees a Stage 7 panel.
+- Rules are provisional (rule pack `RP-2026.10-S7-draft`, `server/src/engine/risks.js`). Never says "compliant".
+- **Also on 25 Oct:** Stages 4, 5 and 6 were rebuilt on top of the new Stage 2 (`stage-2-vendor-routes`) so the whole chain uses the v2 vendor selection and the `#FAF5EC` background.
+- **Database:** `016_stage7_risks.sql` (risk_registers, append-only).
+- **Tests:** API 79 (Stage 7: 5 new); browser: every stage run passes, plus a new Stage 7 run with 16 checks.
 
 ### Stage 2 rewritten to the client's v2 spec — three routes (23 Oct 2026) ✅
 Source: *Offshore Assure – Stage 2 Inputs and Outputs (2).pdf*. Branch: `stage-2-vendor-routes` (made from `ui-brand-updates`).
@@ -646,16 +684,18 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 
 | Suite | Count | Last result |
 |---|---|---|
-| API (`server`, `npm test`) | 68 (Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 8, Stage 3: 4, Stage 4: 6, Stage 5: 6, Stage 6: 5, Website: 2) | ✅ all pass |
+| API (`server`, `npm test`) | 79 (Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 13, Stage 3: 4, Stage 4: 6, Stage 5: 6, Stage 6: 5, Stage 7: 5, Website: 2, Sign-up source: 1) | ✅ all pass |
 | Browser, Stage 0 + admin console | 49 checks | ✅ all pass |
 | Browser, Stage 1 (Steps 1–4) + clean build | 48 checks | ✅ all pass |
 | Browser, roles (buyer / vendor / admin / membership) | 31 checks | ✅ all pass |
-| Browser, Stage 2 vendor selection | 22 checks | ✅ all pass |
+| Browser, Stage 2 vendor selection (v2) | 29 checks | ✅ all pass |
 | Browser, Stage 3 compliance assessment | 20 checks | ✅ all pass |
 | Browser, Stage 4 contract analysis | 19 checks | ✅ all pass |
 | Browser, Stage 5 obligation extraction | 15 checks | ✅ all pass |
 | Browser, Stage 6 transfer assessment | 12 checks | ✅ all pass |
-| Browser, public website pages, feedback, reviews + footer | 22 checks | ✅ all pass |
+| Browser, Stage 7 risk identification | 16 checks | ✅ all pass |
+| Browser, public website pages, feedback, reviews + footer | 24 checks | ✅ all pass |
+| Browser, site extras (dark mode, search, cookie notice …) | 24 checks | ✅ all pass |
 
 ---
 
@@ -670,12 +710,13 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 | Stage 1 requirement API | `server/src/requirements/routes.js` |
 | Stage 1 Step 2 engine rules | `server/src/engine/rulepack.js` |
 | Assessments (Step 2) | `server/src/assessments/service.js`, `routes.js` |
+| Stage 7 risk identification | `server/src/risks/routes.js` (API), `server/src/engine/risks.js` (themes, scoring, bands); `frontend/src/pages/Risks.jsx`, `src/lib/risks.js` |
 | Stage 6 transfer assessment | `server/src/transfers/routes.js` (API), `server/src/engine/transfers.js` (routes, adequacy, checks); `frontend/src/pages/Transfers.jsx`, `src/lib/transfers.js` |
 | Stage 5 obligation extraction | `server/src/obligations/routes.js` (buyer + vendor APIs), `server/src/engine/obligations.js` (extraction and rules); `frontend/src/pages/Obligations.jsx`, `src/pages/vendor/VendorObligations.jsx`, `src/lib/obligations.js` |
 | Stage 4 contract analysis | `server/src/contracts/routes.js` (APIs), `server/src/contracts/extract.js` (PDF/Word text), `server/src/engine/clauses.js` (clause rules); `frontend/src/pages/ContractAnalysis.jsx`, `src/lib/contracts.js` |
 | Stage 3 compliance assessment | `server/src/compliance/routes.js` (buyer + vendor APIs), `server/src/engine/questionnaire.js` (questions, evidence, scoring); `frontend/src/pages/Compliance.jsx`, `src/pages/vendor/VendorQuestionnaire.jsx`, `src/lib/compliance.js` |
 | Public website pages and feedback | `frontend/src/pages/site/*` (Home, HowItWorks, Solutions, About, parts), `src/components/layout/PublicLayout.jsx`, `src/pages/admin/AdminFeedback.jsx`; server `src/feedback/routes.js` |
-| Stage 2 vendor selection | `server/src/selection/routes.js` (APIs + vendor portal), `server/src/engine/matching.js` (match rules); `frontend/src/pages/VendorSelection.jsx`, `src/pages/vendor/VendorAssessments.jsx`, `src/lib/selection.js` |
+| Stage 2 vendor selection | `server/src/selection/routes.js` (APIs + vendor portal), `server/src/selection/vendorFields.js` (the 15 + 25 fields), `server/src/selection/vendors.js`, `server/src/engine/vendorFit.js` (fit rules); `frontend/src/pages/VendorSelection.jsx`, `src/pages/vendor/VendorAssessments.jsx`, `src/lib/selection.js` |
 | Information Required box (Step 4) | `server/src/engine/gaps.js`, `server/src/assessments/profile.js` (`issueSummary`, `buildSummary`); `frontend/src/components/requirements/InformationRequired.jsx` |
 | Profile, controls, timeline (Step 3) | `server/src/assessments/profile.js`, `server/src/engine/controls.js`, `server/src/storage.js` (encryption) |
 | Stage map (9 stages, 43 steps, built steps) | `frontend/src/lib/stages.js` |
@@ -688,9 +729,11 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 
 ## 9. Next
 
-1. **Stage 7 · Risk identification (Steps 29–32):**
-   - Step 29: consolidate the risks and gaps from Stages 3–6 (compliance gaps, missing contract topics, obligation gaps, transfer findings)
-   - Step 30: apply scoring and evidence rules (likelihood, impact, evidence held)
-   - Step 31: show the risk register with the reason for each risk
-   - Step 32: save the risk snapshot with links to its sources
-2. Needed from the client for Stage 7: the risk scoring method (likelihood × impact scale, rating bands) and who owns each risk.
+1. **Stage 8 · Remediation (Steps 33–38):**
+   - Step 33: the buyer approves or assigns an action for each risk
+   - Step 34: the vendor is asked for corrections and missing documents
+   - Step 35: the vendor submits evidence and a response
+   - Step 36: the affected checks run again
+   - Step 37: action and reassessment history saved
+   - Step 38: updated status and outstanding actions shown to the buyer
+2. Needed from the client for Stage 7–8: the risk scoring method (scale and bands), who owns each risk, and action deadlines.
