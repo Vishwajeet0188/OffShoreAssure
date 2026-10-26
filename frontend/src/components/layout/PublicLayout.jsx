@@ -8,7 +8,7 @@ import ThemeToggle from '../extras/ThemeToggle.jsx';
 import SkipLink from '../extras/SkipLink.jsx';
 import ScrollProgress from '../extras/ScrollProgress.jsx';
 import FloatingActions from '../extras/FloatingActions.jsx';
-import CookieNotice from '../extras/CookieNotice.jsx';
+import CookieNotice, { openCookieSettings } from '../extras/CookieNotice.jsx';
 import LastUpdated from '../extras/LastUpdated.jsx';
 
 /* The public website pages (separate routes). */
@@ -203,6 +203,9 @@ function Footer() {
             OffshoreAssure supports the buyer&rsquo;s decision. It does not give legal advice or certify
             compliance.
           </span>
+          <button type="button" className="lpf-top" onClick={openCookieSettings} data-act="cookie-settings">
+            Cookie settings
+          </button>
           <button
             className="lpf-top"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}

@@ -15,9 +15,10 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
   - `stage-8-remediation`: Stage 8 (local; built on Stage 7)
   - `stage-9-monitoring-audit`: Stage 9 (local; built on Stage 8)
   - `completion-items`: the five items found missing in the cross-check (local; built on Stage 9)
-  - `contact-support`: Contact page with support tickets; website search removed (current work, built on `completion-items`)
+  - `contact-support`: Contact page with support tickets; website search removed; code formatting (local; built on `completion-items`)
+  - `cookie-consent`: full-width cookie banner with Accept / Reject (current work, built on `contact-support`)
   - `main` stays on the Phase 1 prototype until the client is ready.
-- **Last updated:** 26 Oct 2026, after the Contact page fixes and code formatting
+- **Last updated:** 26 Oct 2026, after the cookie banner update
 
 ---
 
@@ -380,6 +381,13 @@ Specifications for Stages 2–9 (field lists, rules) will come from the client s
 - **Database:** `006_org_membership.sql` adds `membership` (owner / member / pending / rejected), `membership_decided_by`, `membership_decided_at`. Existing data: the earliest user of each organisation becomes its owner, everyone else a member.
 - **API:** `GET /api/organisation`, `PATCH /api/organisation/members/:userId`, `PATCH /api/admin/buyers/members/:userId`.
 - **Tests:** API 34; browser 49 / 41 / 30, all pass (the roles run now covers a join request, the blocked pending member, and owner approval).
+
+### Cookie banner: full width, Accept or Reject (26 Oct 2026) ✅
+- The cookie notice is now a **full-width bar at the bottom** of the screen with two equal buttons: **Reject non-essential** and **Accept cookies**. On a phone the buttons sit side by side under the text.
+- The choice is saved in the browser (`oa-cookie-consent`, with the date) and the bar does not come back. **Cookie settings** in the website footer opens it again and shows the current choice.
+- OffshoreAssure only sets one cookie, the sign-in session, which is strictly necessary, so sign-in works whichever is chosen. Any optional cookie added later (for example analytics) must check `cookieConsent() === 'accepted'` first.
+- While the bar is open, Contact us and Back to top move up above it.
+- **Tests:** the site-extras browser run now has 27 checks (full width, both buttons, reject remembered, settings reopen, accept saved, floating buttons above the bar).
 
 ### Fixes after the first try of the Contact page, and readable code (26 Oct 2026) ✅
 - **"Check a ticket" card:** the ticket header squeezed number, subject, date and status into one row, so in the narrow card the subject showed one word per line. The header now stacks (number and status, then the subject, then the date) and reads well at any width. Long text and email addresses wrap instead of pushing the page wider.

@@ -7164,36 +7164,81 @@ html[data-theme='dark'] {
   }
 }
 
-/* ---------- Cookie notice ---------- */
-.cookie-notice {
+/* ---------- Cookie banner (full width, bottom of the screen) ---------- */
+.cookie-banner {
   position: fixed;
-  left: 16px;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 55;
-  max-width: min(460px, calc(100vw - 32px));
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  padding: 14px 16px;
-  border-radius: 12px;
+  padding: 16px 0 calc(16px + env(safe-area-inset-bottom, 0px));
   background: var(--inverse);
   color: var(--on-inverse);
-  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.45);
-  font-size: 13.5px;
-  line-height: 1.5;
+  box-shadow: 0 -10px 30px -12px rgba(0, 0, 0, 0.45);
+  font-size: 14px;
+  line-height: 1.55;
 }
-.cookie-notice b {
+
+.cookie-banner-in {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-inline: 32px;
+}
+
+.cookie-banner p {
+  margin: 0;
+  max-width: 760px;
+}
+
+.cookie-banner b {
   color: inherit;
 }
-.cookie-notice .btn {
+
+.cookie-current {
+  opacity: 0.8;
+}
+
+.cookie-banner-actions {
+  display: flex;
   flex: none;
+  gap: 10px;
+}
+
+/* Reject is as easy to find as Accept: same size, outlined on the dark bar. */
+.cookie-banner .cookie-reject {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: transparent;
+  color: var(--on-inverse);
+}
+
+.cookie-banner .cookie-reject:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 760px) {
+  .cookie-banner-in {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding-inline: 16px;
+  }
+
+  .cookie-banner-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 /* ---------- Floating buttons (back to top, contact us) ---------- */
 .floating-actions {
   position: fixed;
   right: 16px;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  /* --cookie-banner-h is set while the cookie banner is open, so the buttons sit above it. */
+  bottom: calc(16px + var(--cookie-banner-h, 0px) + env(safe-area-inset-bottom, 0px));
   z-index: 50;
   display: flex;
   flex-direction: column;
@@ -7979,7 +8024,7 @@ main:focus {
   .lp-nav,
   .lp-foot,
   .floating-actions,
-  .cookie-notice,
+  .cookie-banner,
   .scroll-progress,
   .skip-link,
   .theme-toggle,
@@ -8012,13 +8057,6 @@ main:focus {
   }
   details > * {
     display: block;
-  }
-}
-@media (max-width: 640px) {
-  .cookie-notice {
-    max-width: calc(100vw - 92px);
-    flex-direction: column;
-    align-items: flex-start;
   }
 }
 
