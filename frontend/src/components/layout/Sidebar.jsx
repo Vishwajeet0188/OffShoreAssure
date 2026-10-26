@@ -4,7 +4,7 @@ import { Icon, BackArrow } from '../common/Icon.jsx';
 import { Logo, Waves } from './Brand.jsx';
 
 /* Sidebar. Buyer portal: Dashboard + the nine stages. Vendor portal: Dashboard + the vendor's part of the journey. */
-export default function Sidebar({ portal = 'buyer' }) {
+export default function Sidebar({ portal = 'buyer', open = false, onClose }) {
   const { pathname } = useLocation();
   const vendor = portal === 'vendor';
   const items = vendor
@@ -25,8 +25,18 @@ export default function Sidebar({ portal = 'buyer' }) {
         title: `Stage ${s.n} · ${s.title}`,
       }));
   return (
-    <aside className="side">
+    <aside className={'side' + (open ? ' open' : '')} id="workspace-menu">
       <Waves />
+      {/* Small screens only: close the slide-out menu. */}
+      <button
+        type="button"
+        className="side-close"
+        onClick={onClose}
+        aria-label="Close menu"
+        data-act="menu-close"
+      >
+        <Icon n="x" s={20} />
+      </button>
       <NavLink className="brand brandlink" to="/" title="OffshoreAssure home">
         <span className="wm">
           <Logo />

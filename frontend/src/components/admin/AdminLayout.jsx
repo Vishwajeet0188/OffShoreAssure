@@ -6,6 +6,7 @@ import ErrorBoundary from '../common/ErrorBoundary.jsx';
 import ThemeToggle from '../extras/ThemeToggle.jsx';
 import SkipLink from '../extras/SkipLink.jsx';
 import FloatingActions from '../extras/FloatingActions.jsx';
+import { useMobileMenu } from '../../hooks/useMobileMenu.js';
 
 /* Grouped by party. `stage` marks pages whose data arrives with a later build stage. */
 const NAV = [
@@ -44,10 +45,23 @@ export default function AdminLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const menu = useMobileMenu();
+
   return (
     <div className="adm">
       <SkipLink target="admin-content" />
       <header className="adm-top">
+        <button
+          type="button"
+          className="menu-btn on-dark"
+          onClick={menu.toggle}
+          aria-label={menu.open ? 'Close menu' : 'Open menu'}
+          aria-expanded={menu.open}
+          aria-controls="admin-menu"
+          data-act="menu"
+        >
+          <Icon n={menu.open ? 'x' : 'menu'} s={22} />
+        </button>
         <div className="adm-brand">
           <Logo w={34} h={26} />
           <span>
@@ -64,6 +78,7 @@ export default function AdminLayout() {
           <span className="adm-email">{user?.email}</span>
           <button
             className="btn sm"
+            data-act="signout"
             onClick={() => {
               navigate('/');
               logout();
@@ -74,7 +89,12 @@ export default function AdminLayout() {
         </div>
       </header>
       <div className="adm-body">
-        <nav className="adm-nav" aria-label="Admin">
+        <div
+          className={'nav-backdrop' + (menu.open ? ' open' : '')}
+          onClick={menu.close}
+          aria-hidden="true"
+        />
+        <nav className={'adm-nav' + (menu.open ? ' open' : '')} aria-label="Admin" id="admin-menu">
           {NAV.map(([grp, links]) => (
             <div key={grp || 'top'} className="adm-navsec">
               {grp ? <div className="adm-navgrp">{grp}</div> : null}

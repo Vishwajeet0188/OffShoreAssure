@@ -16,9 +16,10 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
   - `stage-9-monitoring-audit`: Stage 9 (local; built on Stage 8)
   - `completion-items`: the five items found missing in the cross-check (local; built on Stage 9)
   - `contact-support`: Contact page with support tickets; website search removed; code formatting (local; built on `completion-items`)
-  - `cookie-consent`: full-width cookie banner with Accept / Reject (current work, built on `contact-support`)
+  - `cookie-consent`: full-width cookie banner with Accept / Reject (local; built on `contact-support`)
+  - `mobile-menu`: slide-out menu on phones for the admin console and portals (current work, built on `cookie-consent`)
   - `main` stays on the Phase 1 prototype until the client is ready.
-- **Last updated:** 26 Oct 2026, after the cookie banner update
+- **Last updated:** 26 Oct 2026, after the slide-out menu on phones
 
 ---
 
@@ -381,6 +382,14 @@ Specifications for Stages 2–9 (field lists, rules) will come from the client s
 - **Database:** `006_org_membership.sql` adds `membership` (owner / member / pending / rejected), `membership_decided_by`, `membership_decided_at`. Existing data: the earliest user of each organisation becomes its owner, everyone else a member.
 - **API:** `GET /api/organisation`, `PATCH /api/organisation/members/:userId`, `PATCH /api/admin/buyers/members/:userId`.
 - **Tests:** API 34; browser 49 / 41 / 30, all pass (the roles run now covers a join request, the blocked pending member, and owner approval).
+
+### Slide-out menu on phones (26 Oct 2026) ✅
+- On small screens (860px wide or less) the admin console, buyer portal and vendor portal used to squeeze their menu into a strip you scrolled sideways. Now a **☰ button** in the header opens a **slide-out menu** from the left with every option, including the group names (Buyers, Suppliers, Platform …) and all 9 stages.
+- It closes when you choose an option, tap outside it, press Escape, or tap ✕ (in the admin header, or at the top of the portal menu). The page behind does not scroll while it is open.
+- Desktop is unchanged: the menu is always visible and there is no ☰ button.
+- On very narrow phones the "AD" badge in the admin header is hidden to make room.
+- Code: `frontend/src/hooks/useMobileMenu.js` (open / close behaviour), `AppLayout.jsx`, `Sidebar.jsx`, `Topbar.jsx`, `AdminLayout.jsx`, and a "Slide-out menu" section at the end of `styles.css`.
+- **Tests:** new browser run with 16 checks (admin, buyer, vendor on a phone; desktop unchanged).
 
 ### Cookie banner: full width, Accept or Reject (26 Oct 2026) ✅
 - The cookie notice is now a **full-width bar at the bottom** of the screen with two equal buttons: **Reject non-essential** and **Accept cookies**. On a phone the buttons sit side by side under the text.

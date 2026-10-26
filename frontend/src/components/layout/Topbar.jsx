@@ -3,9 +3,10 @@ import { useAuth, displayName } from '../../context/AuthContext.jsx';
 import { VERIFY_LABEL } from '../../lib/roles.js';
 import { Badge } from '../common/Badges.jsx';
 import ThemeToggle from '../extras/ThemeToggle.jsx';
+import { Icon } from '../common/Icon.jsx';
 
 /* Top bar: the role, the organisation, the signed-in user and sign out. */
-export default function Topbar({ portal = 'buyer' }) {
+export default function Topbar({ portal = 'buyer', menuOpen = false, onMenu }) {
   const auth = useAuth();
   const navigate = useNavigate();
   const name = displayName(auth.user, auth.profile);
@@ -19,6 +20,17 @@ export default function Topbar({ portal = 'buyer' }) {
   const v = auth.vendor?.verificationStatus;
   return (
     <header className="top">
+      <button
+        type="button"
+        className="menu-btn"
+        onClick={onMenu}
+        aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={menuOpen}
+        aria-controls="workspace-menu"
+        data-act="menu"
+      >
+        <Icon n={menuOpen ? 'x' : 'menu'} s={22} />
+      </button>
       <div className="top-role">
         <span className={'role-pill' + (vendor ? ' vendor' : '')} data-role={portal}>
           {vendor ? 'Vendor' : 'Buyer'}
