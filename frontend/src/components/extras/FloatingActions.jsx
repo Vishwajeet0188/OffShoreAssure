@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
-// Set VITE_CONTACT_EMAIL to show an email link; without it the button opens the feedback form.
-const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL || '';
-
-/* Bottom-right buttons: "Contact us" always, and "Back to top" once the page is scrolled down. */
+/* Bottom-right buttons: "Contact us" (opens the Contact page to raise a ticket), and "Back to top" once the page is scrolled down. */
 export default function FloatingActions({ showContact = true }) {
   const [scrolledDown, setScrolledDown] = useState(false);
+  const { pathname } = useLocation();
 
   useEffect(() => {
     const onScroll = () => setScrolledDown(window.scrollY > 600);
@@ -22,12 +20,8 @@ export default function FloatingActions({ showContact = true }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
         </button>
       ) : null}
-      {showContact ? (
-        CONTACT_EMAIL ? (
-          <a className="fab fab-contact" href={`mailto:${CONTACT_EMAIL}`} data-act="contact"><ContactIcon /><span>Contact us</span></a>
-        ) : (
-          <Link className="fab fab-contact" to="/#feedback" data-act="contact"><ContactIcon /><span>Contact us</span></Link>
-        )
+      {showContact && pathname !== '/contact' ? (
+        <Link className="fab fab-contact" to="/contact" data-act="contact"><ContactIcon /><span>Contact us</span></Link>
       ) : null}
     </div>
   );

@@ -13,7 +13,7 @@ const NAV = [
   ['Buyers', [['/admin/buyers', 'Organisations', 'building'], ['/admin/users', 'Buyer users', 'users'], ['/admin/assessments', 'Assessments', 'clipboard']]],
   ['Suppliers', [['/admin/vendors', 'Vendors', 'globe'], ['/admin/evidence', 'Evidence review', 'scan', 'Later']]],
   ['Outputs', [['/admin/reports', 'Reports', 'report']]],
-  ['Platform', [['/admin/rules', 'Rule base', 'scale'], ['/admin/team', 'Admin team', 'shield'], ['/admin/feedback', 'Website feedback', 'bell'], ['/admin/audit', 'Audit log', 'list'], ['/admin/settings', 'Platform settings', 'gear']]]
+  ['Platform', [['/admin/rules', 'Rule base', 'scale'], ['/admin/team', 'Admin team', 'shield'], ['/admin/tickets', 'Support tickets', 'ticket'], ['/admin/feedback', 'Website feedback', 'bell'], ['/admin/audit', 'Audit log', 'list'], ['/admin/settings', 'Platform settings', 'gear']]]
 ];
 
 /* OffshoreAssure admin console: a separate workspace from the buyer/supplier app. */

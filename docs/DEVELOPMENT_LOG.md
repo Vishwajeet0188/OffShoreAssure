@@ -14,9 +14,10 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
   - `stage-7-risk-identification`: Stage 7 (local; built on Stage 6)
   - `stage-8-remediation`: Stage 8 (local; built on Stage 7)
   - `stage-9-monitoring-audit`: Stage 9 (local; built on Stage 8)
-  - `completion-items`: the five items found missing in the cross-check (current work, built on Stage 9)
+  - `completion-items`: the five items found missing in the cross-check (local; built on Stage 9)
+  - `contact-support`: Contact page with support tickets; website search removed (current work, built on `completion-items`)
   - `main` stays on the Phase 1 prototype until the client is ready.
-- **Last updated:** 26 Oct 2026, after the completion items (monitored obligations, report PDF, automatic checks, buyer dashboard, rule base)
+- **Last updated:** 26 Oct 2026, after the Contact page and support tickets
 
 ---
 
@@ -379,6 +380,23 @@ Specifications for Stages 2–9 (field lists, rules) will come from the client s
 - **Database:** `006_org_membership.sql` adds `membership` (owner / member / pending / rejected), `membership_decided_by`, `membership_decided_at`. Existing data: the earliest user of each organisation becomes its owner, everyone else a member.
 - **API:** `GET /api/organisation`, `PATCH /api/organisation/members/:userId`, `PATCH /api/admin/buyers/members/:userId`.
 - **Tests:** API 34; browser 49 / 41 / 30, all pass (the roles run now covers a join request, the blocked pending member, and owner approval).
+
+### Contact page and support tickets; website search removed (26 Oct 2026) ✅
+- **Search removed** from the website header (and Ctrl+K): it did not help on a five-page site. `SiteSearch.jsx` and its styles are deleted.
+- **Contact us** (bottom-right on the website, and **Help and support** in the buyer and vendor sidebars) opens a new **Contact page** (`/contact`), laid out like the ScotWarm "Get in touch" page.
+- **Raise a ticket:** name, email, phone (optional), organisation (optional), what it is about, Assessment ID (optional), subject, message.
+  - Signed in, the name, email and organisation come from the account; the email cannot be changed and replies go to that account.
+  - Visitors can raise a ticket too. A hidden field stops spam robots, and there is a rate limit.
+  - On sending, the person gets a **ticket number** (`OA-TKT-2026-000001`) on screen, with a copy button, and by email.
+- **Seeing replies:** signed-in buyers and vendors see **Your tickets** under the form, each with its status and every remark from the team. Visitors use **Check a ticket** with the number and their email; the link in the emails fills in the number.
+- **Admin → Support tickets:**
+  - tabs Open / In progress / Closed / All with counts, and search
+  - each ticket shows the query and who raised it (buyer, vendor or visitor; signed in or not; linked assessment)
+  - **Reply** with a remark and change the status; closing needs a remark that says how it was resolved
+  - remarks and status changes are locked (append-only)
+  - the person is emailed on every update; admin names are not shown to them
+- **Database:** `020_support_tickets.sql` (support_tickets, support_ticket_events append-only).
+- **Tests:** API 104 (4 new); browser: every run passes, plus a new support run with 24 checks (visitor, buyer, vendor, admin, mobile); the extras run now checks the search is gone and Contact us opens the Contact page.
 
 ### Completion items from the cross-check (26 Oct 2026) ✅
 Checked every stage against the source documents. Five things they describe were only partly built; all five are now done, on branch `completion-items`.
@@ -787,7 +805,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 
 | Suite | Count | Last result |
 |---|---|---|
-| API (`server`, `npm test`) | 100 (Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 13, Stage 3: 4, Stage 4: 6, Stage 5: 6, Stage 6: 5, Stage 7: 5, Stage 8: 7, Stage 9: 8, Completion items: 6, Website: 2, Sign-up source: 1) | ✅ all pass |
+| API (`server`, `npm test`) | 104 (Support tickets: 4, Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 13, Stage 3: 4, Stage 4: 6, Stage 5: 6, Stage 6: 5, Stage 7: 5, Stage 8: 7, Stage 9: 8, Completion items: 6, Website: 2, Sign-up source: 1) | ✅ all pass |
 | Browser, Stage 0 + admin console | 49 checks | ✅ all pass |
 | Browser, Stage 1 (Steps 1–4) + clean build | 48 checks | ✅ all pass |
 | Browser, roles (buyer / vendor / admin / membership) | 32 checks | ✅ all pass |
@@ -800,8 +818,9 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 | Browser, Stage 8 remediation (buyer + vendor) | 24 checks | ✅ all pass |
 | Browser, Stage 9 monitoring and audit (buyer + vendor + admin) | 28 checks | ✅ all pass |
 | Browser, completion items (dashboard, PDF, missed obligations, rule base, automatic checks) | 21 checks | ✅ all pass |
+| Browser, Contact page and support tickets (visitor, buyer, vendor, admin) | 24 checks | ✅ all pass |
 | Browser, public website pages, feedback, reviews + footer | 24 checks | ✅ all pass |
-| Browser, site extras (dark mode, search, cookie notice …) | 24 checks | ✅ all pass |
+| Browser, site extras (dark mode, cookie notice, Contact us …) | 23 checks | ✅ all pass |
 
 ---
 
@@ -816,6 +835,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 | Stage 1 requirement API | `server/src/requirements/routes.js` |
 | Stage 1 Step 2 engine rules | `server/src/engine/rulepack.js` |
 | Assessments (Step 2) | `server/src/assessments/service.js`, `routes.js` |
+| Contact page and support tickets | `server/src/support/routes.js` (public + admin APIs); `frontend/src/pages/site/Contact.jsx`, `src/pages/admin/AdminTickets.jsx`, `src/components/extras/FloatingActions.jsx` |
 | Completion items | `server/src/monitoring/job.js` (automatic checks), `monitoring/routes.js`, `reports/pdf.js` (PDF), `rules/catalogue.js` (rule base), `assessments/routes.js` (`/alerts`), `engine/obligations.js` (trigger, consequence); `frontend/src/components/dashboard/Portfolio.jsx`, `src/pages/admin/AdminRules.jsx` |
 | Stage 9 monitoring and audit | `server/src/reports/routes.js` (report, audit pack, monitoring, vendor track record, admin reports), `server/src/engine/report.js` (compile, position, monitoring rules); `frontend/src/pages/Monitoring.jsx`, `src/pages/vendor/TrackRecord.jsx`, `src/pages/admin/AdminReports.jsx`, `src/lib/reports.js` |
 | Stage 8 remediation | `server/src/remediation/routes.js` (buyer + vendor APIs), `server/src/engine/remediation.js` (proposals, due dates, remaining risk); `frontend/src/pages/Remediation.jsx`, `src/pages/vendor/VendorActions.jsx`, `src/lib/remediation.js` |

@@ -19,6 +19,7 @@ import { remediationBuyerRouter, remediationVendorRouter } from './remediation/r
 import { reportsRouter, trackRecordRouter, adminReportsRouter } from './reports/routes.js';
 import { adminChecksRouter } from './monitoring/routes.js';
 import { adminRulesRouter } from './rules/routes.js';
+import { supportRouter, adminTicketsRouter } from './support/routes.js';
 import { feedbackRouter } from './feedback/routes.js';
 import { organisationRouter } from './organisation/routes.js';
 import { COUNTRIES, CURRENCIES } from './reference/countries.js';
@@ -49,6 +50,7 @@ export function createApp() {
   api.use('/admin', adminReportsRouter);
   api.use('/admin', adminChecksRouter);
   api.use('/admin', adminRulesRouter);
+  api.use('/admin', adminTicketsRouter);
   api.use('/admin', adminRouter);
   // Lists used by the sign-up and profile forms.
   api.get('/reference', (_req, res) => res.json({ countries: COUNTRIES, serviceCategories: SERVICE_CATEGORIES, sectors: SECTORS, buyerJobRoles: JOB_ROLES, vendorJobRoles: VENDOR_JOB_ROLES,
@@ -70,6 +72,7 @@ export function createApp() {
   api.use('/vendor', trackRecordRouter);
   api.use('/organisation', organisationRouter);
   api.use('/feedback', feedbackRouter);
+  api.use('/support', supportRouter);
   api.use((_req, res) => res.status(404).json({ error: 'not_found', message: 'Not found.' }));
 
   app.use('/api', api);

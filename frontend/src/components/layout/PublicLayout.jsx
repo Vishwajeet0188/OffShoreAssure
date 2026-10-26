@@ -5,7 +5,6 @@ import { Icon } from '../common/Icon.jsx';
 import { Logo } from './Brand.jsx';
 import { homeFor } from '../../lib/roles.js';
 import ThemeToggle from '../extras/ThemeToggle.jsx';
-import SiteSearch from '../extras/SiteSearch.jsx';
 import SkipLink from '../extras/SkipLink.jsx';
 import ScrollProgress from '../extras/ScrollProgress.jsx';
 import FloatingActions from '../extras/FloatingActions.jsx';
@@ -48,7 +47,6 @@ function LpNav() {
           </div>
         </nav>
         <div className="lp-tools">
-          <SiteSearch />
           <ThemeToggle />
         </div>
         <button className="lp-burger" data-act="lpmenu" aria-label={menu ? 'Close menu' : 'Open menu'} aria-expanded={menu} onClick={() => setMenu(m => !m)}><Icon n={menu ? 'x' : 'menu'} s={22} /></button>
@@ -72,7 +70,7 @@ function Footer() {
             <ul className="lpf-badges"><li><Icon n="shield" s={14} />Encrypted documents</li><li><Icon n="folder" s={14} />Full audit trail</li><li><Icon n="globe" s={14} />Built for UK organisations</li></ul>
           </div>
           {col('Platform', [['/how-it-works', 'How It Works'], ['/solutions', 'Solutions'], ['/', 'Home']])}
-          {col('Company', [['/about', 'About Us'], ['/#feedback', 'Send feedback'], ['/#feedback', 'Contact us']])}
+          {col('Company', [['/about', 'About Us'], ['/contact', 'Contact us'], ['/#feedback', 'Send feedback']])}
           {col(auth.user ? 'Your account' : 'Get started', auth.user
             ? [[homeFor(auth.user), auth.user.isAdmin ? 'Admin console' : auth.user.role === 'vendor' ? 'Vendor portal' : 'Dashboard']]
             : [['/signup?role=buyer', 'Register as a buyer'], ['/signup?role=vendor', 'Register as a vendor'], ['/login', 'Login']])}

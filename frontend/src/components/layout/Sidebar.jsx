@@ -20,6 +20,7 @@ export default function Sidebar({ portal = 'buyer' }) {
       <nav className="mods" aria-label="Workspace">
         <NavLink to={vendor ? '/vendor' : '/dashboard'} end className={({ isActive }) => 'mod' + (isActive ? ' on' : '')} title="Dashboard"><Icon n="home" s={19} /><span className="lbl">Dashboard</span></NavLink>
         {vendor ? null : <NavLink to="/organisation" className={({ isActive }) => 'mod' + (isActive ? ' on' : '')} title="Your organisation and its members"><Icon n="building" s={19} /><span className="lbl">Organisation</span></NavLink>}
+        <NavLink to="/contact" className="mod" title="Raise a support ticket and see the replies" data-act="contact"><Icon n="ticket" s={19} /><span className="lbl">Help and support</span></NavLink>
         <div className="mods-grp">{vendor ? 'Your part in the assessment' : 'Assessment stages'}</div>
         {items.map(it => {
           const on = pathname === it.to || pathname.startsWith(it.to + '/');

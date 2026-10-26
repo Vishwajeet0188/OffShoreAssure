@@ -6,6 +6,7 @@ import Home from './pages/site/Home.jsx';
 import HowItWorks from './pages/site/HowItWorks.jsx';
 import Solutions from './pages/site/Solutions.jsx';
 import About from './pages/site/About.jsx';
+import Contact from './pages/site/Contact.jsx';
 import AdminFeedback from './pages/admin/AdminFeedback.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
@@ -28,6 +29,7 @@ import Monitoring, { MonitoringList } from './pages/Monitoring.jsx';
 import TrackRecord from './pages/vendor/TrackRecord.jsx';
 import AdminReports from './pages/admin/AdminReports.jsx';
 import AdminRules from './pages/admin/AdminRules.jsx';
+import AdminTickets, { AdminTicketDetail } from './pages/admin/AdminTickets.jsx';
 import VendorActions, { VendorActionsList } from './pages/vendor/VendorActions.jsx';
 import VendorObligations, { VendorObligationsList } from './pages/vendor/VendorObligations.jsx';
 import Organisation from './pages/Organisation.jsx';
@@ -72,6 +74,7 @@ export default function App() {
           <Route path="how-it-works" element={<HowItWorks />} />
           <Route path="solutions" element={<Solutions />} />
           <Route path="about" element={<About />} />
+          <Route path="contact" element={<Contact />} />
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<Signup />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
@@ -136,6 +139,8 @@ export default function App() {
           <Route path="suppliers" element={<Navigate to="/admin/vendors" replace />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="rules" element={<AdminRules />} />
+          <Route path="tickets" element={<AdminTickets />} />
+          <Route path="tickets/:number" element={<AdminTicketDetail />} />
           <Route path="evidence" element={<ComingStage page="evidence" />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
