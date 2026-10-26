@@ -5,6 +5,11 @@
  * says someone "shall", "must", "will" or "agrees to" do something is an
  * obligation; "shall not" or "must not" is a prohibition; "may" is a right.
  * We also record who it applies to, any deadline, how often, and the condition.
+ * Each obligation is a monitored rule (Technical Architecture, Stage 5 lane):
+ * an owner, a trigger (what starts the clock) and a consequence (what the
+ * contract says happens if it is missed). The consequence is taken from the
+ * same clause first, then from a general breach clause; if the contract says
+ * nothing, it is left empty and shown as "Not stated in the contract".
  *
  * Step 22: each obligation is linked to the topics of its clause, to the
  * assurance controls (ASS-xxx) and to a short list of rules. A rule with no
@@ -117,6 +122,10 @@ const FREQUENCY_PATTERNS = [
 
 const CONDITION_PATTERN = /\b(if|where|when|unless|on termination|upon termination|in the event of|on|upon)\b\s+([^,;.]{6,80})/i;
 
+/* Words that say what happens when an obligation is missed. */
+const REMEDY_PATTERN = /\b(service credits?|fee (?:reduction|deduction)s?|liquidated damages|penalt(?:y|ies)|indemnif(?:y|ies|ication)|liable for|may (?:immediately )?terminate[^.;]*\b(?:breach|fails?|failure)|suspend)/i;
+const BREACH_PATTERN = /\b(material breach|breach of (?:this|the) agreement|fails? to (?:perform|comply))\b/i;
+
 const DEADLINE_PATTERN = /\b(?:within|no later than|at least|before)\s+\d+\s*(?:minutes?|hours?|(?:working |business )?days?|weeks?|months?)\b|\bwithout undue delay\b|\bimmediately\b/gi;
 
 /**
@@ -189,6 +198,33 @@ function findCondition(sentence) {
   return match[0].trim();
 }
 
+/* What starts the clock: the condition, else the deadline, else how often. */
+export function triggerFor({ condition, deadline, frequency }) {
+  if (condition) return condition;
+  if (deadline.length) return deadline.join(', ');
+  return frequency || null;
+}
+
+/*
+ * What the contract says happens if the obligation is missed: a remedy sentence
+ * in the same clause, else a general breach sentence anywhere in the contract.
+ */
+export function consequenceFor(sentence, clause, clauses) {
+  if (REMEDY_PATTERN.test(sentence)) return { text: sentence, clauseNumber: clause.number, scope: 'clause' };
+  // The same clause, then its section ("3.1" looks at 3.2, 3.3 …).
+  const section = String(clause.number || '').split('.')[0];
+  const nearby = [clause, ...clauses.filter(other => other !== clause && section && String(other.number || '').split('.')[0] === section)];
+  for (const other of nearby) {
+    const remedy = splitSentences(other.text).find(line => line !== sentence && REMEDY_PATTERN.test(line));
+    if (remedy) return { text: remedy, clauseNumber: other.number, scope: 'clause' };
+  }
+  for (const other of clauses) {
+    const general = splitSentences(other.text).find(line => BREACH_PATTERN.test(line) && REMEDY_PATTERN.test(line));
+    if (general) return { text: general, clauseNumber: other.number, scope: 'contract' };
+  }
+  return null;
+}
+
 function confidenceFor({ party, topics, modal }) {
   if (party !== 'unknown' && topics.length > 0 && modal !== 'will') return 'High';
   if (party !== 'unknown') return 'Medium';
@@ -214,15 +250,22 @@ export function extractObligations(clauses, parties = {}) {
 
       const topics = (clause.topics || []).map(topic => topic.topicId);
       const party = findParty(sentence, modal.match.index, partyNames);
+      const deadline = findDeadline(sentence);
+      const frequency = findFrequency(sentence);
+      const condition = findCondition(sentence);
 
       obligations.push({
         id: `OB-${String(obligations.length + 1).padStart(3, '0')}`,
         type: modal.type,
         party,
         text: sentence,
-        deadline: findDeadline(sentence),
-        frequency: findFrequency(sentence),
-        condition: findCondition(sentence),
+        deadline,
+        frequency,
+        condition,
+        trigger: triggerFor({ condition, deadline, frequency }),
+        consequence: modal.type === 'Right' ? null : consequenceFor(sentence, clause, clauses),
+        // Watched after signing: anything with a deadline or a repeat (e.g. "within 24 hours", "each month").
+        monitored: modal.type !== 'Right' && (deadline.length > 0 || !!frequency),
         source: { clauseId: clause.id, clauseNumber: clause.number, heading: clause.heading, page: clause.page },
         topics,
         confidence: confidenceFor({ party, topics, modal: modal.match[1].toLowerCase() }),

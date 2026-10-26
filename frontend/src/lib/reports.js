@@ -10,4 +10,6 @@ export const KIND_WORD = { renewal: 'Renewal', overdue: 'Overdue action', change
 export const STAGE_PATH = { 1: '/requirements', 2: '/vendor-selection', 3: '/compliance', 4: '/contract', 5: '/obligations', 6: '/transfers', 7: '/risks', 8: '/remediation' };
 
 export const packUrl = (reference, version) => `${API_BASE}/assessments/${reference}/report/${version}/pack`;
+export const pdfUrl = (reference, version) => `${API_BASE}/assessments/${reference}/report/${version}/pdf`;
+export const adminPdfUrl = (reference, version) => `${API_BASE}/admin/reports/${reference}/${version}/pdf`;
 export const shortHash = h => (h ? h.slice(0, 12) + '…' : '—');

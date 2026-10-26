@@ -27,6 +27,7 @@ import Remediation, { RemediationList } from './pages/Remediation.jsx';
 import Monitoring, { MonitoringList } from './pages/Monitoring.jsx';
 import TrackRecord from './pages/vendor/TrackRecord.jsx';
 import AdminReports from './pages/admin/AdminReports.jsx';
+import AdminRules from './pages/admin/AdminRules.jsx';
 import VendorActions, { VendorActionsList } from './pages/vendor/VendorActions.jsx';
 import VendorObligations, { VendorObligationsList } from './pages/vendor/VendorObligations.jsx';
 import Organisation from './pages/Organisation.jsx';
@@ -134,7 +135,8 @@ export default function App() {
           <Route path="vendors/:id" element={<AdminVendorDetail />} />
           <Route path="suppliers" element={<Navigate to="/admin/vendors" replace />} />
           <Route path="reports" element={<AdminReports />} />
-          {['evidence', 'rules'].map(k => <Route key={k} path={k} element={<ComingStage page={k} />} />)}
+          <Route path="rules" element={<AdminRules />} />
+          <Route path="evidence" element={<ComingStage page="evidence" />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

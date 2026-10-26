@@ -6,6 +6,7 @@
  *   GET   /report?version=N            an earlier report
  *   POST  /report                      step 39 "generate report" → 40 compile → 41 save → 42 show
  *   GET   /report/:version/pack        step 42: the audit pack (report + audit trail + timeline) as JSON
+ *   GET   /report/:version/pdf         step 42: the report as a PDF (buyer and admin only)
  *   POST  /monitoring                  step 39 "continue monitoring" / step 43 run the checks and save them
  *   POST  /monitoring/requests         step 43: ask the vendor for renewed certificates or insurance
  *
@@ -22,6 +23,7 @@ import { audit } from '../audit.js';
 import { requireAdmin, requireRole } from '../auth/session.js';
 import { buyerOrganisation, requireActiveMembership } from '../assessments/service.js';
 import { remediationState, notifyVendor } from '../remediation/routes.js';
+import { renderReportPdf } from './pdf.js';
 import { compileReport, monitoringItems, REVIEW_MONTHS, EXPIRY_WARNING_DAYS, S9_RULE_PACK, REPORT_NOTE } from '../engine/report.js';
 
 const AUDIT_STAGE = 'stage-9';
@@ -164,7 +166,7 @@ export async function reportState(db, a, requestedVersion = null) {
   const latest = reports[0] || null;
   const shown = requestedVersion ? reports.find(r => r.version === requestedVersion) : latest;
   const { rows: checks } = await db.query(
-    `SELECT m.*, u.email AS created_by_email FROM monitoring_checks m JOIN users u ON u.id = m.created_by
+    `SELECT m.*, u.email AS created_by_email FROM monitoring_checks m LEFT JOIN users u ON u.id = m.created_by
       WHERE m.assessment_id = $1 ORDER BY m.created_at DESC LIMIT 20`, [a.id]);
 
   const items = sources.blocked ? [] : monitoringItems({
@@ -187,7 +189,7 @@ export async function reportState(db, a, requestedVersion = null) {
     report: shapeReport(shown),
     monitoring: {
       items,
-      checks: checks.map(c => ({ at: c.created_at, by: c.created_by_email, choice: c.choice, note: c.note, reportVersion: c.report_version,
+      checks: checks.map(c => ({ at: c.created_at, by: c.created_by_email || 'OffshoreAssure (automatic)', choice: c.choice, note: c.note, reportVersion: c.report_version,
         found: c.items.length, attention: c.items.filter(i => i.severity !== 'low').length })),
       rules: { reviewMonths: REVIEW_MONTHS, expiryWarningDays: EXPIRY_WARNING_DAYS },
     },
@@ -301,6 +303,24 @@ reportsRouter.get('/:ref/report/:version/pack', async (req, res) => {
   });
 });
 
+/* Step 42: the report as a PDF. Built from the saved version only. */
+async function sendReportPdf(req, res, a) {
+  const { rows } = await query(
+    `SELECT r.*, u.email AS created_by_email FROM report_versions r LEFT JOIN users u ON u.id = r.created_by WHERE r.assessment_id = $1 ORDER BY r.version DESC`, [a.id]);
+  const r = rows.find(x => x.version === Number(req.params.version));
+  if (!r) return notFound(res, 'Report not found.');
+  const pdf = await renderReportPdf(shapeReport(r), rows.length);
+  await audit(req, 'report.pdf_downloaded', { stage: AUDIT_STAGE, ref: a.reference, detail: { reference: a.reference, version: r.version } });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${a.reference}-report-v${r.version}.pdf"`);
+  res.send(pdf);
+}
+
+reportsRouter.get('/:ref/report/:version/pdf', async (req, res) => {
+  const a = await findBuyerAssessment({ query }, req); if (!a) return notFound(res);
+  await sendReportPdf(req, res, a);
+});
+
 const monitorSchema = z.object({
   choice: z.enum(['monitor', 'check']).default('check'),
   note: z.string().trim().max(1000).optional().or(z.literal('')),
@@ -348,24 +368,7 @@ reportsRouter.post('/:ref/monitoring/requests', async (req, res) => {
     const chosen = p.data.keys.map(k => state.monitoring.items.find(i => i.key === k));
     if (chosen.some(i => !i || !i.canRequest)) return [409, { error: 'not_requestable', message: 'One of the items cannot be sent to the vendor, or has already been sent.' }];
 
-    const register = (await db.query('SELECT version FROM risk_registers WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1', [a.id])).rows[0];
-    let number = (await db.query('SELECT coalesce(max(number), 0) AS n FROM remediation_actions WHERE assessment_id = $1', [a.id])).rows[0].n;
-    const sent = [];
-    for (const item of chosen) {
-      number++;
-      const requests = [`Upload the renewed document: ${item.title}.`, 'Say in your response what changed (new expiry date, scope).'];
-      const { rows } = await db.query(
-        `INSERT INTO remediation_actions (assessment_id, number, register_version, risk_id, theme, title, owner, requests, needs_document, source_stages,
-                                          rating, score, status, due_on, suggested_due_on, buyer_note)
-         VALUES ($1, $2, $3, $4, 'monitoring', $5, 'vendor', $6, true, '[3]', $7, 0, 'OPEN', $8, $8, $9) RETURNING id`,
-        [a.id, number, register.version, item.key, 'Renewal: ' + item.title.replace(/ \(in \d+ days?\)$/, ''), JSON.stringify(requests),
-          item.severity === 'high' ? 'HIGH' : 'MEDIUM', item.dueOn, p.data.note || null]);
-      for (const event of ['proposed', 'assigned']) {
-        await db.query('INSERT INTO remediation_events (action_id, actor_id, actor_role, event, detail) VALUES ($1, $2, $3, $4, $5)',
-          [rows[0].id, req.user.id, req.user.role, event, JSON.stringify({ monitoring: item.key, dueOn: item.dueOn })]);
-      }
-      sent.push({ code: actionCode(number), title: item.title, due: item.dueOn });
-    }
+    const sent = await createRenewalRequests(db, a, chosen, { userId: req.user.id, role: req.user.role, note: p.data.note || null });
     await timeline(db, a.id, 43, `Renewal requested from ${a.vendor_name} (${sent.map(s => s.code).join(', ')})`, {});
     await audit(req, 'monitoring.requested', { db, stage: AUDIT_STAGE, ref: a.reference, detail: { reference: a.reference, actions: sent.map(s => s.code), keys: p.data.keys } });
     return [201, { state: await reportState(db, a), a, sent }];
@@ -378,6 +381,34 @@ reportsRouter.post('/:ref/monitoring/requests', async (req, res) => {
     'MONITORING', 'Renewed documents needed');
   res.status(201).json(out[1].state);
 });
+
+/*
+ * Step 43: each renewal becomes a Stage 8 action for the vendor (theme "monitoring";
+ * risk_id holds the monitoring key). Used by the buyer and by the automatic checks.
+ */
+export async function createRenewalRequests(db, a, items, { userId = null, role = 'system', note = null } = {}) {
+  const register = (await db.query('SELECT version FROM risk_registers WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1', [a.id])).rows[0];
+  let number = (await db.query('SELECT coalesce(max(number), 0) AS n FROM remediation_actions WHERE assessment_id = $1', [a.id])).rows[0].n;
+  const sent = [];
+  for (const item of items) {
+    number++;
+    const requests = [`Upload the renewed document: ${item.title}.`, 'Say in your response what changed (new expiry date, scope).'];
+    const { rows } = await db.query(
+      `INSERT INTO remediation_actions (assessment_id, number, register_version, risk_id, theme, title, owner, requests, needs_document, source_stages,
+                                        rating, score, status, due_on, suggested_due_on, buyer_note)
+       VALUES ($1, $2, $3, $4, 'monitoring', $5, 'vendor', $6, true, '[3]', $7, 0, 'OPEN', $8, $8, $9) RETURNING id`,
+      [a.id, number, register?.version || 0, item.key, 'Renewal: ' + item.title.replace(/ \(in \d+ days?\)$/, ''), JSON.stringify(requests),
+        item.severity === 'high' ? 'HIGH' : 'MEDIUM', item.dueOn, note]);
+    for (const event of ['proposed', 'assigned']) {
+      await db.query('INSERT INTO remediation_events (action_id, actor_id, actor_role, event, detail) VALUES ($1, $2, $3, $4, $5)',
+        [rows[0].id, userId, role, event, JSON.stringify({ monitoring: item.key, dueOn: item.dueOn, ...(userId ? {} : { automatic: true }) })]);
+    }
+    sent.push({ code: actionCode(number), title: item.title, due: item.dueOn });
+  }
+  return sent;
+}
+
+export { expiringEvidence, monitoringRequests };
 
 /* ================= Vendor: track record ================= */
 
@@ -431,6 +462,14 @@ trackRecordRouter.get('/track-record', async (req, res) => {
 /* ================= Admin: every report ================= */
 
 export const adminReportsRouter = Router();
+adminReportsRouter.get('/reports/:ref/:version/pdf', requireAdmin, async (req, res) => {
+  const a = (await query(
+    `SELECT a.*, r.title, o.name AS buyer_name, v.name AS vendor_name FROM assessments a JOIN requirements r ON r.id = a.requirement_id
+       JOIN organisations o ON o.id = a.buyer_id LEFT JOIN organisations v ON v.id = a.selected_vendor_id WHERE a.reference = $1`, [req.params.ref])).rows[0];
+  if (!a) return notFound(res);
+  await sendReportPdf(req, res, a);
+});
+
 adminReportsRouter.get('/reports', requireAdmin, async (_req, res) => {
   const { rows } = await query(
     `SELECT r.version, r.reason, r.position, r.snapshot_sha256, r.created_at, u.email AS created_by, a.reference, q.title, o.name AS buyer_name, v.name AS vendor_name

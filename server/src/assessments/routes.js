@@ -87,7 +87,8 @@ assessmentsRouter.get('/', async (req, res) => {
         (SELECT json_build_object('version', g.version, 'overall', g.overall, 'totals', g.totals)
            FROM risk_registers g WHERE g.assessment_id = a.id ORDER BY g.version DESC LIMIT 1) AS risks,
         (SELECT json_build_object('actions', count(*), 'open', count(*) FILTER (WHERE x.status IN ('PROPOSED', 'OPEN', 'RETURNED', 'SUBMITTED')),
-                'awaitingReview', count(*) FILTER (WHERE x.status = 'SUBMITTED'), 'closed', count(*) FILTER (WHERE x.status IN ('CLOSED', 'RISK_ACCEPTED')))
+                'awaitingReview', count(*) FILTER (WHERE x.status = 'SUBMITTED'), 'proposed', count(*) FILTER (WHERE x.status = 'PROPOSED'),
+                'overdue', count(*) FILTER (WHERE x.status IN ('OPEN', 'RETURNED') AND x.due_on < current_date), 'closed', count(*) FILTER (WHERE x.status IN ('CLOSED', 'RISK_ACCEPTED')))
            FROM remediation_actions x WHERE x.assessment_id = a.id HAVING count(*) > 0) AS remediation,
         (SELECT json_build_object('version', p.version, 'position', p.position, 'createdAt', p.created_at)
            FROM report_versions p WHERE p.assessment_id = a.id ORDER BY p.version DESC LIMIT 1) AS report
@@ -95,6 +96,42 @@ assessmentsRouter.get('/', async (req, res) => {
       LEFT JOIN compliance_assessments c ON c.assessment_id = a.id WHERE a.buyer_id = $1 ORDER BY a.created_at DESC`, [buyerId])).rows;
   res.json({ assessments: rows.map(a => shapeAssessment(a, { title: a.title, selectedVendor: a.selected_vendor, selectionVersion: a.selection_version, selectionStatus: a.selection_status, shortlisted: a.shortlisted,
     compliance: a.compliance_status ? { status: a.compliance_status, overall: a.compliance_score } : null, contract: a.contract || null, obligations: a.obligations || null, transfers: a.transfers || null, risks: a.risks || null, remediation: a.remediation || null, report: a.report || null })) });
+});
+
+/*
+ * Buyer dashboard alerts (Technical Architecture, "Buyer dashboard"): overdue actions,
+ * certificates or insurance expiring within 30 days (or already expired), and work
+ * waiting on the buyer (vendor responses to review, proposed actions to decide).
+ */
+const ALERT_EXPIRY_DAYS = 30;
+assessmentsRouter.get('/alerts', async (req, res) => {
+  const buyerId = await buyerOrganisation({ query }, req.user.id); if (!buyerId) return res.json({ alerts: [] });
+  const day = d => (d ? String(d instanceof Date ? d.toISOString() : d).slice(0, 10) : null);
+  const code = n => `ACT-${String(n).padStart(2, '0')}`;
+  const { rows: actions } = await query(
+    `SELECT a.reference, x.number, x.title, x.owner, x.status, x.due_on
+       FROM remediation_actions x JOIN assessments a ON a.id = x.assessment_id
+      WHERE a.buyer_id = $1 AND (x.status IN ('PROPOSED', 'SUBMITTED') OR (x.status IN ('OPEN', 'RETURNED') AND x.due_on < current_date))
+      ORDER BY x.due_on NULLS LAST, x.number`, [buyerId]);
+  const { rows: expiring } = await query(
+    `SELECT a.reference, e.file_name, e.doc_type, e.expires_on, v.name AS vendor_name
+       FROM compliance_evidence e JOIN compliance_assessments c ON c.id = e.compliance_id JOIN assessments a ON a.id = c.assessment_id
+       LEFT JOIN organisations v ON v.id = a.selected_vendor_id
+      WHERE a.buyer_id = $1 AND e.expires_on IS NOT NULL AND e.expires_on <= current_date + $2::int
+      ORDER BY e.expires_on`, [buyerId, ALERT_EXPIRY_DAYS]);
+  const today = new Date().toISOString().slice(0, 10);
+  const alerts = [
+    ...actions.filter(x => ['OPEN', 'RETURNED'].includes(x.status)).map(x => ({ kind: 'overdue', severity: 'high', reference: x.reference,
+      title: `${code(x.number)} is overdue (due ${day(x.due_on)})`, detail: `${x.title} · ${x.owner === 'vendor' ? 'vendor' : 'you'}`, path: '/remediation/' + x.reference })),
+    ...expiring.map(e => ({ kind: 'expiry', severity: day(e.expires_on) < today ? 'high' : 'medium', reference: e.reference,
+      title: day(e.expires_on) < today ? `${e.file_name} expired on ${day(e.expires_on)}` : `${e.file_name} expires on ${day(e.expires_on)}`,
+      detail: `${e.vendor_name || 'Vendor'} · ${e.doc_type === 'insurance' ? 'insurance' : 'certificate'}`, path: '/monitoring/' + e.reference })),
+    ...actions.filter(x => x.status === 'SUBMITTED').map(x => ({ kind: 'review', severity: 'medium', reference: x.reference,
+      title: `${code(x.number)} is waiting for your review`, detail: x.title, path: '/remediation/' + x.reference })),
+    ...actions.filter(x => x.status === 'PROPOSED').map(x => ({ kind: 'decide', severity: 'low', reference: x.reference,
+      title: `${code(x.number)} is proposed: approve, assign or accept the risk`, detail: x.title, path: '/remediation/' + x.reference })),
+  ];
+  res.json({ alerts, expiryDays: ALERT_EXPIRY_DAYS });
 });
 
 assessmentsRouter.get('/:ref', async (req, res) => {

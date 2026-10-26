@@ -85,6 +85,8 @@ const timeline = (db, assessmentId, step, title, detail = {}) => db.query(
  */
 async function reassess(db, req, assessment, reason) {
   const register = await latestRegister(db, assessment.id);
+  // Actions can exist before Stage 7 (a missed obligation reported in Stage 5): nothing to re-score yet.
+  if (!register) return null;
   const actions = await loadActions(db, assessment.id);
   const residual = residualRisks(register.risks, actions.map(engineView));
   const version = ((await db.query('SELECT max(version) AS v FROM remediation_snapshots WHERE assessment_id = $1', [assessment.id])).rows[0].v || 0) + 1;

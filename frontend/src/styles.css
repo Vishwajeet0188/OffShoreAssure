@@ -1377,6 +1377,33 @@ main:focus{outline:none}
 .last-updated{opacity:.8;margin-left:6px}
 
 /* ---------- Print: just the content, in black on white ---------- */
+/* Stage 5 · monitored obligations */
+.ob-if-missed{min-width:200px;max-width:280px}
+.ob-missed{display:flex;flex-direction:column;gap:6px;margin-top:6px;align-items:flex-start}
+.ob-missed-form{display:flex;flex-direction:column;gap:6px;width:100%}
+.ob-missed-form textarea{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line-2);border-radius:8px;background:var(--card);color:var(--ink);width:100%}
+
+/* Admin · rule base */
+.rb-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.rb-tab{display:inline-flex;gap:8px;align-items:center;padding:6px 12px 6px 6px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink-2);font:inherit;font-size:13px;cursor:pointer}
+.rb-tab.on{border-color:var(--copper-line);background:var(--copper-soft);color:var(--ink)}
+.mono-ish{font-weight:600;color:var(--ink)}
+
+/* Buyer dashboard */
+.dash-tiles-wide{grid-template-columns:repeat(6,minmax(0,1fr))}
+.dash-tile b.warn{color:var(--coral)}
+.dash-alert{cursor:pointer}
+.dash-alert:hover{background:var(--card-2)}
+.dash-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.dash-bars{display:flex;flex-direction:column;gap:10px;padding:16px 22px}
+.dash-bar{display:grid;grid-template-columns:130px minmax(0,1fr) 36px;gap:10px;align-items:center}
+.dash-bar b{text-align:right;font-variant-numeric:tabular-nums}
+.dash-bar-track{height:10px;border-radius:5px;background:var(--card-2);border:1px solid var(--line);overflow:hidden}
+.dash-bar-fill{display:block;height:100%;border-radius:0 4px 4px 0;min-width:0}
+.dash-bar-fill.b-coral{background:var(--coral)}.dash-bar-fill.b-amber{background:var(--amber)}.dash-bar-fill.b-sage{background:var(--sage)}
+@media (max-width:1100px){.dash-tiles-wide{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){.dash-charts{grid-template-columns:1fr}.dash-tiles-wide{grid-template-columns:repeat(2,minmax(0,1fr))}.dash-bar{grid-template-columns:100px minmax(0,1fr) 30px}}
+
 /* Stage 9 · Monitoring and audit */
 .mn-reason{font:inherit;font-size:13.5px;padding:8px 10px;border:1px solid var(--line-2);border-radius:8px;background:var(--card);color:var(--ink);max-width:520px}
 .mn-tools{align-items:center;flex-wrap:wrap}

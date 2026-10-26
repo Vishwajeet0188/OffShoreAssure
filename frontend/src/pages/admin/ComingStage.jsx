@@ -9,12 +9,6 @@ export const LATER_PAGES = {
     lead: 'Documents and answers suppliers submit against the controls, queued for review by the OffshoreAssure team.',
     will: ['Queue of supplier submissions waiting for review', 'Accept, or request more information, with a recorded reason', 'Overdue requests by supplier and buyer', 'Document integrity (SHA-256 hash) and version'],
     depends: 'Suppliers respond to evidence requests.'
-  },
-  rules: {
-    stage: 'Stage 1', party: 'Platform', title: 'Rule base',
-    lead: 'The controls and rules every assessment is checked against. Only the OffshoreAssure team can change them, and every change creates a new version.',
-    will: ['Control library ASS-001 to ASS-015', 'Risk tier and data classification rules', 'Which controls apply to which kind of service', 'Version history: who changed what, and when'],
-    depends: 'Stage 1 rules confirmed by the client (queries sent to Mukesh).'
   }
 };
 

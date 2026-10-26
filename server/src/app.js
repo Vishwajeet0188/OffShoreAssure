@@ -17,6 +17,8 @@ import { transfersRouter } from './transfers/routes.js';
 import { risksRouter } from './risks/routes.js';
 import { remediationBuyerRouter, remediationVendorRouter } from './remediation/routes.js';
 import { reportsRouter, trackRecordRouter, adminReportsRouter } from './reports/routes.js';
+import { adminChecksRouter } from './monitoring/routes.js';
+import { adminRulesRouter } from './rules/routes.js';
 import { feedbackRouter } from './feedback/routes.js';
 import { organisationRouter } from './organisation/routes.js';
 import { COUNTRIES, CURRENCIES } from './reference/countries.js';
@@ -45,6 +47,8 @@ export function createApp() {
   api.use('/auth', authRouter);
   api.use('/me', meRouter);
   api.use('/admin', adminReportsRouter);
+  api.use('/admin', adminChecksRouter);
+  api.use('/admin', adminRulesRouter);
   api.use('/admin', adminRouter);
   // Lists used by the sign-up and profile forms.
   api.get('/reference', (_req, res) => res.json({ countries: COUNTRIES, serviceCategories: SERVICE_CATEGORIES, sectors: SECTORS, buyerJobRoles: JOB_ROLES, vendorJobRoles: VENDOR_JOB_ROLES,

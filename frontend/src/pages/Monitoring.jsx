@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { fmtTime } from '../lib/format.js';
 import { serviceLabel } from '../lib/assessments.js';
-import { KIND_WORD, POSITION_TONE, SEVERITY_TONE, SEVERITY_WORD, STAGE_PATH, packUrl, shortHash } from '../lib/reports.js';
+import { KIND_WORD, POSITION_TONE, SEVERITY_TONE, SEVERITY_WORD, STAGE_PATH, packUrl, pdfUrl, shortHash } from '../lib/reports.js';
 import { PageHead } from '../components/common/PageHead.jsx';
 import { Icon } from '../components/common/Icon.jsx';
 import Loading from '../components/extras/Loading.jsx';
@@ -195,6 +195,7 @@ function ReportCard({ state, reference, onVersion }) {
       <div className="pad stack">
         <p style={{ margin: 0 }}><b>Position.</b> {c.position.detail}</p>
         <div className="row mn-tools">
+          <a className="btn sm primary" href={pdfUrl(reference, r.version)} data-act="download-pdf"><Icon n="file" s={14} /> Export report (PDF)</a>
           <a className="btn sm" href={packUrl(reference, r.version)} data-act="download-pack"><Icon n="file" s={14} /> Download the audit pack (JSON)</a>
           <button className="btn sm" onClick={() => window.print()} data-act="print-report">Print</button>
           {state.versions.length > 1 ? (
@@ -318,7 +319,7 @@ function MonitoringCard({ state, reference, busy, act }) {
         <div className="asr-block">
           <h3>Monitoring checks saved</h3>
           <ul className="rm-history">{checks.map((c, i) => (
-            <li key={i}><span className="mono note">{fmtTime(c.at)}</span> <b>{c.choice === 'monitor' ? 'Continue monitoring' : 'Check'}</b> · {c.attention ? `${c.attention} need attention` : 'nothing needs attention'}{c.reportVersion ? ` · report v${c.reportVersion}.0` : ''} <span className="note">· {c.by}</span></li>))}</ul>
+            <li key={i}><span className="mono note">{fmtTime(c.at)}</span> <b>{c.choice === 'monitor' ? 'Continue monitoring' : c.choice === 'auto' ? 'Automatic check' : 'Check'}</b> · {c.choice === 'auto' ? (c.note || 'records updated') : c.attention ? `${c.attention} need attention` : 'nothing needs attention'}{c.reportVersion ? ` · report v${c.reportVersion}.0` : ''} <span className="note">· {c.by}</span></li>))}</ul>
         </div>
       ) : null}
     </section>

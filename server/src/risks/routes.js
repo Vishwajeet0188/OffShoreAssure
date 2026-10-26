@@ -44,40 +44,47 @@ risksRouter.post('/:ref/risks', async (req, res) => {
     });
   }
 
-  const register = buildRiskRegister(sources);
-  const version = (latest?.version || 0) + 1;
-
-  await tx(async db => {
-    const snapshot = { reference: assessment.reference, version, inputs: sources.versions, rulePackVersion: S7_RULE_PACK, risks: register.risks };
-    const { rows } = await db.query(
-      `INSERT INTO risk_registers (assessment_id, version, inputs, rule_pack_version, overall, totals, grid, risks, snapshot_sha256, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING id, snapshot_sha256`,
-      [assessment.id, version, JSON.stringify(sources.versions), S7_RULE_PACK, JSON.stringify(register.overall),
-        JSON.stringify(register.totals), JSON.stringify(register.grid), JSON.stringify(register.risks),
-        sha256(JSON.stringify(snapshot)), req.user.id]
-    );
-
-    await recordOnTimeline(db, assessment, { version, register, registerId: rows[0].id });
-
-    await audit(req, 'risks.registered', {
-      db, stage: AUDIT_STAGE, ref: assessment.reference,
-      detail: {
-        reference: assessment.reference, version, overall: register.overall.rating, ...register.totals,
-        inputs: sources.versions, rulePackVersion: S7_RULE_PACK, snapshotSha256: rows[0].snapshot_sha256,
-      },
-    });
-  });
-
+  const version = await tx(db => saveRiskRegister(db, assessment, sources, { req }));
   res.status(201).json(await risksState(query, assessment, version));
 });
 
 /* ---------- Shared ---------- */
 
+/*
+ * Steps 29–32: build the register from the sources, save it and put it on the timeline.
+ * Called by the buyer (POST above) and by the automatic checks (req is null then).
+ */
+export async function saveRiskRegister(db, assessment, sources, { req = null, reason = null } = {}) {
+  const register = buildRiskRegister(sources);
+  const latest = await latestRegister(db.query.bind(db), assessment.id);
+  const version = (latest?.version || 0) + 1;
+  const snapshot = { reference: assessment.reference, version, inputs: sources.versions, rulePackVersion: S7_RULE_PACK, risks: register.risks };
+  const { rows } = await db.query(
+    `INSERT INTO risk_registers (assessment_id, version, inputs, rule_pack_version, overall, totals, grid, risks, snapshot_sha256, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     RETURNING id, snapshot_sha256`,
+    [assessment.id, version, JSON.stringify(sources.versions), S7_RULE_PACK, JSON.stringify(register.overall),
+      JSON.stringify(register.totals), JSON.stringify(register.grid), JSON.stringify(register.risks),
+      sha256(JSON.stringify(snapshot)), req?.user?.id || null]
+  );
+
+  await recordOnTimeline(db, assessment, { version, register, registerId: rows[0].id, reason });
+
+  await audit(req, 'risks.registered', {
+    db, stage: AUDIT_STAGE, ref: assessment.reference,
+    detail: {
+      reference: assessment.reference, version, overall: register.overall.rating, ...register.totals,
+      inputs: sources.versions, rulePackVersion: S7_RULE_PACK, snapshotSha256: rows[0].snapshot_sha256,
+      ...(reason ? { automatic: true, reason } : {}),
+    },
+  });
+  return version;
+}
+
 export async function risksState(run, assessment, requestedVersion = null) {
   const { rows: versions } = await run(
     `SELECT g.*, u.email AS created_by_email
-       FROM risk_registers g JOIN users u ON u.id = g.created_by
+       FROM risk_registers g LEFT JOIN users u ON u.id = g.created_by
       WHERE g.assessment_id = $1 ORDER BY g.version DESC`,
     [assessment.id]
   );
@@ -90,7 +97,7 @@ export async function risksState(run, assessment, requestedVersion = null) {
     blocked: sources.blocked,
     inputs: sources.blocked ? null : sources.versions,
     canRun: !sources.blocked && (!versions[0] || !sameInputs(versions[0].inputs, sources.versions)),
-    versions: versions.map(v => ({ version: v.version, overall: v.overall, totals: v.totals, createdAt: v.created_at, createdBy: v.created_by_email })),
+    versions: versions.map(v => ({ version: v.version, overall: v.overall, totals: v.totals, createdAt: v.created_at, createdBy: v.created_by_email || 'OffshoreAssure (automatic)' })),
     register: shown ? shapeRegister(shown) : null,
     scale: { ratings: RATINGS, severity: SEVERITY, themes: THEMES.map(t => ({ id: t.id, name: t.name, impact: t.impact })) },
   };
@@ -117,7 +124,7 @@ function shapeRegister(row) {
  * needs running again. Stage 7 follows the diagram: the transfer assessment
  * (Stage 6) must be saved first, which means Stages 2–5 are done too.
  */
-async function gatherSources(run, assessment) {
+export async function gatherSources(run, assessment) {
   const one = async (sql, params) => (await run(sql, params)).rows[0] || null;
 
   const transfers = await one('SELECT version, routes FROM transfer_assessments WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1', [assessment.id]);
@@ -152,7 +159,7 @@ async function gatherSources(run, assessment) {
   };
 }
 
-function sameInputs(a = {}, b = {}) {
+export function sameInputs(a = {}, b = {}) {
   return INPUT_KEYS.every(key => a[key] === b[key]);
 }
 
@@ -177,7 +184,7 @@ async function findBuyerAssessment(req) {
   return rows[0] || null;
 }
 
-async function recordOnTimeline(db, assessment, { version, register, registerId }) {
+async function recordOnTimeline(db, assessment, { version, register, registerId, reason = null }) {
   const addEvent = (step, title, detail = {}) => db.query(
     `INSERT INTO assessment_timeline (assessment_id, kind, stage, step, title, status, at, detail)
      VALUES ($1, 'event', 7, $2, $3, 'done', now(), $4)`,
@@ -185,6 +192,7 @@ async function recordOnTimeline(db, assessment, { version, register, registerId 
   );
 
   const { totals } = register;
+  if (reason) await addEvent(29, `Automatic check: ${reason}; risk register built again`, { version, automatic: true });
   await addEvent(29, `Risks and gaps consolidated: ${totals.findings} finding${totals.findings === 1 ? '' : 's'} into ${totals.risks} risk${totals.risks === 1 ? '' : 's'}`, { version });
   await addEvent(30, `Scoring and evidence rules applied: highest rating ${register.overall.label.toLowerCase()}`, { version, overall: register.overall.rating });
   await addEvent(31, `Risk register shared with the buyer (${totals.critical} critical, ${totals.high} high)`, { version });
