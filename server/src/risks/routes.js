@@ -40,7 +40,8 @@ risksRouter.post('/:ref/risks', async (req, res) => {
   if (latest && sameInputs(latest.inputs, sources.versions)) {
     return res.status(409).json({
       error: 'up_to_date',
-      message: 'Nothing has changed since the last risk register. Run it again after an earlier stage changes.',
+      message:
+        'Nothing has changed since the last risk register. Run it again after an earlier stage changes.',
     });
   }
 
@@ -58,23 +59,45 @@ export async function saveRiskRegister(db, assessment, sources, { req = null, re
   const register = buildRiskRegister(sources);
   const latest = await latestRegister(db.query.bind(db), assessment.id);
   const version = (latest?.version || 0) + 1;
-  const snapshot = { reference: assessment.reference, version, inputs: sources.versions, rulePackVersion: S7_RULE_PACK, risks: register.risks };
+  const snapshot = {
+    reference: assessment.reference,
+    version,
+    inputs: sources.versions,
+    rulePackVersion: S7_RULE_PACK,
+    risks: register.risks,
+  };
   const { rows } = await db.query(
     `INSERT INTO risk_registers (assessment_id, version, inputs, rule_pack_version, overall, totals, grid, risks, snapshot_sha256, created_by)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING id, snapshot_sha256`,
-    [assessment.id, version, JSON.stringify(sources.versions), S7_RULE_PACK, JSON.stringify(register.overall),
-      JSON.stringify(register.totals), JSON.stringify(register.grid), JSON.stringify(register.risks),
-      sha256(JSON.stringify(snapshot)), req?.user?.id || null]
+    [
+      assessment.id,
+      version,
+      JSON.stringify(sources.versions),
+      S7_RULE_PACK,
+      JSON.stringify(register.overall),
+      JSON.stringify(register.totals),
+      JSON.stringify(register.grid),
+      JSON.stringify(register.risks),
+      sha256(JSON.stringify(snapshot)),
+      req?.user?.id || null,
+    ],
   );
 
   await recordOnTimeline(db, assessment, { version, register, registerId: rows[0].id, reason });
 
   await audit(req, 'risks.registered', {
-    db, stage: AUDIT_STAGE, ref: assessment.reference,
+    db,
+    stage: AUDIT_STAGE,
+    ref: assessment.reference,
     detail: {
-      reference: assessment.reference, version, overall: register.overall.rating, ...register.totals,
-      inputs: sources.versions, rulePackVersion: S7_RULE_PACK, snapshotSha256: rows[0].snapshot_sha256,
+      reference: assessment.reference,
+      version,
+      overall: register.overall.rating,
+      ...register.totals,
+      inputs: sources.versions,
+      rulePackVersion: S7_RULE_PACK,
+      snapshotSha256: rows[0].snapshot_sha256,
       ...(reason ? { automatic: true, reason } : {}),
     },
   });
@@ -86,20 +109,36 @@ export async function risksState(run, assessment, requestedVersion = null) {
     `SELECT g.*, u.email AS created_by_email
        FROM risk_registers g LEFT JOIN users u ON u.id = g.created_by
       WHERE g.assessment_id = $1 ORDER BY g.version DESC`,
-    [assessment.id]
+    [assessment.id],
   );
   const shown = requestedVersion ? versions.find(v => v.version === requestedVersion) : versions[0];
   const sources = await gatherSources(run, assessment);
 
   return {
-    assessment: { reference: assessment.reference, title: assessment.title, buyerName: assessment.buyer_name },
-    vendor: assessment.selected_vendor_id ? { id: assessment.selected_vendor_id, name: assessment.vendor_name } : null,
+    assessment: {
+      reference: assessment.reference,
+      title: assessment.title,
+      buyerName: assessment.buyer_name,
+    },
+    vendor: assessment.selected_vendor_id
+      ? { id: assessment.selected_vendor_id, name: assessment.vendor_name }
+      : null,
     blocked: sources.blocked,
     inputs: sources.blocked ? null : sources.versions,
     canRun: !sources.blocked && (!versions[0] || !sameInputs(versions[0].inputs, sources.versions)),
-    versions: versions.map(v => ({ version: v.version, overall: v.overall, totals: v.totals, createdAt: v.created_at, createdBy: v.created_by_email || 'OffshoreAssure (automatic)' })),
+    versions: versions.map(v => ({
+      version: v.version,
+      overall: v.overall,
+      totals: v.totals,
+      createdAt: v.created_at,
+      createdBy: v.created_by_email || 'OffshoreAssure (automatic)',
+    })),
     register: shown ? shapeRegister(shown) : null,
-    scale: { ratings: RATINGS, severity: SEVERITY, themes: THEMES.map(t => ({ id: t.id, name: t.name, impact: t.impact })) },
+    scale: {
+      ratings: RATINGS,
+      severity: SEVERITY,
+      themes: THEMES.map(t => ({ id: t.id, name: t.name, impact: t.impact })),
+    },
   };
 }
 
@@ -127,23 +166,41 @@ function shapeRegister(row) {
 export async function gatherSources(run, assessment) {
   const one = async (sql, params) => (await run(sql, params)).rows[0] || null;
 
-  const transfers = await one('SELECT version, routes FROM transfer_assessments WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1', [assessment.id]);
+  const transfers = await one(
+    'SELECT version, routes FROM transfer_assessments WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1',
+    [assessment.id],
+  );
   if (!transfers) return { blocked: 'Run the transfer assessment first (Stage 6).' };
 
-  const profile = await one('SELECT version, original_submission FROM requirement_profiles WHERE assessment_id = $1 ORDER BY created_at DESC, id DESC LIMIT 1', [assessment.id]);
-  const selection = await one('SELECT version, status, match FROM vendor_selections WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1', [assessment.id]);
+  const profile = await one(
+    'SELECT version, original_submission FROM requirement_profiles WHERE assessment_id = $1 ORDER BY created_at DESC, id DESC LIMIT 1',
+    [assessment.id],
+  );
+  const selection = await one(
+    'SELECT version, status, match FROM vendor_selections WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1',
+    [assessment.id],
+  );
   const compliance = await one(
     `SELECT r.version, r.result FROM compliance_results r JOIN compliance_assessments c ON c.id = r.compliance_id
-      WHERE c.assessment_id = $1 ORDER BY r.version DESC LIMIT 1`, [assessment.id]);
+      WHERE c.assessment_id = $1 ORDER BY r.version DESC LIMIT 1`,
+    [assessment.id],
+  );
   const contract = await one(
     `SELECT d.version, ca.not_found FROM contract_documents d JOIN contract_analyses ca ON ca.contract_id = d.id
-      WHERE d.assessment_id = $1 ORDER BY d.version DESC LIMIT 1`, [assessment.id]);
-  const obligations = await one('SELECT version, gaps FROM obligation_registers WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1', [assessment.id]);
+      WHERE d.assessment_id = $1 ORDER BY d.version DESC LIMIT 1`,
+    [assessment.id],
+  );
+  const obligations = await one(
+    'SELECT version, gaps FROM obligation_registers WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1',
+    [assessment.id],
+  );
 
   return {
     blocked: null,
     requirement: profile?.original_submission || {},
-    selection: selection ? { version: selection.version, status: selection.status, fit: selection.match } : null,
+    selection: selection
+      ? { version: selection.version, status: selection.status, fit: selection.match }
+      : null,
     compliance: compliance ? { version: compliance.version, result: compliance.result } : null,
     contract: contract ? { version: contract.version, notFound: contract.not_found } : null,
     obligations: obligations ? { version: obligations.version, gaps: obligations.gaps } : null,
@@ -164,7 +221,10 @@ export function sameInputs(a = {}, b = {}) {
 }
 
 async function latestRegister(run, assessmentId) {
-  const { rows } = await run('SELECT version, inputs FROM risk_registers WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1', [assessmentId]);
+  const { rows } = await run(
+    'SELECT version, inputs FROM risk_registers WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1',
+    [assessmentId],
+  );
   return rows[0] || null;
 }
 
@@ -179,31 +239,48 @@ async function findBuyerAssessment(req) {
        JOIN organisations o ON o.id = a.buyer_id
        LEFT JOIN organisations v ON v.id = a.selected_vendor_id
       WHERE a.reference = $1 AND a.buyer_id = $2`,
-    [req.params.ref, buyerId]
+    [req.params.ref, buyerId],
   );
   return rows[0] || null;
 }
 
 async function recordOnTimeline(db, assessment, { version, register, registerId, reason = null }) {
-  const addEvent = (step, title, detail = {}) => db.query(
-    `INSERT INTO assessment_timeline (assessment_id, kind, stage, step, title, status, at, detail)
+  const addEvent = (step, title, detail = {}) =>
+    db.query(
+      `INSERT INTO assessment_timeline (assessment_id, kind, stage, step, title, status, at, detail)
      VALUES ($1, 'event', 7, $2, $3, 'done', now(), $4)`,
-    [assessment.id, step, title, JSON.stringify(detail)]
-  );
+      [assessment.id, step, title, JSON.stringify(detail)],
+    );
 
   const { totals } = register;
-  if (reason) await addEvent(29, `Automatic check: ${reason}; risk register built again`, { version, automatic: true });
-  await addEvent(29, `Risks and gaps consolidated: ${totals.findings} finding${totals.findings === 1 ? '' : 's'} into ${totals.risks} risk${totals.risks === 1 ? '' : 's'}`, { version });
-  await addEvent(30, `Scoring and evidence rules applied: highest rating ${register.overall.label.toLowerCase()}`, { version, overall: register.overall.rating });
-  await addEvent(31, `Risk register shared with the buyer (${totals.critical} critical, ${totals.high} high)`, { version });
+  if (reason)
+    await addEvent(29, `Automatic check: ${reason}; risk register built again`, { version, automatic: true });
+  await addEvent(
+    29,
+    `Risks and gaps consolidated: ${totals.findings} finding${totals.findings === 1 ? '' : 's'} into ${totals.risks} risk${totals.risks === 1 ? '' : 's'}`,
+    { version },
+  );
+  await addEvent(
+    30,
+    `Scoring and evidence rules applied: highest rating ${register.overall.label.toLowerCase()}`,
+    { version, overall: register.overall.rating },
+  );
+  await addEvent(
+    31,
+    `Risk register shared with the buyer (${totals.critical} critical, ${totals.high} high)`,
+    { version },
+  );
   await addEvent(32, `Risk snapshot v${version} saved with linked sources`, { version, registerId });
 
   if (version === 1) {
     // Stage 7 is done; Stage 8 (remediation) is next.
-    await db.query(`DELETE FROM assessment_timeline WHERE assessment_id = $1 AND stage = 7 AND step IS NULL AND kind = 'milestone'`, [assessment.id]);
+    await db.query(
+      `DELETE FROM assessment_timeline WHERE assessment_id = $1 AND stage = 7 AND step IS NULL AND kind = 'milestone'`,
+      [assessment.id],
+    );
     await db.query(
       `UPDATE assessment_timeline SET status = 'next' WHERE assessment_id = $1 AND stage = 8 AND step IS NULL AND status = 'pending'`,
-      [assessment.id]
+      [assessment.id],
     );
   }
 }

@@ -17,7 +17,7 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
   - `completion-items`: the five items found missing in the cross-check (local; built on Stage 9)
   - `contact-support`: Contact page with support tickets; website search removed (current work, built on `completion-items`)
   - `main` stays on the Phase 1 prototype until the client is ready.
-- **Last updated:** 26 Oct 2026, after the Contact page and support tickets
+- **Last updated:** 26 Oct 2026, after the Contact page fixes and code formatting
 
 ---
 
@@ -380,6 +380,13 @@ Specifications for Stages 2–9 (field lists, rules) will come from the client s
 - **Database:** `006_org_membership.sql` adds `membership` (owner / member / pending / rejected), `membership_decided_by`, `membership_decided_at`. Existing data: the earliest user of each organisation becomes its owner, everyone else a member.
 - **API:** `GET /api/organisation`, `PATCH /api/organisation/members/:userId`, `PATCH /api/admin/buyers/members/:userId`.
 - **Tests:** API 34; browser 49 / 41 / 30, all pass (the roles run now covers a join request, the blocked pending member, and owner approval).
+
+### Fixes after the first try of the Contact page, and readable code (26 Oct 2026) ✅
+- **"Check a ticket" card:** the ticket header squeezed number, subject, date and status into one row, so in the narrow card the subject showed one word per line. The header now stacks (number and status, then the subject, then the date) and reads well at any width. Long text and email addresses wrap instead of pushing the page wider.
+- **401 errors in the browser console:** every page load asked `/api/me`, which answers 401 when nobody is signed in, and browsers print that in red. The website now asks `/api/me/session`, which answers `{ user: null }` for a visitor. `/api/me` is unchanged for the rest of the app.
+- **Sign-in page:** said "buyer workspace" to everyone; it now says buyers, vendors and the OffshoreAssure team all sign in there and each goes to their own workspace. An account is taken where its role says (a buyer account always opens the buyer dashboard).
+- **Admin account:** `npm run seed:admin` now also unlocks the account (failed sign-ins and lock time are cleared) as well as setting the password.
+- **Readable code:** every JavaScript, JSX and CSS file is laid out with Prettier: one statement per line, long JSX, SQL and calls broken across lines, CSS one property per line. Settings are in `.prettierrc.json`; run `npx prettier --write "frontend/src/**/*.{js,jsx,css}" "server/src/**/*.js"` after changes. No behaviour changed: all 104 API tests and every browser run pass.
 
 ### Contact page and support tickets; website search removed (26 Oct 2026) ✅
 - **Search removed** from the website header (and Ctrl+K): it did not help on a five-page site. `SiteSearch.jsx` and its styles are deleted.

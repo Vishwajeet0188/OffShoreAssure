@@ -15,7 +15,11 @@ export default function AppLayout({ portal = 'buyer' }) {
       <Sidebar portal={portal} />
       <div className="main">
         <Topbar portal={portal} />
-        <main className="content" id="content" tabIndex={-1}><ErrorBoundary resetKey={pathname}><Outlet /></ErrorBoundary></main>
+        <main className="content" id="content" tabIndex={-1}>
+          <ErrorBoundary resetKey={pathname}>
+            <Outlet />
+          </ErrorBoundary>
+        </main>
       </div>
       <FloatingActions showContact={false} />
       <CookieNotice />

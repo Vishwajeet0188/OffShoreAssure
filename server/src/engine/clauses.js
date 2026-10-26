@@ -32,7 +32,15 @@ export const TOPICS = [
     id: 'data_protection',
     name: 'Data protection',
     headingWords: ['data protection', 'processing of personal data', 'personal data'],
-    phrases: ['personal data', 'data protection legislation', 'uk gdpr', 'documented instructions', 'data controller', 'data processor', 'processing'],
+    phrases: [
+      'personal data',
+      'data protection legislation',
+      'uk gdpr',
+      'documented instructions',
+      'data controller',
+      'data processor',
+      'processing',
+    ],
     controls: ['ASS-004'],
     expected: true,
   },
@@ -40,7 +48,15 @@ export const TOPICS = [
     id: 'security',
     name: 'Security measures',
     headingWords: ['security', 'information security'],
-    phrases: ['technical and organisational measures', 'encryption', 'multi-factor', 'access control', 'iso 27001', 'penetration test', 'vulnerability'],
+    phrases: [
+      'technical and organisational measures',
+      'encryption',
+      'multi-factor',
+      'access control',
+      'iso 27001',
+      'penetration test',
+      'vulnerability',
+    ],
     controls: ['ASS-002', 'ASS-003', 'ASS-009'],
     expected: true,
   },
@@ -48,7 +64,13 @@ export const TOPICS = [
     id: 'breach_notification',
     name: 'Breach and incident notification',
     headingWords: ['breach', 'incident', 'notification'],
-    phrases: ['personal data breach', 'security incident', 'notify the customer', 'without undue delay', 'becoming aware'],
+    phrases: [
+      'personal data breach',
+      'security incident',
+      'notify the customer',
+      'without undue delay',
+      'becoming aware',
+    ],
     controls: ['ASS-007'],
     expected: true,
   },
@@ -56,7 +78,14 @@ export const TOPICS = [
     id: 'subprocessors',
     name: 'Subcontractors and sub-processors',
     headingWords: ['sub-processor', 'subprocessor', 'subcontract', 'sub-contract'],
-    phrases: ['sub-processor', 'subprocessor', 'subcontractor', 'sub-contractor', 'prior written consent', 'flow down'],
+    phrases: [
+      'sub-processor',
+      'subprocessor',
+      'subcontractor',
+      'sub-contractor',
+      'prior written consent',
+      'flow down',
+    ],
     controls: ['ASS-006'],
     expected: true,
   },
@@ -64,7 +93,16 @@ export const TOPICS = [
     id: 'international_transfer',
     name: 'International data transfers',
     headingWords: ['international transfer', 'transfer', 'data location'],
-    phrases: ['outside the united kingdom', 'outside the uk', 'international data transfer agreement', 'idta', 'standard contractual clauses', 'adequacy', 'appropriate safeguard', 'transfer personal data'],
+    phrases: [
+      'outside the united kingdom',
+      'outside the uk',
+      'international data transfer agreement',
+      'idta',
+      'standard contractual clauses',
+      'adequacy',
+      'appropriate safeguard',
+      'transfer personal data',
+    ],
     controls: ['ASS-005'],
     expected: true,
   },
@@ -80,7 +118,14 @@ export const TOPICS = [
     id: 'return_deletion',
     name: 'Return and deletion of data',
     headingWords: ['return', 'deletion', 'exit'],
-    phrases: ['return or securely delete', 'return or delete', 'delete all personal data', 'destroy', 'exit plan', 'retention'],
+    phrases: [
+      'return or securely delete',
+      'return or delete',
+      'delete all personal data',
+      'destroy',
+      'exit plan',
+      'retention',
+    ],
     controls: ['ASS-014'],
     expected: true,
   },
@@ -88,7 +133,15 @@ export const TOPICS = [
     id: 'service_levels',
     name: 'Service levels',
     headingWords: ['service level', 'sla', 'performance'],
-    phrases: ['service level', 'respond', 'resolve', 'availability', 'service credit', 'uptime', 'priority 1'],
+    phrases: [
+      'service level',
+      'respond',
+      'resolve',
+      'availability',
+      'service credit',
+      'uptime',
+      'priority 1',
+    ],
     controls: ['ASS-012'],
     expected: false,
   },
@@ -263,13 +316,17 @@ function confidenceLabel(headingMatched, phraseCount) {
 export function findKeyTerms(text) {
   const terms = [];
 
-  const timeLimits = text.match(/\b(?:within|at least|no later than|on)\s+\d+\s*(?:minutes?|hours?|(?:working |business )?days?|weeks?|months?)(?:'|’)?/gi) || [];
+  const timeLimits =
+    text.match(
+      /\b(?:within|at least|no later than|on)\s+\d+\s*(?:minutes?|hours?|(?:working |business )?days?|weeks?|months?)(?:'|’)?/gi,
+    ) || [];
   for (const value of timeLimits) terms.push({ kind: 'Time limit', value: value.replace(/['’]$/, '') });
 
   const percentages = text.match(/\b\d{1,3}(?:\.\d+)?\s?%/g) || [];
   for (const value of percentages) terms.push({ kind: 'Percentage', value });
 
-  const amounts = text.match(/(?:£|\$|€|GBP\s?|USD\s?|INR\s?)\d[\d,]*(?:\.\d+)?(?:\s?(?:million|m|k))?/g) || [];
+  const amounts =
+    text.match(/(?:£|\$|€|GBP\s?|USD\s?|INR\s?)\d[\d,]*(?:\.\d+)?(?:\s?(?:million|m|k))?/g) || [];
   for (const value of amounts) terms.push({ kind: 'Amount', value: value.trim() });
 
   return terms;

@@ -41,26 +41,52 @@ export function ObligationsList() {
         {!assessments ? (
           <Loading pad />
         ) : assessments.length === 0 ? (
-          <p className="note pad">No assessments yet. Start with <Link className="link" to="/requirements">Stage 1 · Requirement</Link>.</p>
+          <p className="note pad">
+            No assessments yet. Start with{' '}
+            <Link className="link" to="/requirements">
+              Stage 1 · Requirement
+            </Link>
+            .
+          </p>
         ) : (
           <div className="tw">
             <table>
               <thead>
-                <tr><th>Assessment</th><th>Service</th><th>Vendor</th><th>Obligations</th><th></th></tr>
+                <tr>
+                  <th>Assessment</th>
+                  <th>Service</th>
+                  <th>Vendor</th>
+                  <th>Obligations</th>
+                  <th></th>
+                </tr>
               </thead>
               <tbody>
                 {assessments.map(assessment => (
-                  <tr key={assessment.reference} className="click" onClick={() => navigate('/obligations/' + assessment.reference)}>
+                  <tr
+                    key={assessment.reference}
+                    className="click"
+                    onClick={() => navigate('/obligations/' + assessment.reference)}
+                  >
                     <td>
-                      <Link className="adm-ulink" to={'/obligations/' + assessment.reference} onClick={e => e.stopPropagation()}>
+                      <Link
+                        className="adm-ulink"
+                        to={'/obligations/' + assessment.reference}
+                        onClick={e => e.stopPropagation()}
+                      >
                         <b className="mono">{assessment.reference}</b>
                       </Link>
                       <div className="note">{assessment.title}</div>
                     </td>
                     <td>{serviceLabel(assessment.serviceCode)}</td>
                     <td>{assessment.selectedVendor || <span className="muted">Not selected yet</span>}</td>
-                    <td><RegisterStatus assessment={assessment} /></td>
-                    <td style={{ textAlign: 'right' }}><span className="link">Open <Icon n="arrow" s={13} /></span></td>
+                    <td>
+                      <RegisterStatus assessment={assessment} />
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <span className="link">
+                        Open <Icon n="arrow" s={13} />
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -76,7 +102,9 @@ function RegisterStatus({ assessment }) {
   const register = assessment.obligations;
   if (register) {
     const { obligations, prohibitions, rights } = register.totals;
-    return <Badge s="Complete" label={`v${register.version} · ${obligations + prohibitions + rights} items`} />;
+    return (
+      <Badge s="Complete" label={`v${register.version} · ${obligations + prohibitions + rights} items`} />
+    );
   }
   if (assessment.contract) return <span className="muted">Ready to extract</span>;
   return <span className="muted">Waiting for Stage 4</span>;
@@ -89,14 +117,19 @@ export default function Obligations() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback((version) => {
-    const query = version ? `?version=${version}` : '';
-    return api(`/assessments/${ref}/obligations${query}`)
-      .then(setState)
-      .catch(err => setError(err.message));
-  }, [ref]);
+  const load = useCallback(
+    version => {
+      const query = version ? `?version=${version}` : '';
+      return api(`/assessments/${ref}/obligations${query}`)
+        .then(setState)
+        .catch(err => setError(err.message));
+    },
+    [ref],
+  );
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   async function extract() {
     setBusy(true);
@@ -118,7 +151,13 @@ export default function Obligations() {
 
   return (
     <div className="vs">
-      <Link className="link" to="/obligations" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>← Obligation extraction</Link>
+      <Link
+        className="link"
+        to="/obligations"
+        style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}
+      >
+        ← Obligation extraction
+      </Link>
       <PageHead
         eyebrow={`Buyer · Stage 5 · Obligation extraction · ${state.assessment.reference}`}
         title={state.assessment.title}
@@ -129,19 +168,29 @@ export default function Obligations() {
       <ol className="vs-steps" aria-label="Stage 5 steps">
         {STEPS.map(([number, title]) => (
           <li key={number} className={number <= lastDoneStep ? 'done' : ''}>
-            <span className="journey-n">{number}</span>{title}
+            <span className="journey-n">{number}</span>
+            {title}
           </li>
         ))}
       </ol>
 
-      {error ? <div className="rq-msg err" role="alert"><b>{error}</b></div> : null}
+      {error ? (
+        <div className="rq-msg err" role="alert">
+          <b>{error}</b>
+        </div>
+      ) : null}
 
       {state.blocked ? (
         <section className="card pad stack" data-section="obligations-blocked">
           <h2 style={{ margin: 0 }}>Extract the obligations</h2>
           <div className="rq-flag warning">
             <Icon n="alert" s={16} />
-            <span>{state.blocked} <Link className="link" to={'/contract/' + ref}>Open contract analysis</Link></span>
+            <span>
+              {state.blocked}{' '}
+              <Link className="link" to={'/contract/' + ref}>
+                Open contract analysis
+              </Link>
+            </span>
           </div>
         </section>
       ) : state.canExtract ? (
@@ -153,14 +202,28 @@ export default function Obligations() {
           <VersionBar state={state} onPick={load} />
           <SummaryCard register={register} />
           <RuleTrace register={register} />
-          <RegisterTable register={register} topics={state.topics} parties={state.parties} missed={state.missed || []} reference={ref} latest={!state.versions.length || state.versions[0].version === register.version} onChange={setState} />
+          <RegisterTable
+            register={register}
+            topics={state.topics}
+            parties={state.parties}
+            missed={state.missed || []}
+            reference={ref}
+            latest={!state.versions.length || state.versions[0].version === register.version}
+            onChange={setState}
+          />
           <div className="card rq-next">
             <Icon n="clock" s={20} />
             <div>
               <b>Stage 5 is complete for this assessment. Next: Stage 6 — Transfer assessment.</b>{' '}
               <span className="note">Check every route your data takes out of the UK.</span>
             </div>
-            <Link className="btn primary" to={'/transfers/' + state.assessment.reference} data-act="go-transfers">Open transfer assessment</Link>
+            <Link
+              className="btn primary"
+              to={'/transfers/' + state.assessment.reference}
+              data-act="go-transfers"
+            >
+              Open transfer assessment
+            </Link>
           </div>
         </>
       ) : null}
@@ -172,19 +235,37 @@ function ExtractCard({ state, busy, onExtract }) {
   const isUpdate = state.versions.length > 0;
   return (
     <section className="card pad stack" data-section="obligations-extract">
-      <h2 style={{ margin: 0 }}>{isUpdate ? `A newer contract (v${state.contract.version}) is available` : 'Step 21 · Extract the obligations'}</h2>
+      <h2 style={{ margin: 0 }}>
+        {isUpdate
+          ? `A newer contract (v${state.contract.version}) is available`
+          : 'Step 21 · Extract the obligations'}
+      </h2>
       <p style={{ margin: 0 }}>
-        OffshoreAssure reads the <b>{state.contract.clauses} clauses</b> of <b>{state.contract.fileName}</b> (v{state.contract.version}),
-        finds every obligation, prohibition and right, works out who each one applies to, and checks them against the rules.
+        OffshoreAssure reads the <b>{state.contract.clauses} clauses</b> of <b>{state.contract.fileName}</b>{' '}
+        (v{state.contract.version}), finds every obligation, prohibition and right, works out who each one
+        applies to, and checks them against the rules.
       </p>
       <ul className="cp-facts">
-        <li><Icon n="users" s={15} />Vendor, buyer or both</li>
-        <li><Icon n="clock" s={15} />Deadlines and how often</li>
-        <li><Icon n="doc" s={15} />Linked to the source clause</li>
+        <li>
+          <Icon n="users" s={15} />
+          Vendor, buyer or both
+        </li>
+        <li>
+          <Icon n="clock" s={15} />
+          Deadlines and how often
+        </li>
+        <li>
+          <Icon n="doc" s={15} />
+          Linked to the source clause
+        </li>
       </ul>
       <div>
         <button className="btn primary" onClick={onExtract} disabled={busy} data-act="extract-obligations">
-          {busy ? 'Extracting…' : isUpdate ? `Extract again from contract v${state.contract.version}` : 'Extract obligations'}
+          {busy
+            ? 'Extracting…'
+            : isUpdate
+              ? `Extract again from contract v${state.contract.version}`
+              : 'Extract obligations'}
         </button>
       </div>
     </section>
@@ -200,16 +281,24 @@ function VersionBar({ state, onPick }) {
         <div>
           <b>Obligation register v{register.version}</b>
           <div className="note">
-            From contract v{register.contractVersion} · saved {fmtTime(register.createdAt)} · rule pack {register.rulePackVersion}
+            From contract v{register.contractVersion} · saved {fmtTime(register.createdAt)} · rule pack{' '}
+            {register.rulePackVersion}
           </div>
-          <div className="note">Fingerprint <span className="mono">{register.snapshotSha256.slice(0, 16)}…</span></div>
+          <div className="note">
+            Fingerprint <span className="mono">{register.snapshotSha256.slice(0, 16)}…</span>
+          </div>
         </div>
       </div>
       {state.versions.length > 1 ? (
-        <select aria-label="Register version" value={register.version} onChange={e => onPick(Number(e.target.value))}>
+        <select
+          aria-label="Register version"
+          value={register.version}
+          onChange={e => onPick(Number(e.target.value))}
+        >
           {state.versions.map(v => (
             <option key={v.version} value={v.version}>
-              v{v.version} · contract v{v.contractVersion}{v.version === state.versions[0].version ? ' (latest)' : ''}
+              v{v.version} · contract v{v.contractVersion}
+              {v.version === state.versions[0].version ? ' (latest)' : ''}
             </option>
           ))}
         </select>
@@ -238,26 +327,44 @@ function SummaryCard({ register }) {
       <div className="asr-head">
         <div>
           <div className="eyebrow">Steps 21–23 · Obligations, sources and confidence</div>
-          <h2 className="prf-title" style={{ margin: '4px 0' }}>Who must do what</h2>
+          <h2 className="prf-title" style={{ margin: '4px 0' }}>
+            Who must do what
+          </h2>
           <div className="ob-parties">
-            {parties.map(([label, value, tone]) => <span key={label} className={'b ' + tone}>{label}: {value}</span>)}
+            {parties.map(([label, value, tone]) => (
+              <span key={label} className={'b ' + tone}>
+                {label}: {value}
+              </span>
+            ))}
           </div>
         </div>
       </div>
       <div className="ca-figures">
-        {figures.map(([label, value]) => <div key={label}><b>{value}</b><span>{label}</span></div>)}
+        {figures.map(([label, value]) => (
+          <div key={label}>
+            <b>{value}</b>
+            <span>{label}</span>
+          </div>
+        ))}
       </div>
       {register.gaps.length ? (
         <div className="asr-block" data-section="obligations-gaps">
           <h3>Gaps</h3>
           <ul className="cp-gaps">
             {register.gaps.map(gap => (
-              <li key={gap.ruleId}><span className="b b-coral">No obligation</span><span>{gap.text} <span className="note">({gap.source})</span></span></li>
+              <li key={gap.ruleId}>
+                <span className="b b-coral">No obligation</span>
+                <span>
+                  {gap.text} <span className="note">({gap.source})</span>
+                </span>
+              </li>
             ))}
           </ul>
         </div>
       ) : null}
-      <p className="ir-foot note"><Icon n="shield" s={14} /> {register.note}</p>
+      <p className="ir-foot note">
+        <Icon n="shield" s={14} /> {register.note}
+      </p>
     </section>
   );
 }
@@ -268,19 +375,35 @@ function RuleTrace({ register }) {
       <div className="ch">
         <div>
           <h2>Step 22 · Rule trace</h2>
-          <div className="sub">Each rule, whether an obligation in the contract covers it, and which ones.</div>
+          <div className="sub">
+            Each rule, whether an obligation in the contract covers it, and which ones.
+          </div>
         </div>
-        <span className="note">{register.totals.rulesCovered} of {register.totals.rulesTotal} covered</span>
+        <span className="note">
+          {register.totals.rulesCovered} of {register.totals.rulesTotal} covered
+        </span>
       </div>
       <ul className="ob-rules">
         {register.ruleTrace.map(rule => (
-          <li key={rule.id} className={rule.status === 'COVERED' ? 'covered' : rule.appliesToRequirement ? 'missing' : ''}>
+          <li
+            key={rule.id}
+            className={rule.status === 'COVERED' ? 'covered' : rule.appliesToRequirement ? 'missing' : ''}
+          >
             <div>
               <span className="rid">{rule.id}</span> <b>{rule.text}</b>
-              <div className="note">{rule.source}{rule.controls.length ? ` · ${rule.controls.join(', ')}` : ''}</div>
+              <div className="note">
+                {rule.source}
+                {rule.controls.length ? ` · ${rule.controls.join(', ')}` : ''}
+              </div>
             </div>
             {rule.status === 'COVERED' ? (
-              <span className="ca-chips">{rule.obligationIds.map(id => <span key={id} className="mono">{id}</span>)}</span>
+              <span className="ca-chips">
+                {rule.obligationIds.map(id => (
+                  <span key={id} className="mono">
+                    {id}
+                  </span>
+                ))}
+              </span>
             ) : rule.appliesToRequirement ? (
               <span className="b b-coral">Not found</span>
             ) : (
@@ -316,26 +439,52 @@ function RegisterTable({ register, topics, parties, missed, reference, latest, o
           <h2>Step 23 · Obligation register</h2>
           <div className="sub">Every obligation, prohibition and right, with the clause it comes from.</div>
         </div>
-        <span className="note">{visible.length} of {register.obligations.length}</span>
+        <span className="note">
+          {visible.length} of {register.obligations.length}
+        </span>
       </div>
 
       <div className="ca-filters">
         <select aria-label="Filter by party" value={party} onChange={e => setParty(e.target.value)}>
           <option value="all">All parties</option>
-          {Object.entries(parties).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          {Object.entries(parties).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
         </select>
         <select aria-label="Filter by topic" value={topic} onChange={e => setTopic(e.target.value)}>
           <option value="all">All topics</option>
-          {usedTopics.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          {usedTopics.map(t => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
         </select>
-        <input type="search" placeholder="Search the obligations" value={search} onChange={e => setSearch(e.target.value)} aria-label="Search the obligations" />
+        <input
+          type="search"
+          placeholder="Search the obligations"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          aria-label="Search the obligations"
+        />
       </div>
 
-      {visible.length === 0 ? <p className="note pad">No obligations match.</p> : (
+      {visible.length === 0 ? (
+        <p className="note pad">No obligations match.</p>
+      ) : (
         <div className="tw">
           <table className="ob-table">
             <thead>
-              <tr><th>Ref</th><th>Who</th><th>Obligation</th><th>When</th><th>If missed</th><th>Source</th><th>Confidence</th></tr>
+              <tr>
+                <th>Ref</th>
+                <th>Who</th>
+                <th>Obligation</th>
+                <th>When</th>
+                <th>If missed</th>
+                <th>Source</th>
+                <th>Confidence</th>
+              </tr>
             </thead>
             <tbody>
               {visible.map(obligation => (
@@ -343,22 +492,55 @@ function RegisterTable({ register, topics, parties, missed, reference, latest, o
                   <td className="mono">{obligation.id}</td>
                   <td>
                     <span className={'b ' + PARTY_TONE[obligation.party]}>{parties[obligation.party]}</span>
-                    <div><span className={'b ' + TYPE_TONE[obligation.type]} style={{ marginTop: 4 }}>{obligation.type}</span></div>
+                    <div>
+                      <span className={'b ' + TYPE_TONE[obligation.type]} style={{ marginTop: 4 }}>
+                        {obligation.type}
+                      </span>
+                    </div>
                   </td>
                   <td className="ob-text">
                     {obligation.text}
-                    {obligation.topics.length ? <div className="note">{obligation.topics.map(id => topicName[id]).join(' · ')}</div> : null}
-                    {obligation.requirementControls.length ? <div className="note">Requirement controls: {obligation.requirementControls.join(', ')}</div> : null}
+                    {obligation.topics.length ? (
+                      <div className="note">{obligation.topics.map(id => topicName[id]).join(' · ')}</div>
+                    ) : null}
+                    {obligation.requirementControls.length ? (
+                      <div className="note">
+                        Requirement controls: {obligation.requirementControls.join(', ')}
+                      </div>
+                    ) : null}
                   </td>
-                  <td>{describeTiming(obligation) || <span className="muted">—</span>}
-                    {obligation.monitored ? <div><span className="b b-plum" style={{ marginTop: 4 }}>Monitored</span></div> : null}</td>
+                  <td>
+                    {describeTiming(obligation) || <span className="muted">—</span>}
+                    {obligation.monitored ? (
+                      <div>
+                        <span className="b b-plum" style={{ marginTop: 4 }}>
+                          Monitored
+                        </span>
+                      </div>
+                    ) : null}
+                  </td>
                   <td className="ob-if-missed">
                     <Consequence obligation={obligation} />
-                    <MissedControl obligation={obligation} action={missed.filter(m => m.obligationId === obligation.id).at(-1)} canReport={latest}
-                      open={reporting === obligation.id} onOpen={() => setReporting(obligation.id)} onClose={() => setReporting(null)} reference={reference} onChange={onChange} />
+                    <MissedControl
+                      obligation={obligation}
+                      action={missed.filter(m => m.obligationId === obligation.id).at(-1)}
+                      canReport={latest}
+                      open={reporting === obligation.id}
+                      onOpen={() => setReporting(obligation.id)}
+                      onClose={() => setReporting(null)}
+                      reference={reference}
+                      onChange={onChange}
+                    />
                   </td>
-                  <td className="mono">Clause {obligation.source.clauseNumber}<div className="note">p. {obligation.source.page}</div></td>
-                  <td><span className={'b ' + CONFIDENCE_TONE[obligation.confidence]}>{obligation.confidence}</span></td>
+                  <td className="mono">
+                    Clause {obligation.source.clauseNumber}
+                    <div className="note">p. {obligation.source.page}</div>
+                  </td>
+                  <td>
+                    <span className={'b ' + CONFIDENCE_TONE[obligation.confidence]}>
+                      {obligation.confidence}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -376,8 +558,13 @@ function Consequence({ obligation }) {
   if (!obligation.consequence) return <span className="note">Not stated in the contract</span>;
   return (
     <div className="note" title={obligation.consequence.text}>
-      {obligation.consequence.text.length > 90 ? obligation.consequence.text.slice(0, 88) + '…' : obligation.consequence.text}
-      <div>Clause {obligation.consequence.clauseNumber}{obligation.consequence.scope === 'contract' ? ' (general term)' : ''}</div>
+      {obligation.consequence.text.length > 90
+        ? obligation.consequence.text.slice(0, 88) + '…'
+        : obligation.consequence.text}
+      <div>
+        Clause {obligation.consequence.clauseNumber}
+        {obligation.consequence.scope === 'contract' ? ' (general term)' : ''}
+      </div>
     </div>
   );
 }
@@ -392,29 +579,58 @@ function MissedControl({ obligation, action, canReport, open, onOpen, onClose, r
   const canOpen = canReport && !active && (obligation.monitored || action);
 
   async function send() {
-    setBusy(true); setError('');
+    setBusy(true);
+    setError('');
     try {
-      onChange(await api(`/assessments/${reference}/obligations/${obligation.id}/missed`, { method: 'POST', body: { note } }));
-      setNote(''); onClose();
-    } catch (err) { setError(err.message); } finally { setBusy(false); }
+      onChange(
+        await api(`/assessments/${reference}/obligations/${obligation.id}/missed`, {
+          method: 'POST',
+          body: { note },
+        }),
+      );
+      setNote('');
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
     <div className="ob-missed">
       {action ? (
-        <Link className={'b ' + (active ? 'b-coral' : 'b-sage')} to={'/remediation/' + reference} data-missed={obligation.id}>
+        <Link
+          className={'b ' + (active ? 'b-coral' : 'b-sage')}
+          to={'/remediation/' + reference}
+          data-missed={obligation.id}
+        >
           Missed · {action.code} · {action.statusLabel}
         </Link>
       ) : null}
-      {canOpen && !open ? <button className="btn sm" onClick={onOpen} data-act="report-missed">{action ? 'Report again' : 'Report missed'}</button> : null}
+      {canOpen && !open ? (
+        <button className="btn sm" onClick={onOpen} data-act="report-missed">
+          {action ? 'Report again' : 'Report missed'}
+        </button>
+      ) : null}
       {open ? (
         <div className="ob-missed-form" data-section="report-missed">
-          <textarea rows={2} maxLength={1000} value={note} onChange={e => setNote(e.target.value)} aria-label={'What was missed: ' + obligation.id}
-            placeholder="What was missed and when (at least 10 characters)" />
+          <textarea
+            rows={2}
+            maxLength={1000}
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            aria-label={'What was missed: ' + obligation.id}
+            placeholder="What was missed and when (at least 10 characters)"
+          />
           {error ? <span className="form-err">{error}</span> : null}
           <div className="row">
-            <button className="btn primary sm" disabled={busy} onClick={send} data-act="send-missed">{busy ? 'Sending…' : obligation.party === 'buyer' ? 'Create action' : 'Send to the vendor'}</button>
-            <button className="btn sm" onClick={onClose}>Cancel</button>
+            <button className="btn primary sm" disabled={busy} onClick={send} data-act="send-missed">
+              {busy ? 'Sending…' : obligation.party === 'buyer' ? 'Create action' : 'Send to the vendor'}
+            </button>
+            <button className="btn sm" onClick={onClose}>
+              Cancel
+            </button>
           </div>
           <span className="note">It becomes an action in Stage 8, due in 14 days.</span>
         </div>

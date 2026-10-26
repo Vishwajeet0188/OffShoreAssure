@@ -47,17 +47,32 @@ import AdminVendors, { AdminVendorDetail } from './pages/admin/AdminVendors.jsx'
 import VendorDashboard from './pages/vendor/VendorDashboard.jsx';
 import VendorProfile from './pages/vendor/VendorProfile.jsx';
 import VendorStagePage from './pages/vendor/VendorStagePage.jsx';
-import { RequireAuth, RequireAdminArea, RequireSignedIn, RequireVendorArea } from './components/auth/Guards.jsx';
+import {
+  RequireAuth,
+  RequireAdminArea,
+  RequireSignedIn,
+  RequireVendorArea,
+} from './components/auth/Guards.jsx';
 
 /* New page → top of the window. */
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
   useEffect(() => {
-    if (!hash) { window.scrollTo(0, 0); return undefined; }
+    if (!hash) {
+      window.scrollTo(0, 0);
+      return undefined;
+    }
     // "/#feedback" etc.: scroll to the section once the page has rendered (below the fixed navigation bar).
     const t = setTimeout(() => {
-      const el = document.getElementById(hash.slice(1)); const nav = document.getElementById('lp-nav');
-      if (el) window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - (nav ? nav.offsetHeight : 0) - 8) });
+      const el = document.getElementById(hash.slice(1));
+      const nav = document.getElementById('lp-nav');
+      if (el)
+        window.scrollTo({
+          top: Math.max(
+            0,
+            el.getBoundingClientRect().top + window.scrollY - (nav ? nav.offsetHeight : 0) - 8,
+          ),
+        });
     }, 60);
     return () => clearTimeout(t);
   }, [pathname, hash]);
@@ -78,10 +93,23 @@ export default function App() {
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<Signup />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
-          <Route path="complete-profile" element={<RequireSignedIn><CompleteProfile /></RequireSignedIn>} />
+          <Route
+            path="complete-profile"
+            element={
+              <RequireSignedIn>
+                <CompleteProfile />
+              </RequireSignedIn>
+            }
+          />
         </Route>
         {/* Buyer workspace: signed-in buyer with a completed profile (Stage 0). */}
-        <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
+        <Route
+          element={
+            <RequireAuth>
+              <AppLayout />
+            </RequireAuth>
+          }
+        >
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="requirements" element={<Requirements />} />
           <Route path="requirements/:id" element={<RequirementForm />} />
@@ -105,7 +133,14 @@ export default function App() {
           <Route path="monitoring/:ref" element={<Monitoring />} />
         </Route>
         {/* Vendor (supplier) portal */}
-        <Route path="vendor" element={<RequireVendorArea><AppLayout portal="vendor" /></RequireVendorArea>}>
+        <Route
+          path="vendor"
+          element={
+            <RequireVendorArea>
+              <AppLayout portal="vendor" />
+            </RequireVendorArea>
+          }
+        >
           <Route index element={<VendorDashboard />} />
           <Route path="profile" element={<VendorProfile />} />
           <Route path="assessments" element={<VendorAssessments />} />
@@ -123,7 +158,14 @@ export default function App() {
         <Route path="suppliers" element={<Navigate to="/dashboard" replace />} />
         <Route path="settings/*" element={<Navigate to="/dashboard" replace />} />
         {/* OffshoreAssure admin console: separate workspace, admins only */}
-        <Route path="admin" element={<RequireAdminArea><AdminLayout /></RequireAdminArea>}>
+        <Route
+          path="admin"
+          element={
+            <RequireAdminArea>
+              <AdminLayout />
+            </RequireAdminArea>
+          }
+        >
           <Route index element={<AdminOverview />} />
           <Route path="users" element={<RegisteredUsers />} />
           <Route path="users/:id" element={<AdminUserDetail />} />

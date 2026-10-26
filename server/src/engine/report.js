@@ -25,7 +25,11 @@ export const EXPIRY_WARNING_DAYS = 90;
 
 const DAY = 86400000;
 const iso = d => new Date(d).toISOString().slice(0, 10);
-const addMonths = (date, months) => { const d = new Date(date); d.setUTCMonth(d.getUTCMonth() + months); return iso(d); };
+const addMonths = (date, months) => {
+  const d = new Date(date);
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return iso(d);
+};
 
 /* The overall position stated in the report (never "compliant"). */
 export function assessmentPosition({ residual, actions }) {
@@ -33,66 +37,106 @@ export function assessmentPosition({ residual, actions }) {
   const accepted = actions.filter(a => a.status === 'RISK_ACCEPTED').length;
   const remaining = residual?.overall?.rating || 'NONE';
   if (['CRITICAL', 'HIGH'].includes(remaining) && open) {
-    return { code: 'ACTION_REQUIRED', label: 'Action required', detail: `${open} action${open === 1 ? '' : 's'} still open and the remaining highest risk is ${remaining.toLowerCase()}.` };
+    return {
+      code: 'ACTION_REQUIRED',
+      label: 'Action required',
+      detail: `${open} action${open === 1 ? '' : 's'} still open and the remaining highest risk is ${remaining.toLowerCase()}.`,
+    };
   }
-  if (open) return { code: 'IN_REMEDIATION', label: 'In remediation', detail: `${open} action${open === 1 ? '' : 's'} still open. The remaining highest risk is ${remaining.toLowerCase()}.` };
-  if (accepted) return { code: 'RISKS_ACCEPTED', label: 'Open items closed; some risks accepted', detail: `Every action is closed or accepted. ${accepted} risk${accepted === 1 ? ' was' : 's were'} accepted by the buyer with a recorded reason.` };
-  return { code: 'ACTIONS_CLOSED', label: 'All actions closed', detail: `Every action from the risk register is closed. The remaining highest risk is ${remaining === 'NONE' ? 'none' : remaining.toLowerCase()}.` };
+  if (open)
+    return {
+      code: 'IN_REMEDIATION',
+      label: 'In remediation',
+      detail: `${open} action${open === 1 ? '' : 's'} still open. The remaining highest risk is ${remaining.toLowerCase()}.`,
+    };
+  if (accepted)
+    return {
+      code: 'RISKS_ACCEPTED',
+      label: 'Open items closed; some risks accepted',
+      detail: `Every action is closed or accepted. ${accepted} risk${accepted === 1 ? ' was' : 's were'} accepted by the buyer with a recorded reason.`,
+    };
+  return {
+    code: 'ACTIONS_CLOSED',
+    label: 'All actions closed',
+    detail: `Every action from the risk register is closed. The remaining highest risk is ${remaining === 'NONE' ? 'none' : remaining.toLowerCase()}.`,
+  };
 }
 
 /**
  * Step 40: the report content. `s` holds the latest saved record of each stage (see reports/routes.js).
  */
 export function compileReport(s) {
-  const position = assessmentPosition({ residual: s.remediation?.residual, actions: s.remediation?.actions || [] });
+  const position = assessmentPosition({
+    residual: s.remediation?.residual,
+    actions: s.remediation?.actions || [],
+  });
   const sections = [
     {
-      stage: 1, title: 'Requirement',
+      stage: 1,
+      title: 'Requirement',
       summary: `${s.requirement.title} · ${s.requirement.service} · ${s.requirement.criticality} criticality · risk tier ${s.requirement.riskTier.toLowerCase()}.`,
-      facts: [['Profile version', 'v' + s.requirement.version], ['Personal data', s.requirement.personalData], ['Data classification', s.requirement.classification],
-        ['Processing countries', s.requirement.countries.join(', ') || 'None outside the buyer country']],
+      facts: [
+        ['Profile version', 'v' + s.requirement.version],
+        ['Personal data', s.requirement.personalData],
+        ['Data classification', s.requirement.classification],
+        ['Processing countries', s.requirement.countries.join(', ') || 'None outside the buyer country'],
+      ],
       record: s.requirement.sha256,
     },
     s.selection && {
-      stage: 2, title: 'Vendor selection',
+      stage: 2,
+      title: 'Vendor selection',
       summary: `${s.selection.vendor} selected (${(s.selection.status || 'SELECTED').toLowerCase().replace(/_/g, ' ')}), Vendor Selection Record v${s.selection.version}.0.`,
-      facts: [['Source', s.selection.source || 'DIRECTORY'], ['Reason', s.selection.rationale], ['Conditions', String(s.selection.conditions)]],
+      facts: [
+        ['Source', s.selection.source || 'DIRECTORY'],
+        ['Reason', s.selection.rationale],
+        ['Conditions', String(s.selection.conditions)],
+      ],
       record: s.selection.sha256,
     },
     s.compliance && {
-      stage: 3, title: 'Compliance assessment',
+      stage: 3,
+      title: 'Compliance assessment',
       summary: `Provisional score ${s.compliance.overall}/100 (${s.compliance.rating.toLowerCase()}), ${s.compliance.gaps} gap${s.compliance.gaps === 1 ? '' : 's'}, ${s.compliance.evidence} document${s.compliance.evidence === 1 ? '' : 's'}.`,
       facts: s.compliance.areas.map(a => [a.label, `${a.score}/100`]),
       record: s.compliance.sha256,
     },
     s.contract && {
-      stage: 4, title: 'Contract analysis',
+      stage: 4,
+      title: 'Contract analysis',
       summary: `Contract v${s.contract.version} (${s.contract.fileName}): ${s.contract.clauses} clauses, ${s.contract.notFound.length} expected topic${s.contract.notFound.length === 1 ? '' : 's'} not found.`,
       facts: s.contract.notFound.map(t => ['Not found', t]),
       record: s.contract.sha256,
     },
     s.obligations && {
-      stage: 5, title: 'Obligation extraction',
+      stage: 5,
+      title: 'Obligation extraction',
       summary: `${s.obligations.total} obligations, prohibitions and rights; ${s.obligations.rulesCovered} of ${s.obligations.rulesTotal} rules covered.`,
       facts: s.obligations.gaps.map(g => ['Gap', g]),
       record: s.obligations.sha256,
     },
     s.transfers && {
-      stage: 6, title: 'Transfer assessment',
+      stage: 6,
+      title: 'Transfer assessment',
       summary: `${s.transfers.routes.length} data route${s.transfers.routes.length === 1 ? '' : 's'}; most serious: ${s.transfers.overall.toLowerCase()}.`,
       facts: s.transfers.routes.map(r => [r.route, r.status]),
       record: s.transfers.sha256,
     },
     s.risks && {
-      stage: 7, title: 'Risk identification',
+      stage: 7,
+      title: 'Risk identification',
       summary: `${s.risks.totals.risks} risks from ${s.risks.totals.findings} findings (register v${s.risks.version}); highest ${s.risks.overall.toLowerCase()}.`,
       facts: s.risks.top.map(r => [r.id + ' · ' + r.title, `${r.score} · ${r.rating.toLowerCase()}`]),
       record: s.risks.sha256,
     },
     s.remediation && {
-      stage: 8, title: 'Remediation',
+      stage: 8,
+      title: 'Remediation',
       summary: `${s.remediation.actions.length} actions: ${s.remediation.residual.totals.closed} closed, ${s.remediation.residual.totals.accepted} risks accepted, ${s.remediation.residual.totals.open + s.remediation.residual.totals.awaitingReview + s.remediation.residual.totals.proposed} open. Remaining highest risk: ${s.remediation.residual.overall.label.toLowerCase()}.`,
-      facts: s.remediation.residual.risks.map(r => [r.id + ' · ' + r.title, `${r.original.score} → ${r.score} (${r.status.toLowerCase().replace('_', ' ')})`]),
+      facts: s.remediation.residual.risks.map(r => [
+        r.id + ' · ' + r.title,
+        `${r.original.score} → ${r.score} (${r.status.toLowerCase().replace('_', ' ')})`,
+      ]),
       record: s.remediation.sha256,
     },
   ].filter(Boolean);
@@ -102,8 +146,11 @@ export function compileReport(s) {
     assessment: s.assessment,
     position,
     sections,
-    acceptedRisks: (s.remediation?.actions || []).filter(a => a.status === 'RISK_ACCEPTED').map(a => ({ code: a.code, title: a.title, reason: a.buyerNote })),
-    openActions: (s.remediation?.actions || []).filter(a => ['PROPOSED', 'OPEN', 'RETURNED', 'SUBMITTED'].includes(a.status))
+    acceptedRisks: (s.remediation?.actions || [])
+      .filter(a => a.status === 'RISK_ACCEPTED')
+      .map(a => ({ code: a.code, title: a.title, reason: a.buyerNote })),
+    openActions: (s.remediation?.actions || [])
+      .filter(a => ['PROPOSED', 'OPEN', 'RETURNED', 'SUBMITTED'].includes(a.status))
       .map(a => ({ code: a.code, title: a.title, owner: a.owner, status: a.statusLabel, dueOn: a.dueOn })),
     evidence: s.evidence,
     auditTrail: { events: s.audit.length, first: s.audit[0]?.at || null, last: s.audit.at(-1)?.at || null },
@@ -123,7 +170,15 @@ export function compileReport(s) {
  *   riskTier     requirement risk tier
  *   requested    Map of monitoring key → the action already sent to the vendor for it
  */
-export function monitoringItems({ evidence = [], actions = [], lastReport = null, inputs = {}, riskTier = 'MEDIUM', requested = new Map(), today = new Date() }) {
+export function monitoringItems({
+  evidence = [],
+  actions = [],
+  lastReport = null,
+  inputs = {},
+  riskTier = 'MEDIUM',
+  requested = new Map(),
+  today = new Date(),
+}) {
   const items = [];
   const now = today.getTime();
 
@@ -132,37 +187,68 @@ export function monitoringItems({ evidence = [], actions = [], lastReport = null
     const days = Math.round((new Date(e.expiresOn).getTime() - now) / DAY);
     if (days > EXPIRY_WARNING_DAYS) continue;
     const key = `renew:${e.id}`;
-    const request = requested.get(key);          // the action already sent for it, if any
+    const request = requested.get(key); // the action already sent for it, if any
     const renewed = request?.status === 'CLOSED';
     const what = e.type === 'insurance' ? 'insurance certificate' : 'certificate';
     items.push({
-      key, kind: 'renewal', owner: 'vendor', canRequest: !request,
+      key,
+      kind: 'renewal',
+      owner: 'vendor',
+      canRequest: !request,
       severity: renewed ? 'low' : days < 0 ? 'high' : 'medium',
-      request: request ? { code: request.code, status: request.status, statusLabel: request.statusLabel } : null,
-      title: days < 0 ? `${e.fileName} expired on ${e.expiresOn}` : `${e.fileName} expires on ${e.expiresOn} (in ${days} day${days === 1 ? '' : 's'})`,
-      detail: renewed ? `The renewed ${what} was received and checked (${request.code}).`
-        : request ? `Renewal requested from the vendor (${request.code} · ${request.statusLabel.toLowerCase()}).`
-        : `Ask the vendor for the renewed ${what} (control ${e.controlId}).`,
+      request: request
+        ? { code: request.code, status: request.status, statusLabel: request.statusLabel }
+        : null,
+      title:
+        days < 0
+          ? `${e.fileName} expired on ${e.expiresOn}`
+          : `${e.fileName} expires on ${e.expiresOn} (in ${days} day${days === 1 ? '' : 's'})`,
+      detail: renewed
+        ? `The renewed ${what} was received and checked (${request.code}).`
+        : request
+          ? `Renewal requested from the vendor (${request.code} · ${request.statusLabel.toLowerCase()}).`
+          : `Ask the vendor for the renewed ${what} (control ${e.controlId}).`,
       dueOn: iso(Math.max(now + 14 * DAY, Math.min(new Date(e.expiresOn).getTime(), now + 30 * DAY))),
     });
   }
 
   for (const a of actions) {
     if (a.dueOn && ['OPEN', 'RETURNED'].includes(a.status) && a.dueOn < iso(now)) {
-      items.push({ key: `overdue:${a.code}`, kind: 'overdue', severity: 'high', owner: a.owner, canRequest: false,
-        title: `${a.code} is overdue (due ${a.dueOn})`, detail: `${a.title}. Chase it in Stage 8 · Remediation.` });
+      items.push({
+        key: `overdue:${a.code}`,
+        kind: 'overdue',
+        severity: 'high',
+        owner: a.owner,
+        canRequest: false,
+        title: `${a.code} is overdue (due ${a.dueOn})`,
+        detail: `${a.title}. Chase it in Stage 8 · Remediation.`,
+      });
     }
   }
 
   if (lastReport) {
     const changed = Object.keys(inputs).filter(k => inputs[k] !== lastReport.inputs?.[k]);
-    if (changed.length) items.push({ key: 'changed', kind: 'change', severity: 'medium', owner: 'buyer', canRequest: false,
-      title: `Records changed since report v${lastReport.version}.0`, detail: `Changed: ${changed.join(', ')}. Generate the report again to bring it up to date.` });
+    if (changed.length)
+      items.push({
+        key: 'changed',
+        kind: 'change',
+        severity: 'medium',
+        owner: 'buyer',
+        canRequest: false,
+        title: `Records changed since report v${lastReport.version}.0`,
+        detail: `Changed: ${changed.join(', ')}. Generate the report again to bring it up to date.`,
+      });
     const reviewOn = addMonths(lastReport.createdAt, REVIEW_MONTHS[riskTier] || 12);
     const days = Math.round((new Date(reviewOn).getTime() - now) / DAY);
-    items.push({ key: 'review', kind: 'review', severity: days < 0 ? 'high' : days <= 30 ? 'medium' : 'low', owner: 'buyer', canRequest: false,
+    items.push({
+      key: 'review',
+      kind: 'review',
+      severity: days < 0 ? 'high' : days <= 30 ? 'medium' : 'low',
+      owner: 'buyer',
+      canRequest: false,
       title: days < 0 ? `Periodic review overdue since ${reviewOn}` : `Next periodic review on ${reviewOn}`,
-      detail: `Every ${REVIEW_MONTHS[riskTier] || 12} months for a ${riskTier.toLowerCase()} risk tier: confirm the requirement, re-run the questionnaire and the contract checks.` });
+      detail: `Every ${REVIEW_MONTHS[riskTier] || 12} months for a ${riskTier.toLowerCase()} risk tier: confirm the requirement, re-run the questionnaire and the contract checks.`,
+    });
   }
 
   const rank = { high: 0, medium: 1, low: 2 };

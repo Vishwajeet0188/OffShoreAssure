@@ -30,9 +30,12 @@ export default function CookieNotice() {
   return (
     <div className="cookie-notice" role="region" aria-label="Cookie notice" data-section="cookie-notice">
       <p>
-        <b>We only use essential cookies.</b> One cookie keeps you signed in. We do not use tracking or advertising cookies.
+        <b>We only use essential cookies.</b> One cookie keeps you signed in. We do not use tracking or
+        advertising cookies.
       </p>
-      <button type="button" className="btn sm primary" onClick={dismiss} data-act="cookie-ok">OK</button>
+      <button type="button" className="btn sm primary" onClick={dismiss} data-act="cookie-ok">
+        OK
+      </button>
     </div>
   );
 }

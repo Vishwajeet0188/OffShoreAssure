@@ -30,20 +30,43 @@ export function VendorObligationsList() {
         {!registers ? (
           <Loading pad />
         ) : registers.length === 0 ? (
-          <p className="note pad">No obligations yet. They appear here after a buyer that selected your company has analysed the contract.</p>
+          <p className="note pad">
+            No obligations yet. They appear here after a buyer that selected your company has analysed the
+            contract.
+          </p>
         ) : (
           <div className="tw">
             <table>
-              <thead><tr><th>Assessment</th><th>Buyer</th><th>Your obligations</th><th>Updated</th><th></th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Assessment</th>
+                  <th>Buyer</th>
+                  <th>Your obligations</th>
+                  <th>Updated</th>
+                  <th></th>
+                </tr>
+              </thead>
               <tbody>
                 {registers.map(register => (
                   <tr key={register.reference}>
-                    <td><b className="mono">{register.reference}</b><div className="note">{register.title}</div></td>
+                    <td>
+                      <b className="mono">{register.reference}</b>
+                      <div className="note">{register.title}</div>
+                    </td>
                     <td>{register.buyerName}</td>
-                    <td>{register.yourObligations}<div className="note">from contract v{register.contractVersion}</div></td>
+                    <td>
+                      {register.yourObligations}
+                      <div className="note">from contract v{register.contractVersion}</div>
+                    </td>
                     <td className="mono">{fmtTime(register.createdAt)}</td>
                     <td style={{ textAlign: 'right' }}>
-                      <Link className="btn sm primary" to={'/vendor/obligations/' + register.reference} data-act="open-vendor-obligations">View</Link>
+                      <Link
+                        className="btn sm primary"
+                        to={'/vendor/obligations/' + register.reference}
+                        data-act="open-vendor-obligations"
+                      >
+                        View
+                      </Link>
                     </td>
                   </tr>
                 ))}
@@ -76,7 +99,13 @@ export default function VendorObligations() {
 
   return (
     <div className="vs">
-      <Link className="link" to="/vendor/obligations" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>← Obligations</Link>
+      <Link
+        className="link"
+        to="/vendor/obligations"
+        style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}
+      >
+        ← Obligations
+      </Link>
       <PageHead
         eyebrow={`Vendor · Obligations · ${data.reference}`}
         title={data.title}
@@ -85,20 +114,38 @@ export default function VendorObligations() {
 
       {groups.map(group => (
         <section key={group.name} className="card" data-section="vendor-obligation-group">
-          <div className="ch"><div><h2>{group.name}</h2></div><span className="note">{group.items.length}</span></div>
+          <div className="ch">
+            <div>
+              <h2>{group.name}</h2>
+            </div>
+            <span className="note">{group.items.length}</span>
+          </div>
           <ul className="ob-vlist">
             {group.items.map(obligation => (
               <li key={obligation.id}>
-                <span className={'b ' + TYPE_TONE[obligation.type]}>{obligation.type === 'Prohibition' ? 'Must not' : obligation.type === 'Right' ? 'May' : 'Must'}</span>
+                <span className={'b ' + TYPE_TONE[obligation.type]}>
+                  {obligation.type === 'Prohibition'
+                    ? 'Must not'
+                    : obligation.type === 'Right'
+                      ? 'May'
+                      : 'Must'}
+                </span>
                 <div>
                   <p>{obligation.text}</p>
                   <div className="note">
                     Clause {obligation.source.clauseNumber}
-                    {describeTiming(obligation) ? <> · <b>{describeTiming(obligation)}</b></> : null}
+                    {describeTiming(obligation) ? (
+                      <>
+                        {' '}
+                        · <b>{describeTiming(obligation)}</b>
+                      </>
+                    ) : null}
                     {obligation.party === 'both' ? ' · applies to both parties' : ''}
                   </div>
                   {obligation.type !== 'Right' && obligation.consequence ? (
-                    <div className="note">If missed: {obligation.consequence.text} (clause {obligation.consequence.clauseNumber})</div>
+                    <div className="note">
+                      If missed: {obligation.consequence.text} (clause {obligation.consequence.clauseNumber})
+                    </div>
                   ) : null}
                 </div>
               </li>
@@ -107,7 +154,9 @@ export default function VendorObligations() {
         </section>
       ))}
 
-      <p className="ir-foot note"><Icon n="shield" s={14} /> {data.note}</p>
+      <p className="ir-foot note">
+        <Icon n="shield" s={14} /> {data.note}
+      </p>
     </div>
   );
 }

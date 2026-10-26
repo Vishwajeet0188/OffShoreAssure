@@ -39,7 +39,7 @@ export async function extractContractText(file, extension) {
   const allText = pages.join('\n').trim();
   if (allText.length < MIN_TEXT_LENGTH) {
     throw new UnreadableContractError(
-      'We could not read enough text from this file. If it is a scanned document, please upload a text-based PDF or a Word file.'
+      'We could not read enough text from this file. If it is a scanned document, please upload a text-based PDF or a Word file.',
     );
   }
 
@@ -56,7 +56,9 @@ async function readPdf(file) {
     const { text } = await extractText(pdf, { mergePages: false });
     return text;
   } catch {
-    throw new UnreadableContractError('This PDF could not be opened. It may be damaged or password protected.');
+    throw new UnreadableContractError(
+      'This PDF could not be opened. It may be damaged or password protected.',
+    );
   }
 }
 
@@ -65,6 +67,8 @@ async function readWord(file) {
     const { value } = await mammoth.extractRawText({ buffer: file });
     return value;
   } catch {
-    throw new UnreadableContractError('This Word file could not be opened. Please check it opens in Word and try again.');
+    throw new UnreadableContractError(
+      'This Word file could not be opened. Please check it opens in Word and try again.',
+    );
   }
 }

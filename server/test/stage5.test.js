@@ -5,7 +5,8 @@ import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
 
-process.env.DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://oa:oa@localhost:5432/offshoreassure_test';
+process.env.DATABASE_URL =
+  process.env.TEST_DATABASE_URL || 'postgres://oa:oa@localhost:5432/offshoreassure_test';
 process.env.DEV_SHOW_CODES = 'true';
 process.env.RATE_LIMIT = 'false';
 process.env.RESEND_COOLDOWN_SECONDS = '0';
@@ -24,16 +25,29 @@ let server, base;
 function client() {
   let cookie = '';
   return async (method, p, body, raw) => {
-    const headers = { ...(cookie ? { cookie } : {}), ...(raw ? { 'content-type': raw.type } : { 'content-type': 'application/json' }) };
-    const r = await fetch(base + p, { method, headers, body: raw ? raw.data : body ? JSON.stringify(body) : undefined });
-    const sc = r.headers.get('set-cookie'); if (sc) cookie = sc.split(';')[0];
+    const headers = {
+      ...(cookie ? { cookie } : {}),
+      ...(raw ? { 'content-type': raw.type } : { 'content-type': 'application/json' }),
+    };
+    const r = await fetch(base + p, {
+      method,
+      headers,
+      body: raw ? raw.data : body ? JSON.stringify(body) : undefined,
+    });
+    const sc = r.headers.get('set-cookie');
+    if (sc) cookie = sc.split(';')[0];
     const ct = r.headers.get('content-type') || '';
-    return { status: r.status, body: ct.includes('json') ? await r.json() : Buffer.from(await r.arrayBuffer()) };
+    return {
+      status: r.status,
+      body: ct.includes('json') ? await r.json() : Buffer.from(await r.arrayBuffer()),
+    };
   };
 }
 async function signUp(email, role) {
-  const c = client(); const r = await c('POST', '/auth/register', { email, password: 'Secure1234', role });
-  await c('POST', '/auth/verify', { email, code: r.body.devCode }); return c;
+  const c = client();
+  const r = await c('POST', '/auth/register', { email, password: 'Secure1234', role });
+  await c('POST', '/auth/verify', { email, code: r.body.devCode });
+  return c;
 }
 let admin, buyer, vendor, other, ref, vendorId;
 const fixture = name => fs.readFileSync(new URL('./fixtures/' + name, import.meta.url));
@@ -43,33 +57,66 @@ const uploadContract = (c, query, data, type = 'application/pdf') =>
 before(async () => {
   await pool.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
   await migrate({ log: false });
-  server = createApp().listen(0); base = `http://localhost:${server.address().port}/api`;
-  await pool.query(`INSERT INTO users (email, password_hash, status, is_admin, role, email_verified_at) VALUES ('admin@oa.example', $1, 'active', true, 'admin', now())`, [await bcrypt.hash('Admin12345', 4)]);
-  admin = client(); await admin('POST', '/auth/login', { email: 'admin@oa.example', password: 'Admin12345' });
+  server = createApp().listen(0);
+  base = `http://localhost:${server.address().port}/api`;
+  await pool.query(
+    `INSERT INTO users (email, password_hash, status, is_admin, role, email_verified_at) VALUES ('admin@oa.example', $1, 'active', true, 'admin', now())`,
+    [await bcrypt.hash('Admin12345', 4)],
+  );
+  admin = client();
+  await admin('POST', '/auth/login', { email: 'admin@oa.example', password: 'Admin12345' });
   buyer = await signUp('sarah@ukcompany.example', 'buyer');
-  await buyer('PUT', '/me/profile', { fullName: 'Sarah Williams', organisationName: 'UK Company Ltd', sector: 'Financial Services', jobRole: 'Compliance Manager' });
+  await buyer('PUT', '/me/profile', {
+    fullName: 'Sarah Williams',
+    organisationName: 'UK Company Ltd',
+    sector: 'Financial Services',
+    jobRole: 'Compliance Manager',
+  });
   const id = (await buyer('POST', '/requirements', { data: EXAMPLE })).body.requirement.id;
   ref = (await buyer('POST', `/requirements/${id}/submit`, {})).body.assessment_id;
   vendor = await signUp('anna@krakow.example', 'vendor');
-  await vendor('PUT', '/me/profile', { fullName: 'Anna K', jobRole: 'Delivery Manager', organisationName: 'Krakow IT', registrationNumber: 'KRS 1', country: 'PL', services: ['IT Support'], deliveryCountries: ['PL', 'IN', 'BR', 'PH'] });
+  await vendor('PUT', '/me/profile', {
+    fullName: 'Anna K',
+    jobRole: 'Delivery Manager',
+    organisationName: 'Krakow IT',
+    registrationNumber: 'KRS 1',
+    country: 'PL',
+    services: ['IT Support'],
+    deliveryCountries: ['PL', 'IN', 'BR', 'PH'],
+  });
   vendorId = (await pool.query(`SELECT id FROM organisations WHERE name = 'Krakow IT'`)).rows[0].id;
   await admin('PATCH', '/admin/vendors/' + vendorId, { status: 'approved' });
   other = await signUp('tom@otherbuyer.example', 'buyer');
-  await other('PUT', '/me/profile', { fullName: 'Tom', organisationName: 'Other Buyer Ltd', sector: 'Retail', jobRole: 'Compliance Manager' });
+  await other('PUT', '/me/profile', {
+    fullName: 'Tom',
+    organisationName: 'Other Buyer Ltd',
+    sector: 'Retail',
+    jobRole: 'Compliance Manager',
+  });
 });
-after(async () => { server.close(); await pool.end(); });
+after(async () => {
+  server.close();
+  await pool.end();
+});
 
 async function selectVendorAndStartCompliance() {
   await buyer('POST', `/assessments/${ref}/shortlist`, { vendorId });
-  await buyer('POST', `/assessments/${ref}/selection`, { vendorId, rationale: 'Best match on service and all delivery countries.',
-    selectionSource: 'DIRECTORY', decision: 'SELECT_WITH_CONDITIONS', approverId: (await buyer('GET', '/me')).body.user.id, confirmedAt: new Date().toISOString() });
+  await buyer('POST', `/assessments/${ref}/selection`, {
+    vendorId,
+    rationale: 'Best match on service and all delivery countries.',
+    selectionSource: 'DIRECTORY',
+    decision: 'SELECT_WITH_CONDITIONS',
+    approverId: (await buyer('GET', '/me')).body.user.id,
+    confirmedAt: new Date().toISOString(),
+  });
   await buyer('POST', `/assessments/${ref}/compliance`);
 }
 
 async function vendorSubmitsCompliance() {
   const questionnaire = (await vendor('GET', `/vendor/compliance/${ref}`)).body.compliance.questionnaire;
   const answers = {};
-  for (const control of questionnaire) for (const question of control.questions) answers[question.id] = { answer: 'Yes' };
+  for (const control of questionnaire)
+    for (const question of control.questions) answers[question.id] = { answer: 'Yes' };
   await vendor('PUT', `/vendor/compliance/${ref}/answers`, { answers });
   const r = await vendor('POST', `/vendor/compliance/${ref}/submit`);
   assert.equal(r.status, 201, JSON.stringify(r.body));
@@ -80,12 +127,19 @@ const exampleClauses = () => analyseContract([fixture('contract.txt').toString('
 
 async function uploadContractAfterStage3() {
   await buyer('POST', `/assessments/${ref}/shortlist`, { vendorId });
-  await buyer('POST', `/assessments/${ref}/selection`, { vendorId, rationale: 'Best match on service and all delivery countries.',
-    selectionSource: 'DIRECTORY', decision: 'SELECT_WITH_CONDITIONS', approverId: (await buyer('GET', '/me')).body.user.id, confirmedAt: new Date().toISOString() });
+  await buyer('POST', `/assessments/${ref}/selection`, {
+    vendorId,
+    rationale: 'Best match on service and all delivery countries.',
+    selectionSource: 'DIRECTORY',
+    decision: 'SELECT_WITH_CONDITIONS',
+    approverId: (await buyer('GET', '/me')).body.user.id,
+    confirmedAt: new Date().toISOString(),
+  });
   await buyer('POST', `/assessments/${ref}/compliance`);
   const questionnaire = (await vendor('GET', `/vendor/compliance/${ref}`)).body.compliance.questionnaire;
   const answers = {};
-  for (const control of questionnaire) for (const question of control.questions) answers[question.id] = { answer: 'Yes' };
+  for (const control of questionnaire)
+    for (const question of control.questions) answers[question.id] = { answer: 'Yes' };
   await vendor('PUT', `/vendor/compliance/${ref}/answers`, { answers });
   await vendor('POST', `/vendor/compliance/${ref}/submit`);
   const r = await uploadContract(buyer, { name: 'contract.pdf' }, fixture('contract.pdf'));
@@ -93,15 +147,23 @@ async function uploadContractAfterStage3() {
 }
 
 test('engine: sentences, party names and obligation types', () => {
-  assert.deepEqual(splitSentences('The Supplier shall respond within 4 hours. Availability is 99.5% each month.'),
-    ['The Supplier shall respond within 4 hours.', 'Availability is 99.5% each month.']);
+  assert.deepEqual(
+    splitSentences('The Supplier shall respond within 4 hours. Availability is 99.5% each month.'),
+    ['The Supplier shall respond within 4 hours.', 'Availability is 99.5% each month.'],
+  );
 
-  const names = findPartyNames([{ text: 'Between UK Company Ltd (the "Client") and Vendor A Test Ltd (the "Provider").' }],
-    { buyerName: 'UK Company Ltd', vendorName: 'Vendor A Test Ltd' });
+  const names = findPartyNames(
+    [{ text: 'Between UK Company Ltd (the "Client") and Vendor A Test Ltd (the "Provider").' }],
+    { buyerName: 'UK Company Ltd', vendorName: 'Vendor A Test Ltd' },
+  );
   assert.equal(names.client, 'buyer');
   assert.equal(names.provider, 'vendor');
 
-  const register = buildRegister(exampleClauses(), { buyerName: 'UK Company Ltd', vendorName: 'Vendor A Test Ltd', applicableControls: CONTROLS });
+  const register = buildRegister(exampleClauses(), {
+    buyerName: 'UK Company Ltd',
+    vendorName: 'Vendor A Test Ltd',
+    applicableControls: CONTROLS,
+  });
   const byClause = number => register.obligations.find(o => o.source.clauseNumber === number);
 
   assert.equal(byClause('6.1').party, 'vendor');
@@ -119,7 +181,9 @@ test('engine: sentences, party names and obligation types', () => {
 });
 
 test('engine: a rule with no obligation is a gap only when it applies to the requirement', () => {
-  const clauses = analyseContract(['1. Services\n1.1 The Supplier shall provide IT support services to the Customer during business hours.']).clauses;
+  const clauses = analyseContract([
+    '1. Services\n1.1 The Supplier shall provide IT support services to the Customer during business hours.',
+  ]).clauses;
   const withTransfer = buildRegister(clauses, { applicableControls: ['ASS-005'] });
   assert.ok(withTransfer.gaps.some(gap => gap.ruleId === 'R-TRF-01'));
   const withoutTransfer = buildRegister(clauses, { applicableControls: [] });
@@ -147,21 +211,35 @@ test('steps 21–24: register extracted, saved, on the timeline; Stage 6 next', 
   assert.match(r.body.register.snapshotSha256, /^[0-9a-f]{64}$/);
   assert.equal(r.body.canExtract, false);
 
-  assert.equal((await buyer('POST', `/assessments/${ref}/obligations`)).body.error, 'up_to_date', 'same contract → not again');
+  assert.equal(
+    (await buyer('POST', `/assessments/${ref}/obligations`)).body.error,
+    'up_to_date',
+    'same contract → not again',
+  );
 
   const assessment = await buyer('GET', `/assessments/${ref}`);
   for (const step of [21, 22, 23, 24]) {
-    assert.ok(assessment.body.timeline.some(t => t.stage === 5 && t.step === step), 'timeline step ' + step);
+    assert.ok(
+      assessment.body.timeline.some(t => t.stage === 5 && t.step === step),
+      'timeline step ' + step,
+    );
   }
-  assert.ok(assessment.body.timeline.some(t => t.stage === 6 && t.status === 'next'), 'Stage 6 is next');
+  assert.ok(
+    assessment.body.timeline.some(t => t.stage === 6 && t.status === 'next'),
+    'Stage 6 is next',
+  );
 
   const list = await buyer('GET', '/assessments');
   assert.equal(list.body.assessments[0].obligations.version, 1);
 });
 
 test('a new contract version allows register v2; v1 is kept and locked', async () => {
-  await uploadContract(buyer, { name: 'contract.docx', reason: 'Signed copy received from the vendor' }, fixture('contract.docx'),
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  await uploadContract(
+    buyer,
+    { name: 'contract.docx', reason: 'Signed copy received from the vendor' },
+    fixture('contract.docx'),
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  );
   const r = await buyer('POST', `/assessments/${ref}/obligations`);
   assert.equal(r.status, 201);
   assert.equal(r.body.register.version, 2);
@@ -170,7 +248,9 @@ test('a new contract version allows register v2; v1 is kept and locked', async (
   assert.equal((await buyer('GET', `/assessments/${ref}/obligations?version=1`)).body.register.version, 1);
 
   await assert.rejects(pool.query('UPDATE obligation_registers SET totals = $1', ['{}']), /append-only/);
-  const events = (await pool.query(`SELECT event FROM audit_events WHERE stage = 'stage-5'`)).rows.map(e => e.event);
+  const events = (await pool.query(`SELECT event FROM audit_events WHERE stage = 'stage-5'`)).rows.map(
+    e => e.event,
+  );
   assert.deepEqual(events, ['obligations.extracted', 'obligations.extracted']);
 });
 
@@ -182,7 +262,10 @@ test('vendor sees only its own obligations; other buyers and admins', async () =
   const own = await vendor('GET', `/vendor/obligations/${ref}`);
   assert.equal(own.status, 200);
   assert.ok(own.body.obligations.every(o => o.party === 'vendor' || o.party === 'both'));
-  assert.ok(!own.body.obligations.some(o => o.source.clauseNumber === '9.1'), 'the buyer’s audit right is not listed as a vendor obligation');
+  assert.ok(
+    !own.body.obligations.some(o => o.source.clauseNumber === '9.1'),
+    'the buyer’s audit right is not listed as a vendor obligation',
+  );
 
   assert.equal((await other('GET', `/assessments/${ref}/obligations`)).status, 404);
   assert.equal((await vendor('GET', `/assessments/${ref}/obligations`)).status, 403);

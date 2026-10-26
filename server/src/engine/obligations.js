@@ -37,7 +37,15 @@ export const PARTIES = {
 };
 
 // Words a contract uses for each side when it does not use the company names.
-const VENDOR_WORDS = ['supplier', 'vendor', 'service provider', 'provider', 'processor', 'contractor', 'sub-contractor'];
+const VENDOR_WORDS = [
+  'supplier',
+  'vendor',
+  'service provider',
+  'provider',
+  'processor',
+  'contractor',
+  'sub-contractor',
+];
 const BUYER_WORDS = ['customer', 'client', 'buyer', 'controller', 'purchaser'];
 const BOTH_WORDS = ['each party', 'either party', 'both parties', 'the parties', 'neither party'];
 
@@ -110,8 +118,14 @@ export const RULES = [
 
 // Modal verbs, checked in this order so "shall not" wins over "shall".
 const MODALS = [
-  { pattern: /\b(shall not|must not|will not|may not|is not permitted to|agrees not to)\b/i, type: 'Prohibition' },
-  { pattern: /\b(shall|must|will|agrees to|undertakes to|is required to|is responsible for)\b/i, type: 'Obligation' },
+  {
+    pattern: /\b(shall not|must not|will not|may not|is not permitted to|agrees not to)\b/i,
+    type: 'Prohibition',
+  },
+  {
+    pattern: /\b(shall|must|will|agrees to|undertakes to|is required to|is responsible for)\b/i,
+    type: 'Obligation',
+  },
   { pattern: /\b(may|is entitled to|has the right to)\b/i, type: 'Right' },
 ];
 
@@ -120,13 +134,16 @@ const FREQUENCY_PATTERNS = [
   /\b(daily|weekly|monthly|quarterly|annually|yearly)\b/i,
 ];
 
-const CONDITION_PATTERN = /\b(if|where|when|unless|on termination|upon termination|in the event of|on|upon)\b\s+([^,;.]{6,80})/i;
+const CONDITION_PATTERN =
+  /\b(if|where|when|unless|on termination|upon termination|in the event of|on|upon)\b\s+([^,;.]{6,80})/i;
 
 /* Words that say what happens when an obligation is missed. */
-const REMEDY_PATTERN = /\b(service credits?|fee (?:reduction|deduction)s?|liquidated damages|penalt(?:y|ies)|indemnif(?:y|ies|ication)|liable for|may (?:immediately )?terminate[^.;]*\b(?:breach|fails?|failure)|suspend)/i;
+const REMEDY_PATTERN =
+  /\b(service credits?|fee (?:reduction|deduction)s?|liquidated damages|penalt(?:y|ies)|indemnif(?:y|ies|ication)|liable for|may (?:immediately )?terminate[^.;]*\b(?:breach|fails?|failure)|suspend)/i;
 const BREACH_PATTERN = /\b(material breach|breach of (?:this|the) agreement|fails? to (?:perform|comply))\b/i;
 
-const DEADLINE_PATTERN = /\b(?:within|no later than|at least|before)\s+\d+\s*(?:minutes?|hours?|(?:working |business )?days?|weeks?|months?)\b|\bwithout undue delay\b|\bimmediately\b/gi;
+const DEADLINE_PATTERN =
+  /\b(?:within|no later than|at least|before)\s+\d+\s*(?:minutes?|hours?|(?:working |business )?days?|weeks?|months?)\b|\bwithout undue delay\b|\bimmediately\b/gi;
 
 /**
  * Finds the names a contract gives the two sides, for example
@@ -194,7 +211,11 @@ function findCondition(sentence) {
   if (!match) return null;
   const keyword = match[1].toLowerCase();
   // "on" and "upon" only count when they introduce an event, not "on 30 days' notice".
-  if ((keyword === 'on' || keyword === 'upon') && !/^(termination|expiry|request|completion|receipt)/i.test(match[2])) return null;
+  if (
+    (keyword === 'on' || keyword === 'upon') &&
+    !/^(termination|expiry|request|completion|receipt)/i.test(match[2])
+  )
+    return null;
   return match[0].trim();
 }
 
@@ -213,13 +234,20 @@ export function consequenceFor(sentence, clause, clauses) {
   if (REMEDY_PATTERN.test(sentence)) return { text: sentence, clauseNumber: clause.number, scope: 'clause' };
   // The same clause, then its section ("3.1" looks at 3.2, 3.3 …).
   const section = String(clause.number || '').split('.')[0];
-  const nearby = [clause, ...clauses.filter(other => other !== clause && section && String(other.number || '').split('.')[0] === section)];
+  const nearby = [
+    clause,
+    ...clauses.filter(
+      other => other !== clause && section && String(other.number || '').split('.')[0] === section,
+    ),
+  ];
   for (const other of nearby) {
     const remedy = splitSentences(other.text).find(line => line !== sentence && REMEDY_PATTERN.test(line));
     if (remedy) return { text: remedy, clauseNumber: other.number, scope: 'clause' };
   }
   for (const other of clauses) {
-    const general = splitSentences(other.text).find(line => BREACH_PATTERN.test(line) && REMEDY_PATTERN.test(line));
+    const general = splitSentences(other.text).find(
+      line => BREACH_PATTERN.test(line) && REMEDY_PATTERN.test(line),
+    );
     if (general) return { text: general, clauseNumber: other.number, scope: 'contract' };
   }
   return null;
@@ -243,9 +271,10 @@ export function extractObligations(clauses, parties = {}) {
 
   for (const clause of clauses) {
     for (const sentence of splitSentences(clause.text)) {
-      const modal = MODALS
-        .map(candidate => ({ ...candidate, match: sentence.match(candidate.pattern) }))
-        .find(candidate => candidate.match);
+      const modal = MODALS.map(candidate => ({
+        ...candidate,
+        match: sentence.match(candidate.pattern),
+      })).find(candidate => candidate.match);
       if (!modal) continue;
 
       const topics = (clause.topics || []).map(topic => topic.topicId);
@@ -266,7 +295,12 @@ export function extractObligations(clauses, parties = {}) {
         consequence: modal.type === 'Right' ? null : consequenceFor(sentence, clause, clauses),
         // Watched after signing: anything with a deadline or a repeat (e.g. "within 24 hours", "each month").
         monitored: modal.type !== 'Right' && (deadline.length > 0 || !!frequency),
-        source: { clauseId: clause.id, clauseNumber: clause.number, heading: clause.heading, page: clause.page },
+        source: {
+          clauseId: clause.id,
+          clauseNumber: clause.number,
+          heading: clause.heading,
+          page: clause.page,
+        },
         topics,
         confidence: confidenceFor({ party, topics, modal: modal.match[1].toLowerCase() }),
       });
@@ -287,9 +321,11 @@ export function mapToRules(obligations, applicableControls = []) {
 
   const mapped = obligations.map(obligation => {
     const controls = [...new Set(obligation.topics.flatMap(topicId => topicControls[topicId] || []))];
-    const rules = RULES
-      .filter(rule => obligation.topics.includes(rule.topicId) && (rule.party === obligation.party || obligation.party === 'both'))
-      .map(rule => rule.id);
+    const rules = RULES.filter(
+      rule =>
+        obligation.topics.includes(rule.topicId) &&
+        (rule.party === obligation.party || obligation.party === 'both'),
+    ).map(rule => rule.id);
     return {
       ...obligation,
       controls,

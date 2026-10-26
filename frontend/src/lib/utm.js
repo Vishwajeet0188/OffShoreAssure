@@ -9,13 +9,16 @@ const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_c
 export function captureUtm() {
   const params = new URLSearchParams(window.location.search);
   const tags = Object.fromEntries(
-    UTM_KEYS.filter(key => params.get(key)).map(key => [key, params.get(key).slice(0, 100)])
+    UTM_KEYS.filter(key => params.get(key)).map(key => [key, params.get(key).slice(0, 100)]),
   );
   if (Object.keys(tags).length === 0) return;
 
   try {
     if (localStorage.getItem(STORAGE_KEY)) return; // keep the first source
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...tags, landingPage: window.location.pathname.slice(0, 200) }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...tags, landingPage: window.location.pathname.slice(0, 200) }),
+    );
   } catch {
     /* storage blocked: the source just isn't recorded */
   }

@@ -30,14 +30,20 @@ const canSendEmail = () => Boolean(config.brevoApiKey || smtpTransport);
 /* "OffshoreAssure <no-reply@example.com>" → { name, email } */
 function parseSender(from) {
   const match = String(from).match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
-  return match ? { name: match[1].trim() || undefined, email: match[2].trim() } : { email: String(from).trim() };
+  return match
+    ? { name: match[1].trim() || undefined, email: match[2].trim() }
+    : { email: String(from).trim() };
 }
 
 async function deliver(to, message) {
   if (config.brevoApiKey) {
     const response = await fetch(BREVO_API_URL, {
       method: 'POST',
-      headers: { 'api-key': config.brevoApiKey, 'content-type': 'application/json', accept: 'application/json' },
+      headers: {
+        'api-key': config.brevoApiKey,
+        'content-type': 'application/json',
+        accept: 'application/json',
+      },
       body: JSON.stringify({
         sender: parseSender(config.smtp.from),
         to: [{ email: to }],
@@ -53,10 +59,17 @@ async function deliver(to, message) {
     }
     return;
   }
-  await smtpTransport.sendMail({ from: config.smtp.from, to, subject: message.subject, text: message.text, html: message.html });
+  await smtpTransport.sendMail({
+    from: config.smtp.from,
+    to,
+    subject: message.subject,
+    text: message.text,
+    html: message.html,
+  });
 }
 
-const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const esc = s =>
+  String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /* Wording for each code email. */
 export const EMAIL_TEMPLATES = {
@@ -65,9 +78,10 @@ export const EMAIL_TEMPLATES = {
     preheader: 'Your OffshoreAssure verification code',
     kicker: 'ACCOUNT VERIFICATION',
     title: 'Verify your email address',
-    message: 'Welcome to OffshoreAssure. Enter the verification code below to complete your account registration.',
+    message:
+      'Welcome to OffshoreAssure. Enter the verification code below to complete your account registration.',
     label: 'YOUR VERIFICATION CODE',
-    footer: 'If you did not create an account, you can safely ignore this email.'
+    footer: 'If you did not create an account, you can safely ignore this email.',
   },
   reset: {
     subject: 'Password reset code | OffshoreAssure',
@@ -76,8 +90,9 @@ export const EMAIL_TEMPLATES = {
     title: 'Reset your password',
     message: 'We received a request to reset your OffshoreAssure password. Use the code below to continue.',
     label: 'YOUR PASSWORD RESET CODE',
-    footer: 'If you did not request a password reset, you can ignore this email. Your password will remain unchanged.'
-  }
+    footer:
+      'If you did not request a password reset, you can ignore this email. Your password will remain unchanged.',
+  },
 };
 
 /* Shared branded layout (table-based with inline styles, so it renders in Gmail, Outlook and mobile mail apps). */
@@ -174,7 +189,11 @@ ${t.footer}
 
 Best regards,
 The OffshoreAssure Team`;
-  return { subject: t.subject, text, html: layout({ preheader: `${t.preheader}: ${code}`, kicker: t.kicker, body }) };
+  return {
+    subject: t.subject,
+    text,
+    html: layout({ preheader: `${t.preheader}: ${code}`, kicker: t.kicker, body }),
+  };
 }
 
 /* Sends a verification code. Without email settings (development) the code is printed in the server console. */
@@ -194,11 +213,22 @@ export function renderNotice(subject, lines, { kicker = 'ACCOUNT NOTICE', title 
   const body = `
               <h1 style="margin:0 0 16px;font-size:25px;line-height:1.3;color:#271a38;font-weight:bold;">${esc(title)}</h1>
               ${lines.map(l => `<p style="margin:0 0 14px;font-size:15px;line-height:1.8;color:#62596b;">${esc(l)}</p>`).join('\n              ')}
-              ${action ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:10px 0 6px;"><tr>
+              ${
+                action
+                  ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:10px 0 6px;"><tr>
                 <td style="background:#b95f50;border-radius:8px;"><a href="${esc(action.url)}" style="display:inline-block;padding:12px 22px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;">${esc(action.label)}</a></td>
               </tr></table>
-              <p style="margin:8px 0 0;font-size:12px;line-height:1.6;color:#9b92a2;">Or copy this link: ${esc(action.url)}</p>` : ''}`;
-  const text = [title, ...lines, action ? `${action.label}: ${action.url}` : null, 'Best regards,\nThe OffshoreAssure Team'].filter(Boolean).join('\n\n');
+              <p style="margin:8px 0 0;font-size:12px;line-height:1.6;color:#9b92a2;">Or copy this link: ${esc(action.url)}</p>`
+                  : ''
+              }`;
+  const text = [
+    title,
+    ...lines,
+    action ? `${action.label}: ${action.url}` : null,
+    'Best regards,\nThe OffshoreAssure Team',
+  ]
+    .filter(Boolean)
+    .join('\n\n');
   return { subject, text, html: layout({ preheader: lines[1] || title, kicker, body }) };
 }
 

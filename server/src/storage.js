@@ -5,9 +5,13 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { config } from './config.js';
 
-const key = () => config.storageKey === 'derive'
-  ? crypto.createHash('sha256').update('offshoreassure-storage:' + config.jwtSecret).digest()
-  : Buffer.from(config.storageKey, 'hex');
+const key = () =>
+  config.storageKey === 'derive'
+    ? crypto
+        .createHash('sha256')
+        .update('offshoreassure-storage:' + config.jwtSecret)
+        .digest()
+    : Buffer.from(config.storageKey, 'hex');
 
 export async function saveFile(storageKey, plain) {
   const iv = crypto.randomBytes(12);

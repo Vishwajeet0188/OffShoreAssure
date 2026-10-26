@@ -41,26 +41,52 @@ export function TransfersList() {
         {!assessments ? (
           <Loading pad />
         ) : assessments.length === 0 ? (
-          <p className="note pad">No assessments yet. Start with <Link className="link" to="/requirements">Stage 1 · Requirement</Link>.</p>
+          <p className="note pad">
+            No assessments yet. Start with{' '}
+            <Link className="link" to="/requirements">
+              Stage 1 · Requirement
+            </Link>
+            .
+          </p>
         ) : (
           <div className="tw">
             <table>
               <thead>
-                <tr><th>Assessment</th><th>Service</th><th>Vendor</th><th>Transfers</th><th></th></tr>
+                <tr>
+                  <th>Assessment</th>
+                  <th>Service</th>
+                  <th>Vendor</th>
+                  <th>Transfers</th>
+                  <th></th>
+                </tr>
               </thead>
               <tbody>
                 {assessments.map(assessment => (
-                  <tr key={assessment.reference} className="click" onClick={() => navigate('/transfers/' + assessment.reference)}>
+                  <tr
+                    key={assessment.reference}
+                    className="click"
+                    onClick={() => navigate('/transfers/' + assessment.reference)}
+                  >
                     <td>
-                      <Link className="adm-ulink" to={'/transfers/' + assessment.reference} onClick={e => e.stopPropagation()}>
+                      <Link
+                        className="adm-ulink"
+                        to={'/transfers/' + assessment.reference}
+                        onClick={e => e.stopPropagation()}
+                      >
                         <b className="mono">{assessment.reference}</b>
                       </Link>
                       <div className="note">{assessment.title}</div>
                     </td>
                     <td>{serviceLabel(assessment.serviceCode)}</td>
                     <td>{assessment.selectedVendor || <span className="muted">Not selected yet</span>}</td>
-                    <td><TransferStatus assessment={assessment} /></td>
-                    <td style={{ textAlign: 'right' }}><span className="link">Open <Icon n="arrow" s={13} /></span></td>
+                    <td>
+                      <TransferStatus assessment={assessment} />
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <span className="link">
+                        Open <Icon n="arrow" s={13} />
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -75,7 +101,11 @@ export function TransfersList() {
 function TransferStatus({ assessment }) {
   const transfers = assessment.transfers;
   if (transfers) {
-    return <span className={'b ' + statusTone(transfers.overall.status)}>v{transfers.version} · {transfers.overall.label}</span>;
+    return (
+      <span className={'b ' + statusTone(transfers.overall.status)}>
+        v{transfers.version} · {transfers.overall.label}
+      </span>
+    );
   }
   if (assessment.obligations) return <span className="muted">Ready to run</span>;
   return <span className="muted">Waiting for Stage 5</span>;
@@ -88,14 +118,19 @@ export default function Transfers() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback((version) => {
-    const query = version ? `?version=${version}` : '';
-    return api(`/assessments/${ref}/transfers${query}`)
-      .then(setState)
-      .catch(err => setError(err.message));
-  }, [ref]);
+  const load = useCallback(
+    version => {
+      const query = version ? `?version=${version}` : '';
+      return api(`/assessments/${ref}/transfers${query}`)
+        .then(setState)
+        .catch(err => setError(err.message));
+    },
+    [ref],
+  );
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   async function run() {
     setBusy(true);
@@ -116,7 +151,9 @@ export default function Transfers() {
 
   return (
     <div className="vs">
-      <Link className="link" to="/transfers" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>← Transfer assessment</Link>
+      <Link className="link" to="/transfers" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+        ← Transfer assessment
+      </Link>
       <PageHead
         eyebrow={`Buyer · Stage 6 · Transfer assessment · ${state.assessment.reference}`}
         title={state.assessment.title}
@@ -127,19 +164,29 @@ export default function Transfers() {
       <ol className="vs-steps" aria-label="Stage 6 steps">
         {STEPS.map(([number, title]) => (
           <li key={number} className={result && number <= 28 ? 'done' : ''}>
-            <span className="journey-n">{number}</span>{title}
+            <span className="journey-n">{number}</span>
+            {title}
           </li>
         ))}
       </ol>
 
-      {error ? <div className="rq-msg err" role="alert"><b>{error}</b></div> : null}
+      {error ? (
+        <div className="rq-msg err" role="alert">
+          <b>{error}</b>
+        </div>
+      ) : null}
 
       {state.blocked ? (
         <section className="card pad stack" data-section="transfers-blocked">
           <h2 style={{ margin: 0 }}>Run the transfer assessment</h2>
           <div className="rq-flag warning">
             <Icon n="alert" s={16} />
-            <span>{state.blocked} <Link className="link" to={'/obligations/' + ref}>Open obligation extraction</Link></span>
+            <span>
+              {state.blocked}{' '}
+              <Link className="link" to={'/obligations/' + ref}>
+                Open obligation extraction
+              </Link>
+            </span>
           </div>
         </section>
       ) : state.canRun ? (
@@ -156,9 +203,13 @@ export default function Transfers() {
             <Icon n="clock" s={20} />
             <div>
               <b>Stage 6 is complete for this assessment. Next: Stage 7 — Risk identification.</b>{' '}
-              <span className="note">The gaps from Stages 1 to 6 are brought together in one scored risk register.</span>
+              <span className="note">
+                The gaps from Stages 1 to 6 are brought together in one scored risk register.
+              </span>
             </div>
-            <Link className="btn primary" to={'/risks/' + ref} data-act="go-risks">Open risk register</Link>
+            <Link className="btn primary" to={'/risks/' + ref} data-act="go-risks">
+              Open risk register
+            </Link>
           </div>
         </>
       ) : null}
@@ -169,19 +220,34 @@ export default function Transfers() {
 function RunCard({ isUpdate, busy, onRun }) {
   return (
     <section className="card pad stack" data-section="transfers-run">
-      <h2 style={{ margin: 0 }}>{isUpdate ? 'Something has changed since the last run' : 'Step 25 · Map the data flows'}</h2>
+      <h2 style={{ margin: 0 }}>
+        {isUpdate ? 'Something has changed since the last run' : 'Step 25 · Map the data flows'}
+      </h2>
       <p style={{ margin: 0 }}>
-        OffshoreAssure uses your requirement (where data is stored and accessed from), the vendor’s delivery countries,
-        the contract’s transfer clause and the vendor’s answers to check every route, one by one.
+        OffshoreAssure uses your requirement (where data is stored and accessed from), the vendor’s delivery
+        countries, the contract’s transfer clause and the vendor’s answers to check every route, one by one.
       </p>
       <ul className="cp-facts">
-        <li><Icon n="globe" s={15} />One route per destination</li>
-        <li><Icon n="users" s={15} />Who receives the data, and their role</li>
-        <li><Icon n="shield" s={15} />UK adequacy or a contract safeguard</li>
+        <li>
+          <Icon n="globe" s={15} />
+          One route per destination
+        </li>
+        <li>
+          <Icon n="users" s={15} />
+          Who receives the data, and their role
+        </li>
+        <li>
+          <Icon n="shield" s={15} />
+          UK adequacy or a contract safeguard
+        </li>
       </ul>
       <div>
         <button className="btn primary" onClick={onRun} disabled={busy} data-act="run-transfers">
-          {busy ? 'Checking the routes…' : isUpdate ? 'Run again with the latest information' : 'Run transfer assessment'}
+          {busy
+            ? 'Checking the routes…'
+            : isUpdate
+              ? 'Run again with the latest information'
+              : 'Run transfer assessment'}
         </button>
       </div>
     </section>
@@ -198,16 +264,24 @@ function VersionBar({ state, onPick }) {
         <div>
           <b>Transfer assessment v{result.version}</b>
           <div className="note">
-            Saved {fmtTime(result.createdAt)} · requirement v{inputs.requirement} · contract v{inputs.contract} · obligations v{inputs.obligations} · rule pack {result.rulePackVersion}
+            Saved {fmtTime(result.createdAt)} · requirement v{inputs.requirement} · contract v
+            {inputs.contract} · obligations v{inputs.obligations} · rule pack {result.rulePackVersion}
           </div>
-          <div className="note">Fingerprint <span className="mono">{result.snapshotSha256.slice(0, 16)}…</span></div>
+          <div className="note">
+            Fingerprint <span className="mono">{result.snapshotSha256.slice(0, 16)}…</span>
+          </div>
         </div>
       </div>
       {state.versions.length > 1 ? (
-        <select aria-label="Assessment version" value={result.version} onChange={e => onPick(Number(e.target.value))}>
+        <select
+          aria-label="Assessment version"
+          value={result.version}
+          onChange={e => onPick(Number(e.target.value))}
+        >
           {state.versions.map(v => (
             <option key={v.version} value={v.version}>
-              v{v.version} · {v.overall.label}{v.version === state.versions[0].version ? ' (latest)' : ''}
+              v{v.version} · {v.overall.label}
+              {v.version === state.versions[0].version ? ' (latest)' : ''}
             </option>
           ))}
         </select>
@@ -230,28 +304,41 @@ function SummaryCard({ result }) {
       <div className="asr-head">
         <div>
           <div className="eyebrow">Steps 25–27 · Transfer findings</div>
-          <h2 className="prf-title" style={{ margin: '4px 0' }}>Where the data goes</h2>
+          <h2 className="prf-title" style={{ margin: '4px 0' }}>
+            Where the data goes
+          </h2>
           <div className="note">
-            Contract transfer clause: {contractTerms.clauseNumbers.length ? contractTerms.clauseNumbers.join(', ') : 'none found'}
+            Contract transfer clause:{' '}
+            {contractTerms.clauseNumbers.length ? contractTerms.clauseNumbers.join(', ') : 'none found'}
             {contractTerms.safeguards.length ? ` · ${contractTerms.safeguards.join('; ')}` : ''}
           </div>
         </div>
         <span className={'b ' + statusTone(result.overall.status)}>{result.overall.label}</span>
       </div>
       <div className="ca-figures">
-        {figures.map(([label, value]) => <div key={label}><b>{value}</b><span>{label}</span></div>)}
+        {figures.map(([label, value]) => (
+          <div key={label}>
+            <b>{value}</b>
+            <span>{label}</span>
+          </div>
+        ))}
       </div>
       {result.findings.length ? (
         <div className="asr-block" data-section="transfers-findings">
           <h3>Findings</h3>
           <ul className="cp-gaps">
             {result.findings.map(finding => (
-              <li key={finding.routeId}><span className={'b ' + statusTone(finding.status)}>{finding.routeId}</span><span>{finding.text}</span></li>
+              <li key={finding.routeId}>
+                <span className={'b ' + statusTone(finding.status)}>{finding.routeId}</span>
+                <span>{finding.text}</span>
+              </li>
             ))}
           </ul>
         </div>
       ) : null}
-      <p className="ir-foot note"><Icon n="shield" s={14} /> {result.note}</p>
+      <p className="ir-foot note">
+        <Icon n="shield" s={14} /> {result.note}
+      </p>
     </section>
   );
 }
@@ -276,18 +363,24 @@ function RoutesCard({ result }) {
             <div key={route.id} className={'cp-ctl' + (isOpen ? ' open' : '')} data-route={route.to}>
               <button className="cp-ctl-h tr-route-h" onClick={() => toggle(route.id)} aria-expanded={isOpen}>
                 <span className="rid">{route.id}</span>
-                <b>{route.fromName} → {route.toName}</b>
+                <b>
+                  {route.fromName} → {route.toName}
+                </b>
                 <span className="note">{route.uses.join(' · ')}</span>
                 <span className={'b ' + statusTone(route.status)}>{route.statusLabel}</span>
               </button>
               {isOpen ? (
                 <div className="cp-ctl-b">
-                  <div className="note">Received by: {route.recipients.map(r => `${r.name} (${r.role})`).join('; ')}</div>
+                  <div className="note">
+                    Received by: {route.recipients.map(r => `${r.name} (${r.role})`).join('; ')}
+                  </div>
                   <ul className="tr-checks">
                     {route.checks.map((check, index) => (
                       <li key={index}>
                         <span className={'b ' + (CHECK_TONE[check.result] || 'b-mute')}>{check.result}</span>
-                        <span><b>{check.name}:</b> {check.detail}</span>
+                        <span>
+                          <b>{check.name}:</b> {check.detail}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -305,13 +398,21 @@ function QuestionsCard({ result }) {
   const forBuyer = result.questions.filter(q => q.to === 'buyer');
   const forVendor = result.questions.filter(q => q.to === 'vendor');
 
-  const list = (questions, empty) => questions.length === 0 ? <p className="note" style={{ margin: 0 }}>{empty}</p> : (
-    <ul className="tr-questions">
-      {questions.map((question, index) => (
-        <li key={index}><span className="mono note">{question.routeId}</span><span>{question.text}</span></li>
-      ))}
-    </ul>
-  );
+  const list = (questions, empty) =>
+    questions.length === 0 ? (
+      <p className="note" style={{ margin: 0 }}>
+        {empty}
+      </p>
+    ) : (
+      <ul className="tr-questions">
+        {questions.map((question, index) => (
+          <li key={index}>
+            <span className="mono note">{question.routeId}</span>
+            <span>{question.text}</span>
+          </li>
+        ))}
+      </ul>
+    );
 
   return (
     <section className="card" data-section="transfers-questions">
@@ -323,8 +424,14 @@ function QuestionsCard({ result }) {
         <span className="note">{result.questions.length}</span>
       </div>
       <div className="tr-qcols">
-        <div className="asr-block"><h3>For you (the buyer)</h3>{list(forBuyer, 'Nothing for you to do.')}</div>
-        <div className="asr-block"><h3>For the vendor</h3>{list(forVendor, 'Nothing to ask the vendor.')}</div>
+        <div className="asr-block">
+          <h3>For you (the buyer)</h3>
+          {list(forBuyer, 'Nothing for you to do.')}
+        </div>
+        <div className="asr-block">
+          <h3>For the vendor</h3>
+          {list(forVendor, 'Nothing to ask the vendor.')}
+        </div>
       </div>
     </section>
   );

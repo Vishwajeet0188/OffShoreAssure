@@ -9,7 +9,8 @@ export const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, 
 
 // What users see when the service cannot be reached. Technical details go to the
 // browser console in development only, never on the page.
-export const UNAVAILABLE_MESSAGE = 'We could not connect to OffshoreAssure just now. Please try again in a moment.';
+export const UNAVAILABLE_MESSAGE =
+  'We could not connect to OffshoreAssure just now. Please try again in a moment.';
 
 export class ApiError extends Error {
   constructor(status, body) {
@@ -23,7 +24,9 @@ export class ApiError extends Error {
 
 export function unavailableError(status = 0, detail = '') {
   if (import.meta.env.DEV) {
-    console.warn(`[OffshoreAssure] API not reachable (${detail || 'status ' + status}). Is the server running? cd server && npm run dev`);
+    console.warn(
+      `[OffshoreAssure] API not reachable (${detail || 'status ' + status}). Is the server running? cd server && npm run dev`,
+    );
   }
   return new ApiError(status, { error: 'unavailable', message: UNAVAILABLE_MESSAGE });
 }

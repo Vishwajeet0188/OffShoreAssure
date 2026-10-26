@@ -70,7 +70,7 @@ export const EVENT_LABELS = {
   'admin.vendor_rejected': ['Admin marked vendor not verified', 'coral'],
   'organisation.join_requested': ['Requested to join organisation', 'amber'],
   'organisation.member_approved': ['Organisation member approved', 'sage'],
-  'organisation.member_rejected': ['Organisation member not approved', 'coral']
+  'organisation.member_rejected': ['Organisation member not approved', 'coral'],
 };
 
 export const eventLabel = e => (EVENT_LABELS[e] || [e.replace(/[._]/g, ' ')])[0];
@@ -80,13 +80,46 @@ export const eventTone = e => (EVENT_LABELS[e] || [null, 'mute'])[1];
 export function eventDetail(ev) {
   const d = ev.detail || {};
   if (d.organisationId && d.email) return [d.organisationName, d.email].filter(Boolean).join(' · ');
-  if (d.organisationId) return [d.organisationName, d.note && 'reason: ' + d.note, d.reverify && 'sent back for verification'].filter(Boolean).join(' · ');
+  if (d.organisationId)
+    return [d.organisationName, d.note && 'reason: ' + d.note, d.reverify && 'sent back for verification']
+      .filter(Boolean)
+      .join(' · ');
   if (d.role) return 'Role: ' + d.role;
-  if (d.reference && d.version) return [d.reference, 'v' + d.version, d.reason || d.changeReason, d.controls != null && d.controls + ' controls'].filter(Boolean).join(' · ');
-  if (d.reference) return [d.reference, d.title, d.validationStatus, d.riskTier && 'risk ' + d.riskTier.toLowerCase()].filter(Boolean).join(' · ');
-  if (d.requirementId) return [d.title, d.fileName, d.missing != null ? (Array.isArray(d.missing) ? d.missing.length : d.missing) + ' missing' : null, d.reason].filter(Boolean).join(' · ');
-  if (d.reason) return { wrong_password: 'Wrong password', unknown_email: 'Unknown email: ' + (d.email || ''), wrong_code: 'Wrong code', expired: 'Code expired', too_many_attempts: 'Too many attempts', no_code: 'No active code' }[d.reason] || d.reason;
-  if (d.purpose) return (d.purpose === 'reset' ? 'Password reset' : 'Registration') + (d.resend ? ' · resent' : '');
+  if (d.reference && d.version)
+    return [
+      d.reference,
+      'v' + d.version,
+      d.reason || d.changeReason,
+      d.controls != null && d.controls + ' controls',
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  if (d.reference)
+    return [d.reference, d.title, d.validationStatus, d.riskTier && 'risk ' + d.riskTier.toLowerCase()]
+      .filter(Boolean)
+      .join(' · ');
+  if (d.requirementId)
+    return [
+      d.title,
+      d.fileName,
+      d.missing != null ? (Array.isArray(d.missing) ? d.missing.length : d.missing) + ' missing' : null,
+      d.reason,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  if (d.reason)
+    return (
+      {
+        wrong_password: 'Wrong password',
+        unknown_email: 'Unknown email: ' + (d.email || ''),
+        wrong_code: 'Wrong code',
+        expired: 'Code expired',
+        too_many_attempts: 'Too many attempts',
+        no_code: 'No active code',
+      }[d.reason] || d.reason
+    );
+  if (d.purpose)
+    return (d.purpose === 'reset' ? 'Password reset' : 'Registration') + (d.resend ? ' · resent' : '');
   if (d.email && d.to) return `${d.email}: ${d.from} → ${d.to}`;
   if (d.fullName && d.email) return `${d.fullName} (${d.email})`;
   if (d.organisationName) return [d.organisationName, d.sector, d.jobRole].filter(Boolean).join(' · ');
@@ -96,6 +129,8 @@ export function eventDetail(ev) {
 }
 
 export const STATUS_BADGE = {
-  active: ['Approved', 'Active'], pending: ['Pending', 'Pending approval'],
-  unverified: ['In review', 'Email not verified'], inactive: ['Restricted', 'Inactive']
+  active: ['Approved', 'Active'],
+  pending: ['Pending', 'Pending approval'],
+  unverified: ['In review', 'Email not verified'],
+  inactive: ['Restricted', 'Inactive'],
 };

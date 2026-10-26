@@ -9,7 +9,7 @@ const cookieOptions = () => ({
   sameSite: config.cookieSameSite,
   secure: config.cookieSecure,
   path: '/',
-  maxAge: config.sessionHours * 3600 * 1000
+  maxAge: config.sessionHours * 3600 * 1000,
 });
 
 export function startSession(res, user) {
@@ -31,7 +31,9 @@ export async function loadUser(req, _res, next) {
     const r = await query('SELECT id, email, status, is_admin, role FROM users WHERE id = $1', [sub]);
     const u = r.rows[0];
     if (u && u.status === 'active') req.user = { ...u, role: u.is_admin ? 'admin' : u.role };
-  } catch { /* invalid or expired token: signed out */ }
+  } catch {
+    /* invalid or expired token: signed out */
+  }
   next();
 }
 
@@ -49,6 +51,12 @@ export function requireAdmin(req, res, next) {
 /* Role guard: requireRole('buyer') / requireRole('vendor'). Admins use requireAdmin. */
 export const requireRole = role => (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'not_signed_in', message: 'Please sign in.' });
-  if (req.user.role !== role) return res.status(403).json({ error: 'wrong_role', message: role === 'buyer' ? 'This area is for buyers.' : 'This area is for vendors.' });
+  if (req.user.role !== role)
+    return res
+      .status(403)
+      .json({
+        error: 'wrong_role',
+        message: role === 'buyer' ? 'This area is for buyers.' : 'This area is for vendors.',
+      });
   next();
 };

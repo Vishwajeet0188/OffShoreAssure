@@ -5,12 +5,22 @@ const TONE = {
   sage: ['Verified', 'Approved', 'Submitted', 'Complete', 'Accepted'],
   amber: ['Pending', 'In review', 'Attention', 'Draft', 'In progress'],
   coral: ['Restricted', 'Rejected', 'Action required'],
-  plum: ['Info']
+  plum: ['Info'],
 };
 export const tone = s => Object.keys(TONE).find(k => TONE[k].includes(s)) || 'mute';
 
 export function Badge({ s, label, style }) {
   const t = tone(s);
-  return <span className={'b b-' + t} style={style}>{StatusIcon[t]}{label != null ? label : s}</span>;
+  return (
+    <span className={'b b-' + t} style={style}>
+      {StatusIcon[t]}
+      {label != null ? label : s}
+    </span>
+  );
 }
-export const MuteBadge = ({ children }) => <span className="b b-mute">{StatusIcon.mute}{children}</span>;
+export const MuteBadge = ({ children }) => (
+  <span className="b b-mute">
+    {StatusIcon.mute}
+    {children}
+  </span>
+);
