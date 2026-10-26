@@ -383,6 +383,12 @@ Specifications for Stages 2–9 (field lists, rules) will come from the client s
 - **API:** `GET /api/organisation`, `PATCH /api/organisation/members/:userId`, `PATCH /api/admin/buyers/members/:userId`.
 - **Tests:** API 34; browser 49 / 41 / 30, all pass (the roles run now covers a join request, the blocked pending member, and owner approval).
 
+### Fixes found during the hands-on practical (26 Oct 2026) ✅
+- **Stage 5 · audit rule:** a clause such as "the Customer may audit … and the Supplier shall provide the supporting evidence" was read as a vendor obligation, and rule R-AUD-01 only looked for a buyer obligation, so the register showed a false "No obligation" gap for audit. R-AUD-01 is now met by either party's audit clause (`server/src/engine/obligations.js`); new engine test in `stage5.test.js`. Registers already saved keep their result (they are locked); a new contract version gives a new register with the fix.
+- **Stage 8 · document sizes:** small proof files showed "0 KB"; the buyer and vendor action pages now use the shared size format ("58 B", "12 KB", "1.2 MB").
+- **Practical run-through:** all 9 stages (43 steps) were done by hand with a buyer (UK Company Ltd), a verified directory vendor (ABC) and the admin; every result matched the rules, apart from the two items fixed here.
+- **Stage 2 · candidate count:** the bare "0" beside "Candidates and comparison" now reads "0 candidates" / "1 candidate".
+
 ### Sidebar and Evidence page as in the demo (26 Oct 2026) ✅
 - **Decision (Vishwajeet):** the whole buyer screen matches the demo word for word, including "Compliant" and "Overall Compliance" on the dashboard.
 - **Sidebar (buyer):** Dashboard, Suppliers, Assessments, Contracts, Obligations, Data Transfers, Workflow, Evidence, Reports, Settings, then "v1.0.0 | Prototype". Each opens the existing page that does that job: Suppliers → vendor selection, Assessments → requirements and assessments (also lit for compliance and risks), Contracts → contract analysis, Obligations, Data Transfers → transfer assessment, Workflow → remediation, Reports → monitoring and audit, Settings → organisation. "Help and support" and "Home page" are in the name menu. The vendor portal sidebar is unchanged.
@@ -879,7 +885,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 
 | Suite | Count | Last result |
 |---|---|---|
-| API (`server`, `npm test`) | 107 (Support tickets: 4, Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 13, Stage 3: 4, Stage 4: 6, Stage 5: 6, Stage 6: 5, Stage 7: 5, Stage 8: 7, Stage 9: 8, Completion items: 9, Website: 2, Sign-up source: 1) | ✅ all pass |
+| API (`server`, `npm test`) | 108 (Support tickets: 4, Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 13, Stage 3: 4, Stage 4: 6, Stage 5: 7, Stage 6: 5, Stage 7: 5, Stage 8: 7, Stage 9: 8, Completion items: 9, Website: 2, Sign-up source: 1) | ✅ all pass |
 | Browser, Stage 0 + admin console | 49 checks | ✅ all pass |
 | Browser, Stage 1 (Steps 1–4) + clean build | 51 checks | ✅ all pass |
 | Browser, roles (buyer / vendor / admin / membership) | 32 checks | ✅ all pass |

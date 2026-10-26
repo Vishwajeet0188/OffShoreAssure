@@ -10382,3 +10382,9 @@ button.user {
   width: 66px;
   height: 66px;
 }
+
+/* Candidate count beside the "Candidates and comparison" heading. */
+.vs-count {
+  flex: none;
+  white-space: nowrap;
+}

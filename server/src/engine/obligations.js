@@ -96,7 +96,9 @@ export const RULES = [
   {
     id: 'R-AUD-01',
     topicId: 'audit_rights',
-    party: 'buyer',
+    // Met by the buyer's right to audit or by the vendor's duty to support audits:
+    // contracts often write both in one sentence ("the Customer may audit … and the Supplier shall provide …").
+    party: 'any',
     text: 'The buyer can audit or inspect the vendor, and the vendor provides the information needed.',
     source: 'UK GDPR Art. 28(3)(h)',
   },
@@ -324,7 +326,7 @@ export function mapToRules(obligations, applicableControls = []) {
     const rules = RULES.filter(
       rule =>
         obligation.topics.includes(rule.topicId) &&
-        (rule.party === obligation.party || obligation.party === 'both'),
+        (rule.party === 'any' || rule.party === obligation.party || obligation.party === 'both'),
     ).map(rule => rule.id);
     return {
       ...obligation,

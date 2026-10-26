@@ -190,6 +190,24 @@ test('engine: a rule with no obligation is a gap only when it applies to the req
   assert.ok(!withoutTransfer.gaps.some(gap => gap.ruleId === 'R-TRF-01'));
 });
 
+test('engine: an audit clause covers the audit rule whichever party the sentence starts with', () => {
+  // Found in practice: "the Customer may audit … and the Supplier shall provide the evidence" is read as a
+  // vendor obligation ("shall"); the audit rule must still count as covered.
+  const clauses = analyseContract([
+    "1. Audit\n1.1 The Customer, or an auditor appointed by it, may audit the Supplier's compliance with this " +
+      "Agreement on 30 days' written notice, and the Supplier shall provide the supporting evidence requested.",
+  ]).clauses;
+  const register = buildRegister(clauses, {
+    buyerName: 'UK Company Ltd',
+    vendorName: 'ABC',
+    applicableControls: ['ASS-013'],
+  });
+
+  const audit = register.ruleTrace.find(rule => rule.id === 'R-AUD-01');
+  assert.equal(audit.status, 'COVERED');
+  assert.ok(!register.gaps.some(gap => gap.ruleId === 'R-AUD-01'), 'no false "no obligation" gap');
+});
+
 test('step 21: blocked until the contract has been analysed (Stage 4)', async () => {
   const r = await buyer('POST', `/assessments/${ref}/obligations`);
   assert.equal(r.status, 409);

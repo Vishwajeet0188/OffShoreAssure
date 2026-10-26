@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../lib/api.js';
 import { fmtTime } from '../../lib/format.js';
+import { fmtBytes } from '../../lib/requirements.js';
 import {
   EVENT_WORD,
   STATUS_TONE,
@@ -242,7 +243,8 @@ function VendorAction({ reference, a, busy, act, fileRules }) {
                     {e.fileName}
                   </a>{' '}
                   <span className="note">
-                    {Math.round(e.size / 1024)} KB{e.submitted ? ' · sent' : ''}
+                    {fmtBytes(e.size)}
+                    {e.submitted ? ' · sent' : ''}
                   </span>
                   {editable && !e.submitted ? (
                     <button className="btn sm" onClick={() => remove(e)} disabled={busy === 'rm' + e.id}>

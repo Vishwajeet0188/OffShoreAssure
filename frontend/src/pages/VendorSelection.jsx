@@ -344,7 +344,9 @@ export default function VendorSelection() {
               vendor you added or reused is shown on its own, without a rank.
             </div>
           </div>
-          <span className="note">{st.candidates.length}</span>
+          <span className="note vs-count">
+            {st.candidates.length} candidate{st.candidates.length === 1 ? '' : 's'}
+          </span>
         </div>
         {!st.candidates.length ? (
           <p className="note pad">No candidates yet. Use one of the three options above.</p>

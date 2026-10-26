@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { fmtTime } from '../lib/format.js';
+import { fmtBytes } from '../lib/requirements.js';
 import { serviceLabel } from '../lib/assessments.js';
 import { ratingTone } from '../lib/risks.js';
 import {
@@ -590,7 +591,7 @@ function ActionBody({ reference, a, busy, act }) {
                   {e.fileName}
                 </a>{' '}
                 <span className="note">
-                  {Math.round(e.size / 1024)} KB · {fmtTime(e.uploadedAt)}
+                  {fmtBytes(e.size)} · {fmtTime(e.uploadedAt)}
                 </span>
               </li>
             ))}
