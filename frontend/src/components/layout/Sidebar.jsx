@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { STAGES, VENDOR_JOURNEY } from '../../lib/stages.js';
-import { Icon, BackArrow } from '../common/Icon.jsx';
+import { Icon } from '../common/Icon.jsx';
 import { Logo, Waves } from './Brand.jsx';
 
 /*
@@ -27,7 +27,11 @@ const BUYER_MENU = [
 
 const within = (pathname, path) => pathname === path || pathname.startsWith(path + '/');
 
-/* Sidebar. Buyer portal: the demo's menu. Vendor portal: Dashboard + the vendor's part of the journey. */
+/*
+ * Sidebar, the same clean frame in both portals: logo, Dashboard and the menu.
+ * Buyer portal: the demo's menu. Vendor portal: the vendor's part of the journey.
+ * Help, the home page, dark mode and sign out are in the name menu (top bar).
+ */
 export default function Sidebar({ portal = 'buyer', open = false, onClose }) {
   const { pathname } = useLocation();
   const vendor = portal === 'vendor';
@@ -65,12 +69,6 @@ export default function Sidebar({ portal = 'buyer', open = false, onClose }) {
         </span>
         <small>Assurance for the connected world.</small>
       </NavLink>
-      {/* The buyer portal follows the client's demo, which has no portal label. */}
-      {vendor ? (
-        <div className="side-role" title="You are signed in to the vendor portal">
-          <span>Vendor portal</span>
-        </div>
-      ) : null}
       <nav className="mods" aria-label="Workspace">
         <NavLink
           to={vendor ? '/vendor' : '/dashboard'}
@@ -85,17 +83,6 @@ export default function Sidebar({ portal = 'buyer', open = false, onClose }) {
 
         {vendor ? <VendorMenu items={journey} pathname={pathname} /> : <BuyerMenu pathname={pathname} />}
       </nav>
-      {vendor ? (
-        <NavLink className="mod" to="/" style={{ marginTop: 'auto' }} title="Public home page">
-          <BackArrow s={17} />
-          <span className="lbl">Back to home page</span>
-        </NavLink>
-      ) : null}
-      <div className="foot side-version" style={{ marginTop: vendor ? 0 : 'auto' }}>
-        <span>v1.0.0</span>
-        <span aria-hidden="true">|</span>
-        <span>Prototype</span>
-      </div>
     </aside>
   );
 }
@@ -121,16 +108,6 @@ function BuyerMenu({ pathname }) {
 function VendorMenu({ items, pathname }) {
   return (
     <>
-      <NavLink
-        to="/contact"
-        className="mod"
-        title="Raise a support ticket and see the replies"
-        data-act="contact"
-      >
-        <Icon n="ticket" s={19} />
-        <span className="lbl">Help and support</span>
-      </NavLink>
-      <div className="mods-grp">Your part in the assessment</div>
       {items.map(it => {
         const on = within(pathname, it.to);
         return (

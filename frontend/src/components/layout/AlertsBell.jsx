@@ -3,14 +3,34 @@ import { Link, useLocation } from 'react-router-dom';
 import { api } from '../../lib/api.js';
 import { Icon } from '../common/Icon.jsx';
 
-const KIND_WORD = { overdue: 'Overdue', expiry: 'Expiry', review: 'To review', decide: 'To decide' };
-const KIND_TONE = { overdue: 'b-coral', expiry: 'b-amber', review: 'b-amber', decide: 'b-plum' };
+const KIND_WORD = {
+  overdue: 'Overdue',
+  expiry: 'Expiry',
+  review: 'To review',
+  decide: 'To decide',
+  returned: 'More needed',
+  due: 'Due soon',
+  answer: 'To answer',
+  invited: 'Invitation',
+};
+const KIND_TONE = {
+  overdue: 'b-coral',
+  expiry: 'b-amber',
+  review: 'b-amber',
+  decide: 'b-plum',
+  returned: 'b-coral',
+  due: 'b-amber',
+  answer: 'b-plum',
+  invited: 'b-plum',
+};
+
+const ENDPOINT = { buyer: '/assessments/alerts', vendor: '/vendor/alerts' };
 
 /*
  * Buyer portal bell: overdue actions, certificates or insurance expiring within
  * 30 days, and work waiting for the buyer. The number is how many there are.
  */
-export default function AlertsBell() {
+export default function AlertsBell({ portal = 'buyer' }) {
   const [alerts, setAlerts] = useState([]);
   const [open, setOpen] = useState(false);
   const boxRef = useRef(null);
@@ -18,11 +38,11 @@ export default function AlertsBell() {
 
   // Load on every page change, so the count stays current.
   useEffect(() => {
-    api('/assessments/alerts')
+    api(ENDPOINT[portal])
       .then(result => setAlerts(result.alerts))
       .catch(() => setAlerts([]));
     setOpen(false);
-  }, [pathname]);
+  }, [pathname, portal]);
 
   // Close when clicking anywhere else or pressing Escape.
   useEffect(() => {

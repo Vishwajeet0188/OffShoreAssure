@@ -7,21 +7,47 @@ import { Icon } from '../common/Icon.jsx';
 const MIN_LENGTH = 2;
 const WAIT_MS = 250; // wait for a pause in typing before asking the server
 
-// Pages anyone in the buyer portal can jump to by name.
-const PAGES = [
-  { title: 'Dashboard', to: '/dashboard' },
-  { title: 'Organisation', to: '/organisation' },
-  { title: 'Help and support', to: '/contact' },
-  ...STAGES.map(stage => ({ title: stage.title, to: stage.path || '/stage/' + stage.slug, stage: stage.n })),
-];
+// What each portal searches, and the pages it can jump to by name.
+const PORTALS = {
+  buyer: {
+    endpoint: '/assessments/search',
+    placeholder: 'Search suppliers, contracts, obligations, etc...',
+    pages: [
+      { title: 'Dashboard', to: '/dashboard' },
+      { title: 'Organisation', to: '/organisation' },
+      { title: 'Help and support', to: '/contact' },
+      ...STAGES.map(stage => ({
+        title: stage.title,
+        to: stage.path || '/stage/' + stage.slug,
+        stage: stage.n,
+      })),
+    ],
+  },
+  vendor: {
+    endpoint: '/vendor/search',
+    placeholder: 'Search assessments, obligations, actions, etc...',
+    pages: [
+      { title: 'Dashboard', to: '/vendor' },
+      { title: 'Company profile', to: '/vendor/profile' },
+      { title: 'Assessments', to: '/vendor/assessments' },
+      { title: 'Obligations', to: '/vendor/obligations' },
+      { title: 'Actions', to: '/vendor/actions' },
+      { title: 'Track record', to: '/vendor/track-record' },
+      { title: 'Help and support', to: '/contact' },
+    ],
+  },
+};
 
 /*
- * Search box in the buyer top bar. Finds the organisation's assessments, vendors,
- * contracts, obligations, risks and actions (server), and pages by name (here).
+ * Search box in the top bar.
+ *   Buyer: the organisation's assessments, vendors, contracts, obligations, risks and actions.
+ *   Vendor: its own assessments, obligations and actions.
+ * Pages are found by name too.
  * Arrow keys move through the results, Enter opens one, Escape closes the list.
  * Ctrl+K or "/" puts the cursor in the box from anywhere.
  */
-export default function TopSearch() {
+export default function TopSearch({ portal = 'buyer' }) {
+  const config = PORTALS[portal];
   const [text, setText] = useState('');
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -76,7 +102,7 @@ export default function TopSearch() {
     setLoading(true);
 
     const timer = setTimeout(() => {
-      api('/assessments/search?q=' + encodeURIComponent(query))
+      api(config.endpoint + '?q=' + encodeURIComponent(query))
         .then(result => current && setGroups(result.groups))
         .catch(() => current && setGroups([]))
         .finally(() => current && setLoading(false));
@@ -86,14 +112,14 @@ export default function TopSearch() {
       current = false;
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, config.endpoint]);
 
   // Pages first, then the records, as one list for the arrow keys.
   const results = useMemo(() => {
     if (query.length < MIN_LENGTH) return [];
 
     const lower = query.toLowerCase();
-    const pages = PAGES.filter(page => page.title.toLowerCase().includes(lower)).slice(0, 4);
+    const pages = config.pages.filter(page => page.title.toLowerCase().includes(lower)).slice(0, 4);
     const list = pages.map(page => ({
       group: 'Pages',
       title: page.title,
@@ -105,7 +131,7 @@ export default function TopSearch() {
       for (const item of group.items) list.push({ group: group.label, ...item });
     }
     return list;
-  }, [groups, query]);
+  }, [groups, query, config.pages]);
 
   useEffect(() => setActive(0), [results]);
 
@@ -142,7 +168,7 @@ export default function TopSearch() {
           ref={inputRef}
           type="search"
           value={text}
-          placeholder="Search suppliers, contracts, obligations, etc..."
+          placeholder={config.placeholder}
           aria-label="Search your assessments"
           aria-expanded={showList}
           aria-controls="top-search-results"

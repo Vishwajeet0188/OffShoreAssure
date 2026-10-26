@@ -10,6 +10,7 @@ import { adminRouter } from './admin/routes.js';
 import { requirementsRouter } from './requirements/routes.js';
 import { assessmentsRouter } from './assessments/routes.js';
 import { selectionRouter, vendorPortalRouter } from './selection/routes.js';
+import { vendorPortalTopRouter } from './vendor/portal.js';
 import { complianceBuyerRouter, complianceVendorRouter } from './compliance/routes.js';
 import { contractRouter } from './contracts/routes.js';
 import { obligationsBuyerRouter, obligationsVendorRouter } from './obligations/routes.js';
@@ -101,6 +102,7 @@ export function createApp() {
   api.use('/vendor', obligationsVendorRouter);
   api.use('/vendor', remediationVendorRouter);
   api.use('/vendor', trackRecordRouter);
+  api.use('/vendor', vendorPortalTopRouter);
   api.use('/organisation', organisationRouter);
   api.use('/feedback', feedbackRouter);
   api.use('/support', supportRouter);
@@ -111,12 +113,10 @@ export function createApp() {
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
     if (err.status === 502 && err.message === 'email_failed')
-      return res
-        .status(502)
-        .json({
-          error: 'email_failed',
-          message: 'We could not send the verification email. Please try again in a moment.',
-        });
+      return res.status(502).json({
+        error: 'email_failed',
+        message: 'We could not send the verification email. Please try again in a moment.',
+      });
     if (err.type === 'entity.parse.failed')
       return res.status(400).json({ error: 'bad_json', message: 'Invalid request.' });
     console.error(err);

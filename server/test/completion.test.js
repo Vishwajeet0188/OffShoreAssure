@@ -384,6 +384,32 @@ test('evidence page: contracts and vendor evidence in the demo groups, with thei
   );
 });
 
+test('vendor top bar: the bell lists its own expiring certificate; search finds its own actions only', async () => {
+  let r = await vendor('GET', '/vendor/alerts');
+  assert.equal(r.status, 200);
+  assert.ok(
+    r.body.alerts.some(alert => alert.kind === 'expiry' && /iso27001/.test(alert.title)),
+    'its certificate expires within 30 days',
+  );
+  assert.ok(
+    r.body.alerts.every(alert => alert.path.startsWith('/vendor')),
+    'links stay in the vendor portal',
+  );
+
+  r = await vendor('GET', '/vendor/search?q=ACT');
+  assert.equal(r.status, 200);
+  const actions = r.body.groups.find(group => group.key === 'actions');
+  assert.ok(actions && actions.items.length > 0, 'its own actions are found');
+  assert.ok(actions.items.every(item => item.to === '/vendor/actions/' + ref));
+
+  r = await vendor('GET', '/vendor/search?q=' + encodeURIComponent(ref));
+  assert.ok(r.body.groups.some(group => group.key === 'assessments'));
+  assert.deepEqual((await vendor('GET', '/vendor/search?q=a')).body.groups, [], 'one letter is too short');
+
+  assert.equal((await buyer('GET', '/vendor/alerts')).status, 403, 'buyers cannot use the vendor bell');
+  assert.equal((await buyer('GET', '/vendor/search?q=ACT')).status, 403);
+});
+
 test('top bar search: finds the buyer’s own assessments, vendors and risks, nobody else’s', async () => {
   let r = await buyer('GET', '/assessments/search?q=' + encodeURIComponent(ref));
   assert.equal(r.status, 200);

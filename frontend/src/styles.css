@@ -10211,13 +10211,6 @@ button.user {
 
 /* Sidebar footer from the demo */
 
-.side-version {
-  display: flex;
-  gap: 8px;
-  font-size: 12px;
-  opacity: 0.75;
-}
-
 @media (max-width: 640px) {
   /* On a phone the search is a magnifier button (see "Search box in the buyer top bar"). */
   .top-buyer .top-search {
@@ -10387,4 +10380,10 @@ button.user {
 .vs-count {
   flex: none;
   white-space: nowrap;
+}
+
+/* Vendor verification badge at the top of the name menu. */
+.user-pop-head .b {
+  align-self: flex-start;
+  margin: 4px 0 2px;
 }

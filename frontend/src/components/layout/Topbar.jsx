@@ -4,7 +4,6 @@ import { useAuth, displayName } from '../../context/AuthContext.jsx';
 import { VERIFY_LABEL } from '../../lib/roles.js';
 import { useTheme } from '../../lib/theme.js';
 import { Badge } from '../common/Badges.jsx';
-import ThemeToggle from '../extras/ThemeToggle.jsx';
 import { Icon } from '../common/Icon.jsx';
 import AlertsBell from './AlertsBell.jsx';
 import TopSearch from './TopSearch.jsx';
@@ -19,11 +18,10 @@ const initialsOf = name =>
     .toUpperCase();
 
 /*
- * Top bar.
- *   Buyer portal (layout from the client's demo): search, the bell, and the person's
- *   name with a ▾ menu (organisation, help, dark mode, sign out).
- *   Vendor portal: the role, the organisation and its verification, the theme switch,
- *   the person and Sign out.
+ * Top bar, the same in both portals (layout from the client's demo): the person's
+ * name with a ▾ menu (settings, help, home page, dark mode, sign out).
+ * Search and the bell in both portals, each over that person's own records.
+ *   Vendor portal: the company and its verification are at the top of the menu.
  */
 export default function Topbar({ portal = 'buyer', menuOpen = false, onMenu }) {
   const auth = useAuth();
@@ -43,26 +41,23 @@ export default function Topbar({ portal = 'buyer', menuOpen = false, onMenu }) {
     </button>
   );
 
-  if (!vendor) {
-    const member = activeMember(auth.membership);
+  // Buyers once their organisation has approved them; vendors always (their own work only).
+  const showTools = vendor || activeMember(auth.membership);
 
-    return (
-      <header className="top top-buyer">
-        {menuButton}
-        {member ? <TopSearch /> : <span className="top-spacer" />}
-        <div className="right">
-          {member ? <AlertsBell /> : null}
-          <UserMenu />
-        </div>
-      </header>
-    );
-  }
-
-  return <VendorTopbar menuButton={menuButton} />;
+  return (
+    <header className="top top-buyer" data-portal={portal}>
+      {menuButton}
+      {showTools ? <TopSearch portal={portal} /> : <span className="top-spacer" />}
+      <div className="right">
+        {showTools ? <AlertsBell portal={portal} /> : null}
+        <UserMenu vendor={vendor} />
+      </div>
+    </header>
+  );
 }
 
 /* The person's name and role; clicking opens their menu. */
-function UserMenu() {
+function UserMenu({ vendor = false }) {
   const auth = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -70,6 +65,7 @@ function UserMenu() {
   const [open, setOpen] = useState(false);
   const boxRef = useRef(null);
   const name = displayName(auth.user, auth.profile);
+  const verification = auth.vendor?.verificationStatus;
 
   useEffect(() => setOpen(false), [pathname]);
 
@@ -115,11 +111,20 @@ function UserMenu() {
         <div className="user-pop" role="menu" data-section="user-menu">
           <div className="user-pop-head">
             <b>{auth.profile?.organisationName || ''}</b>
+            {vendor && verification ? (
+              <Badge s={VERIFY_LABEL[verification][0]} label={VERIFY_LABEL[verification][1]} />
+            ) : null}
             <span className="note">{auth.user?.email}</span>
           </div>
-          <Link to="/organisation" role="menuitem">
-            <Icon n="building" s={16} /> Organisation
-          </Link>
+          {vendor ? (
+            <Link to="/vendor/profile" role="menuitem">
+              <Icon n="building" s={16} /> Company profile
+            </Link>
+          ) : (
+            <Link to="/organisation" role="menuitem">
+              <Icon n="building" s={16} /> Organisation
+            </Link>
+          )}
           <Link to="/contact" role="menuitem">
             <Icon n="ticket" s={16} /> Help and support
           </Link>
@@ -143,48 +148,5 @@ function UserMenu() {
         </div>
       ) : null}
     </div>
-  );
-}
-
-function VendorTopbar({ menuButton }) {
-  const auth = useAuth();
-  const navigate = useNavigate();
-  const name = displayName(auth.user, auth.profile);
-  const v = auth.vendor?.verificationStatus;
-
-  return (
-    <header className="top">
-      {menuButton}
-      <div className="top-role">
-        <span className="role-pill vendor" data-role="vendor">
-          Vendor
-        </span>
-        <div className="top-org">
-          <b>{auth.profile?.organisationName || ''}</b>
-        </div>
-        {v ? <Badge s={VERIFY_LABEL[v][0]} label={VERIFY_LABEL[v][1]} /> : null}
-      </div>
-      <div className="right">
-        <ThemeToggle />
-        <div className="user">
-          <span className="avatar">{initialsOf(name)}</span>
-          <div>
-            <b className="top-name">{name}</b>
-            <div className="role">{auth.profile?.jobRole || ''}</div>
-          </div>
-        </div>
-        <button
-          className="btn sm"
-          data-act="signout"
-          title={'Signed in as ' + auth.user?.email}
-          onClick={() => {
-            navigate('/');
-            auth.logout();
-          }}
-        >
-          Sign out
-        </button>
-      </div>
-    </header>
   );
 }
