@@ -386,6 +386,7 @@ Specifications for Stages 2–9 (field lists, rules) will come from the client s
 ### Fixes found during the hands-on practical (26 Oct 2026) ✅
 - **Stage 5 · audit rule:** a clause such as "the Customer may audit … and the Supplier shall provide the supporting evidence" was read as a vendor obligation, and rule R-AUD-01 only looked for a buyer obligation, so the register showed a false "No obligation" gap for audit. R-AUD-01 is now met by either party's audit clause (`server/src/engine/obligations.js`); new engine test in `stage5.test.js`. Registers already saved keep their result (they are locked); a new contract version gives a new register with the fix.
 - **Vendor portal frame like the buyer's:** the vendor top bar is now the same clean bar as the buyer's (name and role with a ▾ menu). The company name and its verification status (Verified / Pending verification) are at the top of that menu, with Company profile, Help and support, Home page, Dark mode and Sign out. The VENDOR pill, the "Vendor portal" label, the Help and "Back to home page" sidebar links are gone from the frame. "v1.0.0 | Prototype" is removed from the bottom of both sidebars.
+- **Vendor dashboard like the buyer's, with confirmation of the work given:** headline figures (work received, questionnaires to answer, actions to do, with the buyer, actions closed, assurance score); **Work you have been given**: for each assessment a green confirmation line ("Selected with conditions by UK Company Ltd · date · approved by … · Vendor Selection Record v1.0"), then the questionnaire, the actions (closed of N, to do, with the buyer), the buyer's latest report and its position, and a button for what is next; recent activity. Before verification it shows the verification status and the company profile. The long "You are signed in as a vendor" box and the journey cards were removed. Server: `GET /api/vendor/overview` (`server/src/vendor/portal.js`).
 - **Vendor search box and bell:** the vendor top bar now has the same search box and bell as the buyer's, over the vendor's own records only.
   - Search (`GET /api/vendor/search?q=`): its assessments (reference, title, buyer), its obligations (vendor or both parties) and its actions, plus pages by name.
   - Bell (`GET /api/vendor/alerts`): questionnaire to answer or overdue, actions sent back ("More needed"), overdue or due within 7 days, its certificates or insurance expiring within 30 days, and new invitations from buyers.
@@ -900,7 +901,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 | Browser, Stage 5 obligation extraction | 15 checks | ✅ all pass |
 | Browser, Stage 6 transfer assessment | 12 checks | ✅ all pass |
 | Browser, Stage 7 risk identification | 16 checks | ✅ all pass |
-| Browser, Stage 8 remediation (buyer + vendor) | 27 checks | ✅ all pass |
+| Browser, Stage 8 remediation (buyer + vendor) | 28 checks | ✅ all pass |
 | Browser, Stage 9 monitoring and audit (buyer + vendor + admin) | 28 checks | ✅ all pass |
 | Browser, completion items (dashboard, PDF, missed obligations, rule base, automatic checks) | 38 checks | ✅ all pass |
 | Browser, Contact page and support tickets (visitor, buyer, vendor, admin) | 26 checks | ✅ all pass |

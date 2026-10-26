@@ -243,3 +243,141 @@ export async function vendorSearch(vendorId, text) {
 
   return { query: q, groups };
 }
+
+/* ---------------- Dashboard ---------------- */
+
+/*
+ * Vendor dashboard (GET /api/vendor/overview): every piece of work the vendor has
+ * been given, each with the confirmation and where it stands now:
+ *   - selected by which buyer, when, and on what terms (Stage 2 record)
+ *   - questionnaire sent, answered and scored (Stage 3)
+ *   - actions to do, waiting for the buyer, closed (Stage 8)
+ *   - the latest report and its stated position (Stage 9)
+ * plus headline figures and recent activity.
+ */
+vendorPortalTopRouter.use('/overview', requireRole('vendor'));
+
+vendorPortalTopRouter.get('/overview', async (req, res) => {
+  const vendorId = await vendorOrganisation(req.user.id);
+  if (!vendorId) return res.json({ work: [], figures: null, activity: [] });
+
+  res.json(await vendorOverview(vendorId));
+});
+
+const SELECTION_LABEL = {
+  SELECTED: 'Selected',
+  SELECTED_PENDING_ASSESSMENT: 'Selected',
+  CONDITIONALLY_SELECTED: 'Selected with conditions',
+};
+
+export async function vendorOverview(vendorId) {
+  const { rows } = await query(
+    `SELECT a.id, a.reference, a.selection_status, r.title,
+            coalesce(r.data ->> 'serviceCategory', a.service_code) AS service,
+            b.name AS buyer,
+            (SELECT json_build_object('version', s.version, 'at', s.selected_at, 'by', p.full_name)
+               FROM vendor_selections s LEFT JOIN user_profiles p ON p.user_id = s.selected_by
+              WHERE s.assessment_id = a.id ORDER BY s.version DESC LIMIT 1) AS selection,
+            (SELECT json_build_object('status', c.status, 'due', c.due_on, 'submittedAt', c.submitted_at)
+               FROM compliance_assessments c WHERE c.assessment_id = a.id) AS questionnaire,
+            (SELECT cr.overall_score FROM compliance_results cr
+               JOIN compliance_assessments c ON c.id = cr.compliance_id
+              WHERE c.assessment_id = a.id ORDER BY cr.version DESC LIMIT 1) AS score,
+            (SELECT json_agg(x.status) FROM remediation_actions x
+              WHERE x.assessment_id = a.id AND x.owner = 'vendor' AND x.status <> 'PROPOSED') AS actions,
+            (SELECT json_build_object('version', v.version, 'at', v.created_at, 'position', v.position)
+               FROM report_versions v WHERE v.assessment_id = a.id ORDER BY v.version DESC LIMIT 1) AS report
+       FROM assessments a
+       JOIN requirements r ON r.id = a.requirement_id
+       JOIN organisations b ON b.id = a.buyer_id
+      WHERE a.selected_vendor_id = $1
+      ORDER BY a.created_at DESC`,
+    [vendorId],
+  );
+
+  const work = rows.map(row => {
+    const statuses = row.actions || [];
+    const count = list => statuses.filter(status => list.includes(status)).length;
+    const actions = {
+      assigned: statuses.length,
+      toDo: count(['OPEN', 'RETURNED']),
+      waiting: count(['SUBMITTED']),
+      closed: count(['CLOSED']),
+      accepted: count(['RISK_ACCEPTED']),
+    };
+
+    const q = row.questionnaire;
+    let questionnaire = { label: 'Not sent yet', tone: 'mute' };
+    if (q && q.status === 'submitted')
+      questionnaire = { label: `Answered · score ${row.score}/100`, tone: 'sage' };
+    else if (q) questionnaire = { label: `To answer by ${day(q.due)}`, tone: 'amber' };
+
+    // Where the work stands, in one line, for the vendor.
+    let next = { label: 'Waiting for the buyer', to: '/vendor/assessments' };
+    if (q && q.status !== 'submitted')
+      next = { label: 'Answer the questionnaire', to: '/vendor/assessments/' + row.reference };
+    else if (actions.toDo)
+      next = {
+        label: `Complete ${actions.toDo} action${actions.toDo === 1 ? '' : 's'}`,
+        to: '/vendor/actions/' + row.reference,
+      };
+    else if (actions.waiting)
+      next = { label: 'Buyer is reviewing your responses', to: '/vendor/actions/' + row.reference };
+    else if (actions.assigned && row.report)
+      next = { label: 'All your actions are done', to: '/vendor/track-record' };
+
+    return {
+      reference: row.reference,
+      title: row.title,
+      service: row.service,
+      buyer: row.buyer,
+      selection: {
+        label: SELECTION_LABEL[row.selection_status] || 'Selected',
+        conditional: row.selection_status === 'CONDITIONALLY_SELECTED',
+        at: row.selection?.at || null,
+        by: row.selection?.by || null,
+        version: row.selection?.version || null,
+      },
+      questionnaire,
+      actions,
+      report: row.report
+        ? { version: row.report.version, at: row.report.at, position: row.report.position?.label || null }
+        : null,
+      next,
+    };
+  });
+
+  const sum = key => work.reduce((total, item) => total + item.actions[key], 0);
+  const scores = rows.map(row => row.score).filter(score => score !== null);
+
+  const ids = rows.map(row => row.id);
+  const { rows: activity } = ids.length
+    ? await query(
+        `SELECT t.title, t.at, t.stage, a.reference
+           FROM assessment_timeline t JOIN assessments a ON a.id = t.assessment_id
+          WHERE t.assessment_id = ANY($1) AND t.kind = 'event' AND t.at IS NOT NULL AND t.stage >= 2
+          ORDER BY t.at DESC, t.id DESC
+          LIMIT 6`,
+        [ids],
+      )
+    : { rows: [] };
+
+  return {
+    figures: {
+      work: work.length,
+      buyers: new Set(work.map(item => item.buyer)).size,
+      questionnairesToAnswer: work.filter(item => item.questionnaire.tone === 'amber').length,
+      actionsToDo: sum('toDo'),
+      actionsWaiting: sum('waiting'),
+      actionsClosed: sum('closed'),
+      averageScore: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null,
+    },
+    work,
+    activity: activity.map(item => ({
+      title: item.title,
+      at: item.at,
+      stage: item.stage,
+      reference: item.reference,
+    })),
+  };
+}

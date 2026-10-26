@@ -406,6 +406,17 @@ test('vendor top bar: the bell lists its own expiring certificate; search finds 
   assert.ok(r.body.groups.some(group => group.key === 'assessments'));
   assert.deepEqual((await vendor('GET', '/vendor/search?q=a')).body.groups, [], 'one letter is too short');
 
+  // Dashboard: the work it was given, with the confirmation and where it stands.
+  r = await vendor('GET', '/vendor/overview');
+  assert.equal(r.status, 200);
+  const work = r.body.work.find(item => item.reference === ref);
+  assert.ok(work, 'the assessment it was selected for is listed');
+  assert.ok(work.selection.at && work.selection.version === 1, 'with the date and the selection record');
+  assert.ok(/Selected/.test(work.selection.label));
+  assert.ok(work.actions.assigned > 0 && work.next.to.startsWith('/vendor'));
+  assert.equal(r.body.figures.work, 1);
+  assert.equal((await buyer('GET', '/vendor/overview')).status, 403);
+
   assert.equal((await buyer('GET', '/vendor/alerts')).status, 403, 'buyers cannot use the vendor bell');
   assert.equal((await buyer('GET', '/vendor/search?q=ACT')).status, 403);
 });
