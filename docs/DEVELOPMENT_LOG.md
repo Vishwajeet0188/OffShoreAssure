@@ -12,9 +12,10 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
   - `stage-2-vendor-routes`: Stage 2 rewritten to the client's v2 spec (pushed 24 Oct)
   - `stage-4-contract-analysis`, `stage-5-obligation-extraction`, `stage-6-transfer-assessment`: rebuilt on `stage-2-vendor-routes` on 25 Oct (local; not pushed yet)
   - `stage-7-risk-identification`: Stage 7 (local; built on Stage 6)
-  - `stage-8-remediation`: Stage 8 (current work, built on Stage 7)
+  - `stage-8-remediation`: Stage 8 (local; built on Stage 7)
+  - `stage-9-monitoring-audit`: Stage 9 (current work, built on Stage 8)
   - `main` stays on the Phase 1 prototype until the client is ready.
-- **Last updated:** 25 Oct 2026, after Stage 8 (Remediation complete)
+- **Last updated:** 25 Oct 2026, after Stage 9 (Monitoring and audit complete — all 9 stages built)
 
 ---
 
@@ -24,7 +25,8 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 - **Done:** sign-up and login for buyers and vendors, the admin console, the public website, and **Stages 1–8**. A buyer describes the service and gets an Assessment ID with an "Information Required" summary, selects a verified vendor with a recorded reason, and sends that vendor a compliance questionnaire. The vendor answers it and uploads evidence; the buyer gets a provisional score with the gaps. The buyer then uploads the contract, and OffshoreAssure lists every clause and shows which important topics are covered or missing. OffshoreAssure then lists every obligation in the contract (who must do what, by when), checks it against the rules and shows the gaps; the vendor sees its own obligations. Finally it maps every route the data takes out of the UK and checks each one (adequacy, contract safeguard, risk assessment), with the questions to resolve.
 - **Also done (Stage 7):** every gap from Stages 1–6 is brought into one risk register, scored likelihood × impact, with the reason for each score and a link to where each finding came from.
 - **Also done (Stage 8):** each risk becomes an action for the buyer or the vendor; the vendor uploads proof in its portal, the buyer closes or returns it, and the remaining risk is re-checked and saved after every change.
-- **Next:** **Stage 9 — Monitoring and audit.** The evidence-backed report, the audit pack and ongoing checks.
+- **Also done (Stage 9):** the buyer generates an evidence-backed report from every stage, with document fingerprints and the audit trail, downloads the audit pack, and keeps monitoring expiring certificates, overdue actions and changes. The vendor sees its track record.
+- **Next:** all 43 steps are built. Next is the client's review, replacing the provisional rules with the confirmed ones, and hosting in a UK region.
 - **Live site:** https://off-shore-assure.vercel.app runs `stage-0-3` (Vercel website, Render API, Neon database).
 - **Waiting on the client:** rule questions for Stages 1–6 (see section 5). The build uses provisional rules until they answer.
 
@@ -38,8 +40,8 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 | 5 · Obligation extraction | 21–24 | ✅ Done (23 Oct) |
 | 6 · Transfer assessment | 25–28 | ✅ Done (23 Oct) |
 | 7 · Risk identification | 29–32 | ✅ Done (25 Oct) |
-| **8 · Remediation** | 33–38 | ✅ **Done (25 Oct)** |
-| **9 · Monitoring and audit** | 39–43 | ⏭️ **Next** |
+| 8 · Remediation | 33–38 | ✅ Done (25 Oct) |
+| **9 · Monitoring and audit** | 39–43 | ✅ **Done (25 Oct)** |
 
 ### Stage 1 step by step
 
@@ -119,8 +121,23 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 | 37 | Save action and reassessment history | Engine → Evidence Record | Every change is kept (locked), and a snapshot of the remaining risk is saved each time | ✅ Done |
 | 38 | Updated status and outstanding actions | Engine → Buyer | Outstanding, waiting for review, overdue, closed; remaining risk grid; Stage 9 becomes next when everything is closed or accepted | ✅ Done |
 
+### Stage 9 step by step
+
+| Step | Title (diagram) | Who | What it means in simple words | Status |
+|---|---|---|---|---|
+| 39 | Generate report or continue monitoring | Buyer → Engine | Once every Stage 8 action is decided, the buyer chooses **Generate the report** or **Continue monitoring** | ✅ Done |
+| 40 | Compile report and audit trail | Engine | The latest saved record of Stages 1–8 is summarised, with the stated position, open actions, accepted risks (with reasons), every document's SHA-256 and the audit trail | ✅ Done |
+| 41 | Save report version and full history | Engine → Evidence Record | Saved as a locked version with the version of every record it read and a fingerprint; a new version only when something changed | ✅ Done |
+| 42 | Evidence-backed assessment report | Engine → Buyer | The buyer reads it, prints it, switches versions and downloads the audit pack (JSON: report, full audit trail, timeline) | ✅ Done |
+| 43 | Ongoing requests, changes and renewals | Engine → Vendor | Expiring certificates and insurance, overdue actions, records changed since the report, the next periodic review; renewals go to the vendor as actions; the vendor sees its **Track record** | ✅ Done |
+
 ### Stage completion notes
 Short notes written when a stage is finished: what it does, how to check it, and what comes next.
+
+- **Stage 9 — Monitoring and audit (completed 25 Oct 2026, branch `stage-9-monitoring-audit`).**
+  - *What it does:* brings every stage into one evidence-backed report with fingerprints and the audit trail, saves each version, and keeps watching for renewals and changes.
+  - *How to check:* buyer → Remediation (all actions decided) → **Open monitoring and audit** → **Generate the report** → **Download the audit pack**. In Step 43 tick an expiring certificate → **Ask the vendor**. Vendor → **Actions** (renewal) and **Track record**. Admin → **Reports**.
+  - *Next:* the client's review and confirmed rules.
 
 - **Stage 8 — Remediation (completed 25 Oct 2026, branch `stage-8-remediation`).**
   - *What it does:* turns the risk register into actions, collects the vendor's proof, lets the buyer close or return each one, and shows the remaining risk going down.
@@ -361,6 +378,25 @@ Specifications for Stages 2–9 (field lists, rules) will come from the client s
 - **Database:** `006_org_membership.sql` adds `membership` (owner / member / pending / rejected), `membership_decided_by`, `membership_decided_at`. Existing data: the earliest user of each organisation becomes its owner, everyone else a member.
 - **API:** `GET /api/organisation`, `PATCH /api/organisation/members/:userId`, `PATCH /api/admin/buyers/members/:userId`.
 - **Tests:** API 34; browser 49 / 41 / 30, all pass (the roles run now covers a join request, the blocked pending member, and owner approval).
+
+### Stage 9 — Monitoring and audit, Steps 39–43 (25 Oct 2026) ✅ — Stage 9 complete, all stages built
+- **When:** after the risk register is saved and every Stage 8 action is decided (assigned or the risk accepted). Open actions are allowed: the report states them.
+- **Step 39 · Choose:** **Generate the report** or **Continue monitoring without a report**. Both are recorded on the timeline.
+- **Step 40 · Compile:** one section per stage (1–8) with a plain summary and details, a link back to each stage, the **stated position** (Action required / In remediation / Open items closed; some risks accepted / All actions closed — never "compliant"), open actions, accepted risks with the buyer's reason, an evidence index (every requirement document, Stage 3 evidence, contract version and submitted Stage 8 proof, each with its SHA-256), the fingerprint of every saved record, the audit trail count and the next periodic review date.
+- **Step 41 · Save:** `report_versions` is locked (append-only). Each version stores the version of every record it read; the buyer can only generate a new one when a record has changed, with an optional reason. Earlier versions stay viewable.
+- **Step 42 · Show:** the report page (print-friendly), a version picker, and the **audit pack** download: the report, the full audit trail and the timeline up to the moment it was saved.
+- **Step 43 · Monitor:**
+  - certificates and insurance that expired or expire within 90 days
+  - overdue Stage 8 actions
+  - records changed since the last report
+  - the next periodic review: Critical every 3 months, High 6, Medium 12, Low 24 (from the risk tier)
+  - the buyer ticks renewals and **asks the vendor**: each becomes a Stage 8 action (theme "monitoring") on the vendor's Actions page; when the buyer closes it the item shows "received"
+  - each **monitoring check** is saved (locked) with what it found
+- **Vendor · Track record:** assessments, average compliance score, actions closed on time, actions open, reports issued, and its own renewals coming up. It does not show the buyers' risk scores.
+- **Admin:** a live **Reports** page (every report, position and fingerprint) and a Stage 9 panel on each assessment.
+- Rules are provisional (rule pack `RP-2026.10-S9-draft`, `server/src/engine/report.js`).
+- **Database:** `018_stage9_monitoring.sql` (report_versions and monitoring_checks, both append-only).
+- **Tests:** API 94 (Stage 9: 8 new); browser: every stage run passes, plus a new Stage 9 run with 28 checks (buyer, vendor, admin, mobile).
 
 ### Stage 8 — Remediation, Steps 33–38 (25 Oct 2026) ✅ — Stage 8 complete
 - **When:** after the risk register (Stage 7) is saved. If the register is built again later with new risks, **Propose actions** adds actions for those risks only.
@@ -718,7 +754,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 
 | Suite | Count | Last result |
 |---|---|---|
-| API (`server`, `npm test`) | 86 (Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 13, Stage 3: 4, Stage 4: 6, Stage 5: 6, Stage 6: 5, Stage 7: 5, Stage 8: 7, Website: 2, Sign-up source: 1) | ✅ all pass |
+| API (`server`, `npm test`) | 94 (Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 13, Stage 3: 4, Stage 4: 6, Stage 5: 6, Stage 6: 5, Stage 7: 5, Stage 8: 7, Stage 9: 8, Website: 2, Sign-up source: 1) | ✅ all pass |
 | Browser, Stage 0 + admin console | 49 checks | ✅ all pass |
 | Browser, Stage 1 (Steps 1–4) + clean build | 48 checks | ✅ all pass |
 | Browser, roles (buyer / vendor / admin / membership) | 32 checks | ✅ all pass |
@@ -729,6 +765,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 | Browser, Stage 6 transfer assessment | 12 checks | ✅ all pass |
 | Browser, Stage 7 risk identification | 16 checks | ✅ all pass |
 | Browser, Stage 8 remediation (buyer + vendor) | 24 checks | ✅ all pass |
+| Browser, Stage 9 monitoring and audit (buyer + vendor + admin) | 28 checks | ✅ all pass |
 | Browser, public website pages, feedback, reviews + footer | 24 checks | ✅ all pass |
 | Browser, site extras (dark mode, search, cookie notice …) | 24 checks | ✅ all pass |
 
@@ -745,6 +782,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 | Stage 1 requirement API | `server/src/requirements/routes.js` |
 | Stage 1 Step 2 engine rules | `server/src/engine/rulepack.js` |
 | Assessments (Step 2) | `server/src/assessments/service.js`, `routes.js` |
+| Stage 9 monitoring and audit | `server/src/reports/routes.js` (report, audit pack, monitoring, vendor track record, admin reports), `server/src/engine/report.js` (compile, position, monitoring rules); `frontend/src/pages/Monitoring.jsx`, `src/pages/vendor/TrackRecord.jsx`, `src/pages/admin/AdminReports.jsx`, `src/lib/reports.js` |
 | Stage 8 remediation | `server/src/remediation/routes.js` (buyer + vendor APIs), `server/src/engine/remediation.js` (proposals, due dates, remaining risk); `frontend/src/pages/Remediation.jsx`, `src/pages/vendor/VendorActions.jsx`, `src/lib/remediation.js` |
 | Stage 7 risk identification | `server/src/risks/routes.js` (API), `server/src/engine/risks.js` (themes, scoring, bands); `frontend/src/pages/Risks.jsx`, `src/lib/risks.js` |
 | Stage 6 transfer assessment | `server/src/transfers/routes.js` (API), `server/src/engine/transfers.js` (routes, adequacy, checks); `frontend/src/pages/Transfers.jsx`, `src/lib/transfers.js` |
@@ -765,10 +803,8 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 
 ## 9. Next
 
-1. **Stage 9 · Monitoring and audit (Steps 39–43):**
-   - Step 39: the buyer chooses to generate the report or continue monitoring
-   - Step 40: compile the report and the audit trail from every saved stage
-   - Step 41: save the report version and the full history
-   - Step 42: the evidence-backed assessment report for the buyer
-   - Step 43: ongoing requests, changes and renewals (e.g. expiring certificates), and the vendor's track record
-2. Needed from the client for Stages 7–9: the risk scoring method, action deadlines, the report contents and how often monitoring runs.
+All 9 stages (43 steps) are built. What is left:
+1. **Client review** of the full journey (buyer, vendor, admin) on a test deployment.
+2. **Confirmed rules** to replace the provisional rule packs RP-2026.10-S1 … S9-draft: risk scoring, action deadlines, report contents, monitoring intervals and warning periods (section 5).
+3. **Hosting** in a UK region, and the evidence retention period.
+4. Push the local stage branches (4–9) when Vishwajeet decides.

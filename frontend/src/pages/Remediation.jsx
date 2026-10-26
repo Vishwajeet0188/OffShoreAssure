@@ -173,8 +173,9 @@ export default function Remediation() {
           <Icon n="clock" s={20} />
           <div>
             <b>Stage 8 is complete for this assessment. Next: Stage 9 — Monitoring and audit.</b>{' '}
-            <span className="note">The evidence-backed report and ongoing checks. Not available yet (next build stage).</span>
+            <span className="note">Generate the evidence-backed report and keep monitoring renewals and changes.</span>
           </div>
+          <Link className="btn primary sm" to={'/monitoring/' + ref} data-act="go-monitoring">Open monitoring and audit</Link>
         </div>
       ) : null}
     </div>

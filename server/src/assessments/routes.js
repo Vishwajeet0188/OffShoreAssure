@@ -88,11 +88,13 @@ assessmentsRouter.get('/', async (req, res) => {
            FROM risk_registers g WHERE g.assessment_id = a.id ORDER BY g.version DESC LIMIT 1) AS risks,
         (SELECT json_build_object('actions', count(*), 'open', count(*) FILTER (WHERE x.status IN ('PROPOSED', 'OPEN', 'RETURNED', 'SUBMITTED')),
                 'awaitingReview', count(*) FILTER (WHERE x.status = 'SUBMITTED'), 'closed', count(*) FILTER (WHERE x.status IN ('CLOSED', 'RISK_ACCEPTED')))
-           FROM remediation_actions x WHERE x.assessment_id = a.id HAVING count(*) > 0) AS remediation
+           FROM remediation_actions x WHERE x.assessment_id = a.id HAVING count(*) > 0) AS remediation,
+        (SELECT json_build_object('version', p.version, 'position', p.position, 'createdAt', p.created_at)
+           FROM report_versions p WHERE p.assessment_id = a.id ORDER BY p.version DESC LIMIT 1) AS report
       FROM assessments a JOIN requirements r ON r.id = a.requirement_id LEFT JOIN organisations sv ON sv.id = a.selected_vendor_id
       LEFT JOIN compliance_assessments c ON c.assessment_id = a.id WHERE a.buyer_id = $1 ORDER BY a.created_at DESC`, [buyerId])).rows;
   res.json({ assessments: rows.map(a => shapeAssessment(a, { title: a.title, selectedVendor: a.selected_vendor, selectionVersion: a.selection_version, selectionStatus: a.selection_status, shortlisted: a.shortlisted,
-    compliance: a.compliance_status ? { status: a.compliance_status, overall: a.compliance_score } : null, contract: a.contract || null, obligations: a.obligations || null, transfers: a.transfers || null, risks: a.risks || null, remediation: a.remediation || null })) });
+    compliance: a.compliance_status ? { status: a.compliance_status, overall: a.compliance_score } : null, contract: a.contract || null, obligations: a.obligations || null, transfers: a.transfers || null, risks: a.risks || null, remediation: a.remediation || null, report: a.report || null })) });
 });
 
 assessmentsRouter.get('/:ref', async (req, res) => {

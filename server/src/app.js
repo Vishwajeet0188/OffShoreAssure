@@ -16,6 +16,7 @@ import { obligationsBuyerRouter, obligationsVendorRouter } from './obligations/r
 import { transfersRouter } from './transfers/routes.js';
 import { risksRouter } from './risks/routes.js';
 import { remediationBuyerRouter, remediationVendorRouter } from './remediation/routes.js';
+import { reportsRouter, trackRecordRouter, adminReportsRouter } from './reports/routes.js';
 import { feedbackRouter } from './feedback/routes.js';
 import { organisationRouter } from './organisation/routes.js';
 import { COUNTRIES, CURRENCIES } from './reference/countries.js';
@@ -43,6 +44,7 @@ export function createApp() {
   }
   api.use('/auth', authRouter);
   api.use('/me', meRouter);
+  api.use('/admin', adminReportsRouter);
   api.use('/admin', adminRouter);
   // Lists used by the sign-up and profile forms.
   api.get('/reference', (_req, res) => res.json({ countries: COUNTRIES, serviceCategories: SERVICE_CATEGORIES, sectors: SECTORS, buyerJobRoles: JOB_ROLES, vendorJobRoles: VENDOR_JOB_ROLES,
@@ -56,10 +58,12 @@ export function createApp() {
   api.use('/assessments', transfersRouter);
   api.use('/assessments', risksRouter);
   api.use('/assessments', remediationBuyerRouter);
+  api.use('/assessments', reportsRouter);
   api.use('/vendor', vendorPortalRouter);
   api.use('/vendor', complianceVendorRouter);
   api.use('/vendor', obligationsVendorRouter);
   api.use('/vendor', remediationVendorRouter);
+  api.use('/vendor', trackRecordRouter);
   api.use('/organisation', organisationRouter);
   api.use('/feedback', feedbackRouter);
   api.use((_req, res) => res.status(404).json({ error: 'not_found', message: 'Not found.' }));

@@ -10,12 +10,6 @@ export const LATER_PAGES = {
     will: ['Queue of supplier submissions waiting for review', 'Accept, or request more information, with a recorded reason', 'Overdue requests by supplier and buyer', 'Document integrity (SHA-256 hash) and version'],
     depends: 'Suppliers respond to evidence requests.'
   },
-  reports: {
-    stage: 'Final stage', party: 'Buyers', title: 'Reports',
-    lead: 'Final assessment reports issued to buyers, across all organisations.',
-    will: ['Every issued report with buyer, supplier, date and outcome', 'Download any report', 'Reports waiting for OffshoreAssure sign-off'],
-    depends: 'Final assessment output is built.'
-  },
   rules: {
     stage: 'Stage 1', party: 'Platform', title: 'Rule base',
     lead: 'The controls and rules every assessment is checked against. Only the OffshoreAssure team can change them, and every change creates a new version.',

@@ -270,7 +270,7 @@ remediationBuyerRouter.post('/:ref/remediation/decisions', async (req, res) => {
   res.json(out[1].state);
 });
 
-async function notifyVendor(a, subject, lines, kicker, title) {
+export async function notifyVendor(a, subject, lines, kicker, title) {
   const people = (await query(`SELECT u.email, p.full_name FROM user_profiles p JOIN users u ON u.id = p.user_id WHERE p.organisation_id = $1 AND u.status = 'active'`, [a.selected_vendor_id])).rows;
   for (const v of people) {
     try {

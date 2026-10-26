@@ -29,13 +29,13 @@ export const STAGES = [
     summary: 'Approve or assign actions, request corrections from the vendor and re-run the affected checks.',
     steps: [[33, 'Approve or assign actions', 'B', 'E'], [34, 'Request corrections and missing documents', 'E', 'V'], [35, 'Submit evidence and response', 'V', 'E'], [36, 'Re-run affected checks', 'E', 'E'],
       [37, 'Save action and reassessment history', 'E', 'R'], [38, 'Updated status and outstanding actions', 'E', 'B']] },
-  { n: 9, slug: 'monitoring-audit', title: 'Monitoring and audit', icon: 'report',
+  { n: 9, slug: 'monitoring-audit', title: 'Monitoring and audit', icon: 'report', path: '/monitoring',
     summary: 'Generate the evidence-backed report with its audit trail, and keep monitoring changes and renewals.',
     steps: [[39, 'Generate report or continue monitoring', 'B', 'E'], [40, 'Compile report and audit trail', 'E', 'E'], [41, 'Save report version and full history', 'E', 'R'], [42, 'Evidence-backed assessment report', 'E', 'B'], [43, 'Ongoing requests, changes and renewals', 'E', 'V']] }
 ];
 
 /* Steps that are live in this build. */
-export const BUILT_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38];
+export const BUILT_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43];
 export const stageStatus = s => {
   const done = s.steps.filter(([n]) => BUILT_STEPS.includes(n)).length;
   return done === 0 ? 'not-started' : done === s.steps.length ? 'available' : 'partial';
@@ -55,7 +55,7 @@ export const VENDOR_JOURNEY = [
     text: 'Receive the access the current assessment supports, with the reason for any limit.', steps: [] },
   { stage: 8, slug: 'actions', title: 'Actions', icon: 'flow', path: '/vendor/actions',
     text: 'Receive correction requests, supply renewed certificates or corrected terms, and close the action.', steps: [34, 35] },
-  { stage: 9, slug: 'track-record', title: 'Track record', icon: 'report',
+  { stage: 9, slug: 'track-record', title: 'Track record', icon: 'report', path: '/vendor/track-record',
     text: 'Build a verified delivery and compliance history that strengthens your next UK bid; respond to ongoing requests and renewals.', steps: [43] }
 ];
 export const vendorJourneyBySlug = slug => VENDOR_JOURNEY.find(j => j.slug === slug);
