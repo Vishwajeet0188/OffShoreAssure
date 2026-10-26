@@ -320,6 +320,97 @@ test('dashboard: the list carries overdue counts; alerts list expiries and work 
   await decideRemediation();
 });
 
+test('dashboard overview: figures, footprint, risks and recent assessments come from the saved records', async () => {
+  const r = await buyer('GET', '/assessments/overview');
+  assert.equal(r.status, 200);
+
+  const { figures, byService, footprint, openRisks, recentAssessments, activity } = r.body;
+  assert.equal(figures.assessments, 1);
+  assert.equal(figures.vendors, 1);
+  assert.equal(
+    figures.onTrack + figures.attention + figures.highRisk + figures.inProgress,
+    1,
+    'every assessment has exactly one standing',
+  );
+
+  assert.equal(byService.length, 1);
+  assert.equal(byService[0].count, 1);
+
+  const home = footprint.find(place => place.roles.includes('Head office'));
+  assert.ok(home, 'the head office is on the map');
+  assert.ok(footprint.every(place => /^[A-Z]{2}$/.test(place.code)));
+
+  assert.equal(recentAssessments[0].reference, ref);
+  assert.ok(
+    ['Compliant', 'Attention', 'High Risk', 'In Progress'].includes(
+      r.body.standingLabels[recentAssessments[0].standing],
+    ),
+  );
+  assert.ok(Array.isArray(openRisks) && openRisks.length <= 5);
+  assert.ok(activity.length > 0 && activity.length <= 6);
+
+  const empty = await other('GET', '/assessments/overview');
+  assert.equal(empty.status, 200);
+  assert.equal(empty.body.figures.assessments, 0, 'another buyer sees nothing');
+  assert.equal(empty.body.footprint.length, 1, 'only the head office before the first assessment');
+  assert.deepEqual(empty.body.footprint[0].roles, ['Head office']);
+  assert.equal(empty.body.openRisks.length, 0);
+
+  // The period picker: an unknown value falls back to all time.
+  assert.equal((await buyer('GET', '/assessments/overview?period=30')).body.figures.assessments, 1);
+  assert.equal((await buyer('GET', '/assessments/overview?period=nonsense')).body.period, 'all');
+});
+
+test('evidence page: contracts and vendor evidence in the demo groups, with their real status', async () => {
+  const r = await buyer('GET', '/assessments/evidence');
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.groups, ['Contracts', 'Policies', 'Certificates', 'Other']);
+
+  const certificate = r.body.documents.find(doc => /iso27001/.test(doc.name));
+  assert.ok(certificate, 'the ISO 27001 certificate is listed');
+  assert.equal(certificate.group, 'Certificates');
+  assert.equal(certificate.status, 'Expiring', 'it expires within 30 days');
+  assert.ok(certificate.to.endsWith('/compliance/' + ref));
+
+  assert.ok(
+    r.body.documents.some(doc => doc.group === 'Contracts'),
+    'the contract is listed',
+  );
+  assert.ok(!r.body.documents.some(doc => doc.status === 'Verified'), 'nothing claims to be verified');
+  assert.deepEqual(
+    (await other('GET', '/assessments/evidence')).body.documents,
+    [],
+    'another buyer sees nothing',
+  );
+});
+
+test('top bar search: finds the buyer’s own assessments, vendors and risks, nobody else’s', async () => {
+  let r = await buyer('GET', '/assessments/search?q=' + encodeURIComponent(ref));
+  assert.equal(r.status, 200);
+  const assessments = r.body.groups.find(group => group.key === 'assessments');
+  assert.ok(assessments && assessments.items[0].to.endsWith(ref), 'the assessment and the page it opens');
+
+  r = await buyer('GET', '/assessments/search?q=krakow');
+  assert.ok(
+    r.body.groups.some(group => group.key === 'vendors'),
+    'vendor found by name, any case',
+  );
+
+  r = await buyer('GET', '/assessments/search?q=' + encodeURIComponent('%'));
+  assert.equal(r.body.groups.length, 0, '% is searched as text, not as a wildcard');
+
+  assert.deepEqual(
+    (await buyer('GET', '/assessments/search?q=a')).body.groups,
+    [],
+    'one letter is too short',
+  );
+  assert.deepEqual(
+    (await other('GET', '/assessments/search?q=krakow')).body.groups,
+    [],
+    'another buyer finds nothing',
+  );
+});
+
 /* ---------------- 7 · Report PDF ---------------- */
 
 test('report PDF: buyer and admin can download it; others cannot', async () => {

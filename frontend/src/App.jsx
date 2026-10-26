@@ -24,6 +24,7 @@ import ContractAnalysis, { ContractList } from './pages/ContractAnalysis.jsx';
 import Obligations, { ObligationsList } from './pages/Obligations.jsx';
 import Transfers, { TransfersList } from './pages/Transfers.jsx';
 import Risks, { RisksList } from './pages/Risks.jsx';
+import Evidence from './pages/Evidence.jsx';
 import Remediation, { RemediationList } from './pages/Remediation.jsx';
 import Monitoring, { MonitoringList } from './pages/Monitoring.jsx';
 import TrackRecord from './pages/vendor/TrackRecord.jsx';
@@ -126,6 +127,7 @@ export default function App() {
           <Route path="transfers" element={<TransfersList />} />
           <Route path="transfers/:ref" element={<Transfers />} />
           <Route path="risks" element={<RisksList />} />
+          <Route path="evidence" element={<Evidence />} />
           <Route path="risks/:ref" element={<Risks />} />
           <Route path="remediation" element={<RemediationList />} />
           <Route path="remediation/:ref" element={<Remediation />} />

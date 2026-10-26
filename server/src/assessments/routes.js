@@ -1,6 +1,9 @@
 /* Stage 1 · Step 2 APIs (names from the specification): POST /assessments/validate and POST /assessments.
    Buyers only. Assessments are visible to every user of the buyer organisation. */
 import { Router } from 'express';
+import { buyerOverview, PERIODS } from './overview.js';
+import { buyerSearch } from './search.js';
+import { buyerEvidence } from './evidence.js';
 import { query, tx } from '../db.js';
 import { audit } from '../audit.js';
 import { requireAuth } from '../auth/session.js';
@@ -25,14 +28,12 @@ export const assessmentsRouter = Router();
 assessmentsRouter.use(requireAuth);
 assessmentsRouter.use((req, res, next) =>
   req.user.role !== 'buyer'
-    ? res
-        .status(403)
-        .json({
-          error: 'buyers_only',
-          message: req.user.is_admin
-            ? 'Assessments are created by buyers. Use the admin console.'
-            : 'This area is for buyers. Vendors use the vendor portal.',
-        })
+    ? res.status(403).json({
+        error: 'buyers_only',
+        message: req.user.is_admin
+          ? 'Assessments are created by buyers. Use the admin console.'
+          : 'This area is for buyers. Vendors use the vendor portal.',
+      })
     : next(),
 );
 assessmentsRouter.use(requireActiveMembership);
@@ -46,12 +47,10 @@ async function ownRequirement(db, req, id) {
   );
 }
 const noOrg = res =>
-  res
-    .status(403)
-    .json({
-      error: 'no_organisation',
-      message: 'Complete your profile with your organisation before submitting.',
-    });
+  res.status(403).json({
+    error: 'no_organisation',
+    message: 'Complete your profile with your organisation before submitting.',
+  });
 
 /* Dry run: the engine checks, nothing is saved. Body: { requirementId } or { data }. */
 assessmentsRouter.post('/validate', async (req, res) => {
@@ -235,6 +234,31 @@ assessmentsRouter.get('/', async (req, res) => {
       }),
     ),
   });
+});
+
+/* Buyer dashboard: everything it shows in one request (see overview.js). */
+assessmentsRouter.get('/overview', async (req, res) => {
+  const buyerId = await buyerOrganisation({ query }, req.user.id);
+  if (!buyerId) return res.status(404).json({ error: 'not_found', message: 'No organisation yet.' });
+
+  const period = Object.hasOwn(PERIODS, req.query.period) ? req.query.period : 'all';
+  res.json(await buyerOverview(buyerId, req.user.id, period));
+});
+
+/* Evidence page: every document held for the organisation's assessments (see evidence.js). */
+assessmentsRouter.get('/evidence', async (req, res) => {
+  const buyerId = await buyerOrganisation({ query }, req.user.id);
+  if (!buyerId) return res.json({ documents: [], groups: [] });
+
+  res.json(await buyerEvidence(buyerId));
+});
+
+/* Search box in the buyer top bar: the organisation's own records only (see search.js). */
+assessmentsRouter.get('/search', async (req, res) => {
+  const buyerId = await buyerOrganisation({ query }, req.user.id);
+  if (!buyerId) return res.json({ query: '', groups: [] });
+
+  res.json(await buyerSearch(buyerId, String(req.query.q || '').slice(0, 100)));
 });
 
 /*
@@ -424,12 +448,10 @@ assessmentsRouter.post('/:ref/corrections', async (req, res) => {
       [req.params.ref],
     )
   ).rows[0];
-  res
-    .status(201)
-    .json({
-      ...out[1],
-      assessment: shapeAssessment(a, { title: a.title }),
-      requirement: { id: a.requirement_id, data: a.data },
-      ...(await loadProfiles({ query }, a.id)),
-    });
+  res.status(201).json({
+    ...out[1],
+    assessment: shapeAssessment(a, { title: a.title }),
+    requirement: { id: a.requirement_id, data: a.data },
+    ...(await loadProfiles({ query }, a.id)),
+  });
 });

@@ -383,6 +383,56 @@ Specifications for Stages 2–9 (field lists, rules) will come from the client s
 - **API:** `GET /api/organisation`, `PATCH /api/organisation/members/:userId`, `PATCH /api/admin/buyers/members/:userId`.
 - **Tests:** API 34; browser 49 / 41 / 30, all pass (the roles run now covers a join request, the blocked pending member, and owner approval).
 
+### Sidebar and Evidence page as in the demo (26 Oct 2026) ✅
+- **Decision (Vishwajeet):** the whole buyer screen matches the demo word for word, including "Compliant" and "Overall Compliance" on the dashboard.
+- **Sidebar (buyer):** Dashboard, Suppliers, Assessments, Contracts, Obligations, Data Transfers, Workflow, Evidence, Reports, Settings, then "v1.0.0 | Prototype". Each opens the existing page that does that job: Suppliers → vendor selection, Assessments → requirements and assessments (also lit for compliance and risks), Contracts → contract analysis, Obligations, Data Transfers → transfer assessment, Workflow → remediation, Reports → monitoring and audit, Settings → organisation. "Help and support" and "Home page" are in the name menu. The vendor portal sidebar is unchanged.
+- **Evidence page (new, `/evidence`):** every document held for the organisation's assessments, with tabs All / Contracts / Policies / Certificates / Other and columns Document, Related to, Uploaded, Status. Statuses are what we know (Analysed, Valid, Expiring, Expired, Submitted …); nothing is called "Verified" because OffshoreAssure does not verify documents itself. "Generate Report" on the right opens Reports, where the report, audit pack and PDF are made. Server: `GET /api/assessments/evidence` (`server/src/assessments/evidence.js`).
+- Dashboard tiles: Compliant, Attention and High Risk icons in filled colour circles; Recent Activity rows tidied (title, supplier, time on the right).
+- **Tests:** 107 API tests (new: evidence); browser runs updated for the new menu (completion run now 38 checks, including the Evidence page). All pass.
+
+### Dashboard and frame matched word for word to the client's demo (26 Oct 2026) ✅
+- **Decision (Vishwajeet):** the buyer dashboard uses the demo's words exactly, including "Compliant" and "Overall Compliance". This replaces the earlier "never say compliant" rule **on the dashboard only**; reports, risk and remediation pages keep their wording.
+- **Top bar (buyer):** "Search suppliers, contracts, obligations, etc..." on the left; the bell; the person's name and role with a ▾ menu (Organisation, Help and support, Dark mode, Sign out). The BUYER pill and organisation name are gone from the bar (the name is in the menu). The vendor portal top bar is unchanged.
+- **Sidebar:** stage icons instead of the numbers 1–9; the tagline "Assurance for the connected world." under the logo; "v1.0.0 | Prototype" at the bottom; no "Buyer portal" label (vendors still see "Vendor portal").
+- **Header:** "Welcome back, {name}. Here’s your outsourcing compliance at a glance."; a date button (📅 26 Oct 2026 ▾) whose list picks All time / Last 30 days / Last 90 days / Last 12 months; "All Organisations ▾" (a buyer has one organisation, so both choices show the same figures). "+ New requirement" and the first-steps banner were removed, as in the demo; "Start a requirement" is in the empty Recent Compliance Assessments table.
+- **Tiles:** Total Suppliers (↑ +N since last month), Compliant / Attention / High Risk (N% of total), Actions Required (in progress), Overall Compliance ring (↑ N% vs last month).
+- **Cards:** Compliance by Sector (centre "Overall"); Global Outsourcing Footprint with "All Countries ▾", map pins "UK (Head Office)", "USA (Data Storage)", the map framed like the demo and the country list with flags on the right; Recent Activity with View all, supplier (country) and "2h ago"; Open Risks (ID, Supplier, Issue, Severity, Due Date, Status: Open / In progress); Recent Compliance Assessments (Supplier / Service, Jurisdiction, Status, Score).
+- **The assurance path:** "From supplier to certainty." with the demo's nine steps (Supplier Discovery, Requirement Analysis, Contract Extraction, Obligation Identification, Rule Mapping, Jurisdiction / Data Transfer, Risk Assessment, Workflow Actions, Evidence & Audit), each opening the stage that does it.
+- Standings from the server are now "Compliant", "Attention", "High Risk", "In Progress". Open risk status is "In progress" once an agreed action is being worked on, otherwise "Open".
+- Map pins and labels keep the same size on screen however wide the map is.
+- **Tests:** 106 API tests; all browser runs pass (sign-out now opens the name menu first).
+
+### Dashboard: the rest of the demo (search, sector, footprint, period) (26 Oct 2026) ✅
+- **Search box** in the buyer top bar ("Search vendors, contracts, obligations…"). It searches the organisation's own assessments, vendors, contracts, obligations, risks and actions, and pages by name. Results are grouped; arrow keys and Enter open one; **Ctrl+K** or **/** jumps to the box. On a phone it is a magnifier that opens a full-width search. Server: `GET /api/assessments/search?q=` (at least 2 letters, 5 results a group, `%` and `_` searched as text).
+- **Every card shows from the first day.** A new account now sees Compliance by sector, the footprint map (with the head office), Recent activity, Open risks and Recent compliance assessments, each with a short message saying what will appear there.
+- **Compliance by sector** (was "Assessments by service"): the donut of the services outsourced, with the overall score in the middle.
+- **Global outsourcing footprint:** map pins like the demo, with the country name and its role "(Head office)", "(Remote access, Vendor)"; labels move so they never cover each other. A filter shows all countries or only head office / data storage / remote access / vendor countries. Flags beside each country (also in Recent compliance assessments, "Jurisdiction").
+- **Period picker** next to the date: All time, Last 30 days, Last 90 days, Last 12 months (by when the assessment started).
+- **Trends:** the Vendors tile shows "↑ N new in the last 30 days"; Overall assurance shows "↑/↓ N vs last month" once there was a score a month ago.
+- **Assurance path:** arrows between the nine stages.
+- Fixed: the empty score ring showed a small dot.
+- Not added: the demo's "All Organisations" picker. A buyer belongs to one organisation, so it would have only one choice.
+- **New package (frontend):** `flag-icons` (flag pictures; each flag is a separate small file). Run `npm install` in `frontend`.
+- Code: server `src/assessments/search.js`, `overview.js` (period, trends, head office), `routes.js`; frontend `src/components/layout/TopSearch.jsx`, `src/components/common/Flag.jsx`, `src/components/dashboard/Overview.jsx`, `FootprintMap.jsx`, `Charts.jsx`, `src/pages/Dashboard.jsx`, `styles.css`.
+- **Tests:** 106 API tests (new: search, period); browser: completion 34 checks, Stage 1 51 checks.
+
+### Buyer dashboard redesigned to the client's demo (26 Oct 2026) ✅
+- The buyer dashboard now follows the layout of the two demo pages: headline figures across the top, three cards in the middle, two tables, and the assurance path at the bottom. Every number comes from the buyer's saved records; nothing is sample data.
+- **Headline figures:** Vendors (dark tile), On track, Attention, High risk, Actions required, and an **Average score** ring. Each tile opens the matching page.
+  - "On track / Attention / High risk / In progress" replaces the demo's "Compliant / Non-compliant", because results are never called "compliant". The Stage 9 report decides it when there is one; otherwise the highest rating in the latest risk register; otherwise "In progress".
+- **Middle row:** a donut of **assessments by service** with the average score in the centre; an **outsourcing footprint** world map (head office, data storage, remote access and vendor countries shaded and pinned, with dashed lines from the head office) and a country list; **recent activity** from the assessment timelines.
+- **Tables:** **Open risks** (from the latest risk registers, with severity, due date and the action status from Stage 8) and **Recent assessments** (vendor, service, vendor country, standing, score). A row opens that assessment.
+- **Assurance path:** the nine stages as round icons, each a link to its stage.
+- **Header:** "Welcome back, {name}. Here's your outsourcing assurance at a glance.", today's date and **+ New requirement**.
+- **Bell** in the top bar (buyers): the old "Needs your attention" card moved into a drop-down list with a count. It closes on Escape or a click outside.
+- **Removed:** the role note, the long requirements table, the filters, the old figure tiles, the bar charts and the separate journey list (the assurance path replaces it). The demo's search box and organisation filter were left out: a buyer only sees their own organisation, so they would do nothing.
+- A buyer with no assessments sees "Start with your first requirement" (and their drafts), the figures at zero and the assurance path, but no empty tables.
+- On a phone the cards stack, the top bar stays on one row (the name is hidden, the initials stay), and the bell list opens full width. On narrow phones the vendor's verification badge is left out of the top bar (it is on their dashboard and profile).
+- The map is drawn in the browser (no map service, nothing sent anywhere) and only loads on the dashboard.
+- **New packages (frontend):** `d3-geo`, `topojson-client`, `world-atlas` (country shapes), `i18n-iso-countries` (country codes). Run `npm install` in `frontend` after pulling.
+- Code: server `src/assessments/overview.js` (`GET /api/assessments/overview`); frontend `src/components/dashboard/Overview.jsx`, `Charts.jsx` (ring and donut), `FootprintMap.jsx`, `src/components/layout/AlertsBell.jsx`, `src/pages/Dashboard.jsx`, and a "Buyer dashboard" section at the end of `styles.css`. `Portfolio.jsx` is deleted.
+- **Tests:** a new API test (105 in total); the completion browser run now checks the new dashboard (27 checks), and the stage runs check the assurance path instead of the old journey list.
+
 ### Slide-out menu on phones (26 Oct 2026) ✅
 - On small screens (860px wide or less) the admin console, buyer portal and vendor portal used to squeeze their menu into a strip you scrolled sideways. Now a **☰ button** in the header opens a **slide-out menu** from the left with every option, including the group names (Buyers, Suppliers, Platform …) and all 9 stages.
 - It closes when you choose an option, tap outside it, press Escape, or tap ✕ (in the admin header, or at the top of the portal menu). The page behind does not scroll while it is open.
@@ -829,9 +879,9 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 
 | Suite | Count | Last result |
 |---|---|---|
-| API (`server`, `npm test`) | 104 (Support tickets: 4, Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 13, Stage 3: 4, Stage 4: 6, Stage 5: 6, Stage 6: 5, Stage 7: 5, Stage 8: 7, Stage 9: 8, Completion items: 6, Website: 2, Sign-up source: 1) | ✅ all pass |
+| API (`server`, `npm test`) | 107 (Support tickets: 4, Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 13, Stage 3: 4, Stage 4: 6, Stage 5: 6, Stage 6: 5, Stage 7: 5, Stage 8: 7, Stage 9: 8, Completion items: 9, Website: 2, Sign-up source: 1) | ✅ all pass |
 | Browser, Stage 0 + admin console | 49 checks | ✅ all pass |
-| Browser, Stage 1 (Steps 1–4) + clean build | 48 checks | ✅ all pass |
+| Browser, Stage 1 (Steps 1–4) + clean build | 51 checks | ✅ all pass |
 | Browser, roles (buyer / vendor / admin / membership) | 32 checks | ✅ all pass |
 | Browser, Stage 2 vendor selection (v2) | 29 checks | ✅ all pass |
 | Browser, Stage 3 compliance assessment | 20 checks | ✅ all pass |
@@ -841,10 +891,11 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 | Browser, Stage 7 risk identification | 16 checks | ✅ all pass |
 | Browser, Stage 8 remediation (buyer + vendor) | 24 checks | ✅ all pass |
 | Browser, Stage 9 monitoring and audit (buyer + vendor + admin) | 28 checks | ✅ all pass |
-| Browser, completion items (dashboard, PDF, missed obligations, rule base, automatic checks) | 21 checks | ✅ all pass |
-| Browser, Contact page and support tickets (visitor, buyer, vendor, admin) | 24 checks | ✅ all pass |
+| Browser, completion items (dashboard, PDF, missed obligations, rule base, automatic checks) | 38 checks | ✅ all pass |
+| Browser, Contact page and support tickets (visitor, buyer, vendor, admin) | 26 checks | ✅ all pass |
 | Browser, public website pages, feedback, reviews + footer | 24 checks | ✅ all pass |
-| Browser, site extras (dark mode, cookie notice, Contact us …) | 23 checks | ✅ all pass |
+| Browser, site extras (dark mode, cookie notice, Contact us …) | 27 checks |
+| Browser, slide-out menu on phones | 16 checks | ✅ all pass | ✅ all pass |
 
 ---
 
@@ -860,7 +911,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 | Stage 1 Step 2 engine rules | `server/src/engine/rulepack.js` |
 | Assessments (Step 2) | `server/src/assessments/service.js`, `routes.js` |
 | Contact page and support tickets | `server/src/support/routes.js` (public + admin APIs); `frontend/src/pages/site/Contact.jsx`, `src/pages/admin/AdminTickets.jsx`, `src/components/extras/FloatingActions.jsx` |
-| Completion items | `server/src/monitoring/job.js` (automatic checks), `monitoring/routes.js`, `reports/pdf.js` (PDF), `rules/catalogue.js` (rule base), `assessments/routes.js` (`/alerts`), `engine/obligations.js` (trigger, consequence); `frontend/src/components/dashboard/Portfolio.jsx`, `src/pages/admin/AdminRules.jsx` |
+| Completion items | `server/src/monitoring/job.js` (automatic checks), `monitoring/routes.js`, `reports/pdf.js` (PDF), `rules/catalogue.js` (rule base), `assessments/routes.js` (`/alerts`), `engine/obligations.js` (trigger, consequence); `src/pages/admin/AdminRules.jsx` |
 | Stage 9 monitoring and audit | `server/src/reports/routes.js` (report, audit pack, monitoring, vendor track record, admin reports), `server/src/engine/report.js` (compile, position, monitoring rules); `frontend/src/pages/Monitoring.jsx`, `src/pages/vendor/TrackRecord.jsx`, `src/pages/admin/AdminReports.jsx`, `src/lib/reports.js` |
 | Stage 8 remediation | `server/src/remediation/routes.js` (buyer + vendor APIs), `server/src/engine/remediation.js` (proposals, due dates, remaining risk); `frontend/src/pages/Remediation.jsx`, `src/pages/vendor/VendorActions.jsx`, `src/lib/remediation.js` |
 | Stage 7 risk identification | `server/src/risks/routes.js` (API), `server/src/engine/risks.js` (themes, scoring, bands); `frontend/src/pages/Risks.jsx`, `src/lib/risks.js` |
@@ -873,6 +924,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 | Information Required box (Step 4) | `server/src/engine/gaps.js`, `server/src/assessments/profile.js` (`issueSummary`, `buildSummary`); `frontend/src/components/requirements/InformationRequired.jsx` |
 | Profile, controls, timeline (Step 3) | `server/src/assessments/profile.js`, `server/src/engine/controls.js`, `server/src/storage.js` (encryption) |
 | Stage map (9 stages, 43 steps, built steps) | `frontend/src/lib/stages.js` |
+| Buyer dashboard and top bar search | `server/src/assessments/overview.js`, `search.js`; `frontend/src/components/dashboard/*`, `src/components/layout/AlertsBell.jsx`, `TopSearch.jsx`, `src/components/common/Flag.jsx` |
 | Buyer pages | `frontend/src/pages/Dashboard.jsx`, `Requirements.jsx`, `RequirementForm.jsx`, `StagePage.jsx` |
 | Admin console | `frontend/src/components/admin/AdminLayout.jsx`, `frontend/src/pages/admin/*` |
 | Roles and vendor portal | `frontend/src/lib/roles.js`, `src/pages/vendor/*`, `src/components/auth/VendorProfileForm.jsx`, `src/pages/admin/AdminVendors.jsx`; server: `auth/routes.js` (`saveVendorProfile`), `admin/routes.js` (vendors), `auth/session.js` (`requireRole`) |
