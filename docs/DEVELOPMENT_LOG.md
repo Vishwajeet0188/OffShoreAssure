@@ -9,19 +9,20 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 - **Branches:** one branch per stage, each built on the one before.
   - `stage-0-3`: Stages 0–3 (pushed 23 Oct)
   - `stage-4-contract-analysis`: Stage 4 (local; not pushed yet)
-  - `stage-5-obligation-extraction`: Stage 5 (current work, built on Stage 4)
+  - `stage-5-obligation-extraction`: Stage 5 (local; not pushed yet)
+  - `stage-6-transfer-assessment`: Stage 6 (current work, built on Stage 5)
   - `main` stays on the Phase 1 prototype (the live Vercel site) until the client is ready.
-- **Last updated:** 23 Oct 2026, after Stage 5 (Obligation extraction complete)
+- **Last updated:** 23 Oct 2026, after Stage 6 (Transfer assessment complete)
 
 ---
 
 ## 1. Where we are
 
 ### In plain words
-- **Done:** sign-up and login for buyers and vendors, the admin console, the public website, and **Stages 1–5**. A buyer describes the service and gets an Assessment ID with an "Information Required" summary, selects a verified vendor with a recorded reason, and sends that vendor a compliance questionnaire. The vendor answers it and uploads evidence; the buyer gets a provisional score with the gaps. The buyer then uploads the contract, and OffshoreAssure lists every clause and shows which important topics are covered or missing. OffshoreAssure then lists every obligation in the contract (who must do what, by when), checks it against the rules and shows the gaps; the vendor sees its own obligations.
-- **Next:** **Stage 6 — Transfer assessment.** Map the data flows and check each transfer route.
+- **Done:** sign-up and login for buyers and vendors, the admin console, the public website, and **Stages 1–6**. A buyer describes the service and gets an Assessment ID with an "Information Required" summary, selects a verified vendor with a recorded reason, and sends that vendor a compliance questionnaire. The vendor answers it and uploads evidence; the buyer gets a provisional score with the gaps. The buyer then uploads the contract, and OffshoreAssure lists every clause and shows which important topics are covered or missing. OffshoreAssure then lists every obligation in the contract (who must do what, by when), checks it against the rules and shows the gaps; the vendor sees its own obligations. Finally it maps every route the data takes out of the UK and checks each one (adequacy, contract safeguard, risk assessment), with the questions to resolve.
+- **Next:** **Stage 7 — Risk identification.** Bring the gaps from Stages 3–6 together in one risk register.
 - **Live site:** https://off-shore-assure.vercel.app runs `stage-0-3` (Vercel website, Render API, Neon database).
-- **Waiting on the client:** rule questions for Stages 1–5 (see section 5). The build uses provisional rules until they answer.
+- **Waiting on the client:** rule questions for Stages 1–6 (see section 5). The build uses provisional rules until they answer.
 
 | Stage (sequence diagram) | Steps | Status |
 |---|---|---|
@@ -30,9 +31,9 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 | 2 · Vendor selection | 5–9 | ✅ Done (21 Oct) |
 | 3 · Compliance assessment | 10–16 | ✅ Done (22 Oct) |
 | 4 · Contract analysis | 17–20 | ✅ Done (23 Oct) |
-| **5 · Obligation extraction** | 21–24 | ✅ **Done (23 Oct)** |
-| **6 · Transfer assessment** | 25–28 | ⏭️ **Next** |
-| 7 · Risk identification | 29–32 | ⬜ Not started |
+| 5 · Obligation extraction | 21–24 | ✅ Done (23 Oct) |
+| **6 · Transfer assessment** | 25–28 | ✅ **Done (23 Oct)** |
+| **7 · Risk identification** | 29–32 | ⏭️ **Next** |
 | 8 · Remediation | 33–38 | ⬜ Not started |
 | 9 · Monitoring and audit | 39–43 | ⬜ Not started |
 
@@ -85,8 +86,22 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 | 23 | Obligations, sources and confidence | Engine → Buyer | The register: who, what, when, source clause, confidence, with filters | ✅ Done |
 | 24 | Save obligation register and rule trace | Engine → Evidence Record | Saved as a locked version with a fingerprint; a new contract version gives v2 | ✅ Done |
 
+### Stage 6 step by step
+
+| Step | Title (diagram) | Who | What it means in simple words | Status |
+|---|---|---|---|---|
+| 25 | Map data flows and transfer routes | Engine | One route per destination, from where data is stored, accessed from, where the vendor delivers from, and sub-processors | ✅ Done |
+| 26 | Check recipients, roles and safeguards | Engine | For each route: restricted country? who receives it (processor / sub-processor)? UK adequacy? a contract safeguard (IDTA, Addendum) that allows that country? transfer risk assessment? vendor's Stage 3 answers | ✅ Done |
+| 27 | Transfer findings and questions | Engine → Buyer | Status per route, findings, and the questions for the buyer and for the vendor | ✅ Done |
+| 28 | Save route-by-route assessment | Engine → Evidence Record | Saved as a locked version with the inputs it used and a fingerprint | ✅ Done |
+
 ### Stage completion notes
 Short notes written when a stage is finished: what it does, how to check it, and what comes next.
+
+- **Stage 6 — Transfer assessment (completed 23 Oct 2026, branch `stage-6-transfer-assessment`).**
+  - *What it does:* lists every route personal data takes out of the UK and checks each one: restricted countries, who receives it, UK adequacy, the contract's transfer safeguard, the need for a transfer risk assessment, and the vendor's Stage 3 answers. Shows the findings and the questions to resolve.
+  - *How to check:* buyer → Obligations → **Open transfer assessment** (or sidebar **6 · Transfer assessment**) → **Run transfer assessment** → open a route to see its checks.
+  - *Next:* Stage 7, Risk identification.
 
 - **Stage 5 — Obligation extraction (completed 23 Oct 2026, branch `stage-5-obligation-extraction`).**
   - *What it does:* turns the contract clauses into an obligation register (who must do what, by when), links each obligation to the controls and rules, and lists the rules no obligation covers. The vendor sees its own obligations.
@@ -369,6 +384,22 @@ Source: *Offshore Assure – Stage 2 Inputs and Outputs (2).pdf*. Branch: `stage
 - All requests go through one place (`frontend/src/lib/api.js`: `api`, `readResponse`, `unavailableError`), including the file uploads (requirement documents, vendor evidence, contracts).
 - The "Development build" label in the sidebar is shown only in development.
 
+### Stage 6 — Transfer assessment, Steps 25–28 (23 Oct 2026) ✅ — Stage 6 complete
+- **When:** after the obligations are extracted (Stage 5). It reads the requirement (Stage 1), the selected vendor's delivery countries (Stage 2), the vendor's transfer answers (Stage 3, ASS-005), the contract's transfer clause (Stage 4) and the obligation register (Stage 5). It runs again only when one of those changes.
+- **Step 25 · Routes:** one route per destination: data storage locations (cloud hosting provider as sub-processor when cloud services are used), remote access countries, the vendor's delivery centres, and "sub-processors (location not confirmed)" when sub-processors are allowed.
+- **Step 26 · Checks per route**, with a status:
+  - *Stays in the UK* (no restricted transfer)
+  - *Not permitted* (the buyer listed it as a restricted country)
+  - *Covered by UK adequacy* (EEA, Switzerland, Japan, Korea, New Zealand, Israel, Canada, US and others; some only with a condition, e.g. US only for certified organisations)
+  - *Safeguard in contract · risk assessment needed* (IDTA / UK Addendum named and the country allowed)
+  - *Safeguard missing* (no safeguard, or the contract only allows other countries)
+  - *Information needed* (location or recipient not confirmed)
+- **Step 27 · Findings and questions:** the most serious status overall, the findings, and the questions split into "for you (the buyer)" and "for the vendor" (e.g. "Provide the transfer risk assessment for United Kingdom → India"). These become actions in Stage 8.
+- **Step 28 · Saved:** locked version with the input versions and a fingerprint; timeline steps 25–28; Stage 7 becomes "Next"; audit "Transfer assessment saved". Admin sees a Stage 6 panel.
+- Rules and the adequacy list are provisional (rule pack `RP-2026.10-S6-draft`, `server/src/engine/transfers.js`); the adequacy list must be checked against the ICO's current list. Never says "compliant".
+- **Database:** `013_stage6_transfers.sql` (transfer_assessments, append-only).
+- **Tests:** API 68 (Stage 6: 5 new); browser 49 / 48 / 31 / 22 / 20 / 19 / 15 / 24, and a new Stage 6 run with 12 checks. All pass.
+
 ### Stage 5 — Obligation extraction, Steps 21–24 (23 Oct 2026) ✅ — Stage 5 complete
 - **When:** once the contract has been analysed (Stage 4). The buyer clicks **Extract obligations**; it runs again only when a newer contract version is uploaded.
 - **Step 21 · Extract:**
@@ -581,6 +612,7 @@ Requested by Vishwajeet before starting Stage 3: make the user-facing site clear
 | 8 | Stage 3 questionnaire questions per control (ASS-001 … ASS-015), evidence rules, scoring weights and bands, response deadline | 21 Oct | Final Stage 3 rules (provisional ones are built and in use) |
 | 9 | Stage 4: which clause topics to look for, which are mandatory, and whether the contract must wait for Stage 3 | 23 Oct | Final Stage 4 rules (provisional ones are built and in use) |
 | 10 | Stage 5: which rules each obligation is checked against, obligation categories, and how deadlines and frequencies are recorded | 23 Oct | Final Stage 5 rules (provisional ones are built and in use) |
+| 11 | Stage 6: the transfer rules (adequacy list to use, IDTA / Addendum, transfer risk assessment questions, how to treat sub-processors with unknown locations) | 23 Oct | Final Stage 6 rules (provisional ones are built and in use) |
 | 6 | Production hosting (UK region) for the API and database | Oct 2026 | Going live |
 | 7 | Evidence retention period (how long requirement documents and profiles are kept) | 20 Oct | Retention policy (Step 3 boundary) |
 
@@ -614,7 +646,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 
 | Suite | Count | Last result |
 |---|---|---|
-| API (`server`, `npm test`) | 63 (Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 8, Stage 3: 4, Stage 4: 6, Stage 5: 6, Website: 2) | ✅ all pass |
+| API (`server`, `npm test`) | 68 (Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 8, Stage 3: 4, Stage 4: 6, Stage 5: 6, Stage 6: 5, Website: 2) | ✅ all pass |
 | Browser, Stage 0 + admin console | 49 checks | ✅ all pass |
 | Browser, Stage 1 (Steps 1–4) + clean build | 48 checks | ✅ all pass |
 | Browser, roles (buyer / vendor / admin / membership) | 31 checks | ✅ all pass |
@@ -622,6 +654,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 | Browser, Stage 3 compliance assessment | 20 checks | ✅ all pass |
 | Browser, Stage 4 contract analysis | 19 checks | ✅ all pass |
 | Browser, Stage 5 obligation extraction | 15 checks | ✅ all pass |
+| Browser, Stage 6 transfer assessment | 12 checks | ✅ all pass |
 | Browser, public website pages, feedback, reviews + footer | 22 checks | ✅ all pass |
 
 ---
@@ -637,6 +670,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 | Stage 1 requirement API | `server/src/requirements/routes.js` |
 | Stage 1 Step 2 engine rules | `server/src/engine/rulepack.js` |
 | Assessments (Step 2) | `server/src/assessments/service.js`, `routes.js` |
+| Stage 6 transfer assessment | `server/src/transfers/routes.js` (API), `server/src/engine/transfers.js` (routes, adequacy, checks); `frontend/src/pages/Transfers.jsx`, `src/lib/transfers.js` |
 | Stage 5 obligation extraction | `server/src/obligations/routes.js` (buyer + vendor APIs), `server/src/engine/obligations.js` (extraction and rules); `frontend/src/pages/Obligations.jsx`, `src/pages/vendor/VendorObligations.jsx`, `src/lib/obligations.js` |
 | Stage 4 contract analysis | `server/src/contracts/routes.js` (APIs), `server/src/contracts/extract.js` (PDF/Word text), `server/src/engine/clauses.js` (clause rules); `frontend/src/pages/ContractAnalysis.jsx`, `src/lib/contracts.js` |
 | Stage 3 compliance assessment | `server/src/compliance/routes.js` (buyer + vendor APIs), `server/src/engine/questionnaire.js` (questions, evidence, scoring); `frontend/src/pages/Compliance.jsx`, `src/pages/vendor/VendorQuestionnaire.jsx`, `src/lib/compliance.js` |
@@ -654,9 +688,9 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 
 ## 9. Next
 
-1. **Stage 6 · Transfer assessment (Steps 25–28):**
-   - Step 25: map the data flows and transfer routes (where data is stored and accessed from, sub-processors)
-   - Step 26: check recipients, roles and safeguards for each route
-   - Step 27: show the transfer findings and questions to the buyer
-   - Step 28: save the route-by-route assessment
-2. Needed from the client for Stage 6: the transfer rules (adequacy list, IDTA / Addendum, transfer risk assessment questions).
+1. **Stage 7 · Risk identification (Steps 29–32):**
+   - Step 29: consolidate the risks and gaps from Stages 3–6 (compliance gaps, missing contract topics, obligation gaps, transfer findings)
+   - Step 30: apply scoring and evidence rules (likelihood, impact, evidence held)
+   - Step 31: show the risk register with the reason for each risk
+   - Step 32: save the risk snapshot with links to its sources
+2. Needed from the client for Stage 7: the risk scoring method (likelihood × impact scale, rating bands) and who owns each risk.

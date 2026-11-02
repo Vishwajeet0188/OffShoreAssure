@@ -63,6 +63,7 @@ export function AdminAssessmentDetail() {
       {d.compliance?.compliance ? <CompliancePanel s={d.compliance} /> : null}
       {d.contract?.versions.length ? <ContractPanel state={d.contract} /> : null}
       {d.obligations?.register ? <ObligationsPanel state={d.obligations} /> : null}
+      {d.transfers?.result ? <TransfersPanel state={d.transfers} /> : null}
       <AssessmentResult a={a} buyerName={a.buyerName} />
       {d.profiles ? <ProfilePanel profiles={d.profiles} timeline={d.timeline} catalogue={d.controlCatalogue} /> : null}
     </>
@@ -162,6 +163,26 @@ function ObligationsPanel({ state }) {
       <div className="asr-block">
         <h3>Gaps ({register.gaps.length})</h3>
         {register.gaps.length ? <ul>{register.gaps.map(gap => <li key={gap.ruleId}>{gap.text}</li>)}</ul> : <p className="note" style={{ margin: 0 }}>None.</p>}
+      </div>
+    </section>
+  );
+}
+
+/* Stage 6 for the admin: the latest transfer assessment (read-only). */
+function TransfersPanel({ state }) {
+  const result = state.result;
+  return (
+    <section className="card" data-section="admin-transfers">
+      <div className="ch">
+        <div>
+          <h2>Stage 6 · Transfer assessment</h2>
+          <div className="sub">Version {result.version} · saved {fmtTime(result.createdAt)} · {result.totals.routes} routes · {result.totals.questions} questions</div>
+        </div>
+        <Badge s={result.overall.status === 'ADEQUATE' || result.overall.status === 'NOT_RESTRICTED' ? 'Complete' : 'Attention'} label={result.overall.label} />
+      </div>
+      <div className="asr-block">
+        <h3>Routes</h3>
+        <ul>{result.routes.map(route => <li key={route.id}>{route.fromName} → {route.toName}: {route.statusLabel}</li>)}</ul>
       </div>
     </section>
   );

@@ -158,8 +158,9 @@ export default function Obligations() {
             <Icon n="clock" s={20} />
             <div>
               <b>Stage 5 is complete for this assessment. Next: Stage 6 — Transfer assessment.</b>{' '}
-              <span className="note">Data flows and transfer routes will be checked route by route. Not available yet (next build stage).</span>
+              <span className="note">Check every route your data takes out of the UK.</span>
             </div>
+            <Link className="btn primary" to={'/transfers/' + state.assessment.reference} data-act="go-transfers">Open transfer assessment</Link>
           </div>
         </>
       ) : null}
