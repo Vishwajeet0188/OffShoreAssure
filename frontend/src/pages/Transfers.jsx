@@ -156,8 +156,9 @@ export default function Transfers() {
             <Icon n="clock" s={20} />
             <div>
               <b>Stage 6 is complete for this assessment. Next: Stage 7 — Risk identification.</b>{' '}
-              <span className="note">The gaps from Stages 3 to 6 will be brought together in one risk register. Not available yet (next build stage).</span>
+              <span className="note">The gaps from Stages 1 to 6 are brought together in one scored risk register.</span>
             </div>
+            <Link className="btn primary" to={'/risks/' + ref} data-act="go-risks">Open risk register</Link>
           </div>
         </>
       ) : null}

@@ -9,6 +9,7 @@ import { Badge } from '../components/common/Badges.jsx';
 import { Icon } from '../components/common/Icon.jsx';
 import { activeMember } from '../lib/membership.js';
 import Loading from '../components/extras/Loading.jsx';
+import Portfolio from '../components/dashboard/Portfolio.jsx';
 
 /* Buyer dashboard: only real data from the API, plus where each stage of the assessment stands. */
 export default function Dashboard() {
@@ -19,7 +20,6 @@ export default function Dashboard() {
   const active = activeMember(auth.membership);
   useEffect(() => { if (active) api('/requirements').then(r => setList(r.requirements)).catch(x => setErr(x.message)); }, [active]);
   const drafts = list ? list.filter(r => r.status === 'draft').length : null;
-  const submitted = list ? list.filter(r => r.status === 'submitted').length : null;
   return (
     <>
       <PageHead eyebrow={'Buyer dashboard · ' + (auth.profile?.organisationName || '')} title={'Welcome, ' + displayName(auth.user, auth.profile).split(' ')[0]}
@@ -28,7 +28,7 @@ export default function Dashboard() {
       <div className="role-note" data-section="role-note">
         <span className="role-pill">Buyer</span>
         <p>You are signed in as a <b>buyer</b>: the organisation that plans to outsource a service. You submit requirements, select a vendor and receive the assessment report.
-          <span className="note"> Vendors (suppliers) use a separate vendor portal, arriving with Stages 2–3. The OffshoreAssure team uses the admin console.</span></p>
+          <span className="note"> Vendors (suppliers) use a separate vendor portal. The OffshoreAssure team uses the admin console.</span></p>
       </div>
       {!active ? (
         <section className={'card vstatus vstatus-' + (auth.membership === 'pending' ? 'pending' : 'rejected')} data-section="membership">
@@ -42,10 +42,7 @@ export default function Dashboard() {
       ) : null}
       {err ? <p className="form-err">{err}</p> : null}
       {active ? <>
-      <div className="dash-tiles">
-        <Link className="dash-tile" to="/requirements"><span className="note">Requirements in draft</span><b>{drafts ?? '—'}</b></Link>
-        <Link className="dash-tile" to="/requirements"><span className="note">Assessments created</span><b>{submitted ?? '—'}</b></Link>
-      </div>
+      <Portfolio drafts={drafts} />
       <div className="card">
         <div className="ch"><div><h2>Your requirements</h2><div className="sub">Stage 1 · Requirement</div></div><Link className="link" to="/requirements">View all <Icon n="arrow" s={13} /></Link></div>
         {!list ? <Loading pad /> : list.length === 0 ? (
@@ -68,7 +65,7 @@ export default function Dashboard() {
       </div>
       </> : null}
       <div className="card">
-        <div className="ch"><div><h2>Assessment journey</h2><div className="sub">The nine stages, in order. Stages become available as they are built.</div></div></div>
+        <div className="ch"><div><h2>Assessment journey</h2><div className="sub">The nine stages, in order.</div></div></div>
         <ol className="journey">
           {STAGES.map(s => {
             const st = stageStatus(s);

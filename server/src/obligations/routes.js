@@ -4,6 +4,7 @@
  * Buyer:
  *   GET  /api/assessments/:ref/obligations              latest register (or ?version=N)
  *   POST /api/assessments/:ref/obligations              steps 21–24 for the latest contract version
+ *   POST /api/assessments/:ref/obligations/:id/missed   report a monitored obligation as missed → a Stage 8 action
  * Vendor:
  *   GET  /api/vendor/obligations                        assessments with a register for this vendor
  *   GET  /api/vendor/obligations/:ref                   the vendor's own obligations, stated plainly
@@ -18,6 +19,9 @@ import { requireRole } from '../auth/session.js';
 import { buyerOrganisation, requireActiveMembership } from '../assessments/service.js';
 import { buildRegister, PARTIES, RULES, S5_RULE_PACK, REGISTER_NOTE } from '../engine/obligations.js';
 import { TOPICS } from '../engine/clauses.js';
+import { ACTION_STATUS } from '../engine/remediation.js';
+import { notifyVendor } from '../remediation/routes.js';
+import { z } from 'zod';
 
 const AUDIT_STAGE = 'stage-5';
 
@@ -93,6 +97,67 @@ obligationsBuyerRouter.post('/:ref/obligations', async (req, res) => {
   res.status(201).json(await obligationsState(query, assessment, version));
 });
 
+/*
+ * A monitored obligation was missed (Technical Architecture, Stage 5: each obligation
+ * is a monitored rule with an owner, a trigger and a consequence). The buyer reports it;
+ * it becomes a Stage 8 action for whoever owns the obligation, due in 14 days.
+ */
+const missedSchema = z.object({ note: z.string().trim().min(10, 'Say what was missed and when (at least 10 characters).').max(1000) });
+const MISSED_DUE_DAYS = 14;
+
+obligationsBuyerRouter.post('/:ref/obligations/:id/missed', async (req, res) => {
+  const p = missedSchema.safeParse(req.body || {});
+  if (!p.success) return res.status(400).json({ error: 'validation', message: p.error.issues[0].message });
+  const assessment = await findBuyerAssessment(req);
+  if (!assessment) return notFound(res, 'Assessment not found.');
+
+  const out = await tx(async db => {
+    await db.query('SELECT id FROM assessments WHERE id = $1 FOR UPDATE', [assessment.id]);
+    const register = await latestRegister(db.query.bind(db), assessment.id, true);
+    const obligation = register?.obligations.find(o => o.id === req.params.id);
+    if (!obligation) return [404, { error: 'not_found', message: 'Obligation not found.' }];
+    if (obligation.type === 'Right') return [409, { error: 'not_monitored', message: 'A right cannot be missed.' }];
+    const owner = obligation.party === 'buyer' ? 'buyer' : 'vendor';
+    if (owner === 'vendor' && !assessment.selected_vendor_id) return [409, { error: 'no_vendor', message: 'There is no selected vendor to ask.' }];
+    const open = (await db.query(
+      `SELECT number FROM remediation_actions WHERE assessment_id = $1 AND theme = 'obligation' AND risk_id = $2 AND status IN ('OPEN', 'RETURNED', 'SUBMITTED')`,
+      [assessment.id, obligation.id])).rows[0];
+    if (open) return [409, { error: 'already_open', message: `${obligation.id} already has an open action (ACT-${String(open.number).padStart(2, '0')}).` }];
+
+    const riskRegister = (await db.query('SELECT version FROM risk_registers WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1', [assessment.id])).rows[0];
+    const number = (await db.query('SELECT coalesce(max(number), 0) + 1 AS n FROM remediation_actions WHERE assessment_id = $1', [assessment.id])).rows[0].n;
+    const due = new Date(Date.now() + MISSED_DUE_DAYS * 86400000).toISOString().slice(0, 10);
+    const consequence = obligation.consequence ? `Under clause ${obligation.consequence.clauseNumber}: ${obligation.consequence.text}` : 'The contract does not state a consequence.';
+    const requests = owner === 'vendor'
+      ? [`Explain why ${obligation.id} (clause ${obligation.source.clauseNumber}) was not met and what you have done to put it right.`, 'Upload evidence of the fix.', consequence]
+      : [`Record what you did about ${obligation.id} (clause ${obligation.source.clauseNumber}).`, consequence];
+    const { rows } = await db.query(
+      `INSERT INTO remediation_actions (assessment_id, number, register_version, risk_id, theme, title, owner, requests, needs_document, source_stages,
+                                        rating, score, status, due_on, suggested_due_on, buyer_note)
+       VALUES ($1, $2, $3, $4, 'obligation', $5, $6, $7, $8, '[5]', 'HIGH', 0, 'OPEN', $9, $9, $10) RETURNING id`,
+      [assessment.id, number, riskRegister?.version || 0, obligation.id, `Missed obligation ${obligation.id}: clause ${obligation.source.clauseNumber}`,
+        owner, JSON.stringify(requests), owner === 'vendor', due, p.data.note]);
+    for (const event of ['proposed', 'assigned']) {
+      await db.query('INSERT INTO remediation_events (action_id, actor_id, actor_role, event, detail) VALUES ($1, $2, $3, $4, $5)',
+        [rows[0].id, req.user.id, req.user.role, event, JSON.stringify({ obligation: obligation.id, dueOn: due })]);
+    }
+    await db.query(
+      `INSERT INTO assessment_timeline (assessment_id, kind, stage, step, title, status, at, detail) VALUES ($1, 'event', 8, 33, $2, 'done', now(), $3)`,
+      [assessment.id, `Missed obligation ${obligation.id} reported; action ACT-${String(number).padStart(2, '0')} assigned to the ${owner}`, JSON.stringify({ obligation: obligation.id })]);
+    await audit(req, 'obligations.missed', { db, stage: AUDIT_STAGE, ref: assessment.reference,
+      detail: { reference: assessment.reference, obligation: obligation.id, clause: obligation.source.clauseNumber, owner, action: number, note: p.data.note } });
+    return [201, { owner, number, obligation, due }];
+  });
+  if (out[0] !== 201) return res.status(out[0]).json(out[1]);
+  const { owner, number, obligation, due } = out[1];
+  if (owner === 'vendor') {
+    await notifyVendor(assessment, `${assessment.buyer_name} reported a missed obligation`,
+      [`${assessment.buyer_name} says obligation ${obligation.id} (clause ${obligation.source.clauseNumber}) in "${assessment.title}" (${assessment.reference}) was not met.`,
+        `ACT-${String(number).padStart(2, '0')} · respond by ${due}.`], 'OBLIGATION MISSED', 'An obligation was missed');
+  }
+  res.status(201).json(await obligationsState(query, assessment));
+});
+
 /* ================= Vendor ================= */
 
 export const obligationsVendorRouter = Router();
@@ -153,7 +218,7 @@ obligationsVendorRouter.get('/obligations/:ref', async (req, res) => {
     createdAt: register.created_at,
     obligations: ownObligations.map(o => ({
       id: o.id, type: o.type, party: o.party, text: o.text, deadline: o.deadline, frequency: o.frequency,
-      condition: o.condition, source: o.source, topics: o.topics,
+      condition: o.condition, trigger: o.trigger ?? null, consequence: o.consequence ?? null, monitored: !!o.monitored, source: o.source, topics: o.topics,
     })),
     topics: TOPICS.map(({ id, name }) => ({ id, name })),
     note: REGISTER_NOTE,
@@ -193,6 +258,11 @@ export async function obligationsState(run, assessment, requestedVersion = null)
     parties: PARTIES,
     topics: TOPICS.map(({ id, name }) => ({ id, name })),
     rules: RULES.map(({ id, text, source }) => ({ id, text, source })),
+    // Missed obligations already reported (Stage 8 actions with theme "obligation").
+    missed: (await run(
+      `SELECT number, risk_id, status, due_on FROM remediation_actions WHERE assessment_id = $1 AND theme = 'obligation' ORDER BY number`, [assessment.id])).rows
+      .map(a => ({ obligationId: a.risk_id, code: `ACT-${String(a.number).padStart(2, '0')}`, status: a.status, statusLabel: ACTION_STATUS[a.status].label,
+        dueOn: a.due_on ? String(a.due_on instanceof Date ? a.due_on.toISOString() : a.due_on).slice(0, 10) : null })),
   };
 }
 
@@ -243,9 +313,9 @@ async function latestAnalysedContract(run, assessmentId) {
   return rows[0] || null;
 }
 
-async function latestRegister(run, assessmentId) {
+async function latestRegister(run, assessmentId, withObligations = false) {
   const { rows } = await run(
-    'SELECT version, contract_version FROM obligation_registers WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1',
+    `SELECT version, contract_version${withObligations ? ', obligations' : ''} FROM obligation_registers WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1`,
     [assessmentId]
   );
   return rows[0] || null;

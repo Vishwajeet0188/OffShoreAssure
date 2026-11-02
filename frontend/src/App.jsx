@@ -22,6 +22,13 @@ import Compliance, { ComplianceList } from './pages/Compliance.jsx';
 import ContractAnalysis, { ContractList } from './pages/ContractAnalysis.jsx';
 import Obligations, { ObligationsList } from './pages/Obligations.jsx';
 import Transfers, { TransfersList } from './pages/Transfers.jsx';
+import Risks, { RisksList } from './pages/Risks.jsx';
+import Remediation, { RemediationList } from './pages/Remediation.jsx';
+import Monitoring, { MonitoringList } from './pages/Monitoring.jsx';
+import TrackRecord from './pages/vendor/TrackRecord.jsx';
+import AdminReports from './pages/admin/AdminReports.jsx';
+import AdminRules from './pages/admin/AdminRules.jsx';
+import VendorActions, { VendorActionsList } from './pages/vendor/VendorActions.jsx';
 import VendorObligations, { VendorObligationsList } from './pages/vendor/VendorObligations.jsx';
 import Organisation from './pages/Organisation.jsx';
 import RegisteredUsers from './pages/admin/RegisteredUsers.jsx';
@@ -87,6 +94,12 @@ export default function App() {
           <Route path="obligations/:ref" element={<Obligations />} />
           <Route path="transfers" element={<TransfersList />} />
           <Route path="transfers/:ref" element={<Transfers />} />
+          <Route path="risks" element={<RisksList />} />
+          <Route path="risks/:ref" element={<Risks />} />
+          <Route path="remediation" element={<RemediationList />} />
+          <Route path="remediation/:ref" element={<Remediation />} />
+          <Route path="monitoring" element={<MonitoringList />} />
+          <Route path="monitoring/:ref" element={<Monitoring />} />
         </Route>
         {/* Vendor (supplier) portal */}
         <Route path="vendor" element={<RequireVendorArea><AppLayout portal="vendor" /></RequireVendorArea>}>
@@ -96,6 +109,9 @@ export default function App() {
           <Route path="assessments/:ref" element={<VendorQuestionnaire />} />
           <Route path="obligations" element={<VendorObligationsList />} />
           <Route path="obligations/:ref" element={<VendorObligations />} />
+          <Route path="actions" element={<VendorActionsList />} />
+          <Route path="actions/:ref" element={<VendorActions />} />
+          <Route path="track-record" element={<TrackRecord />} />
           <Route path="stage/:slug" element={<VendorStagePage />} />
         </Route>
         {/* Old prototype addresses */}
@@ -118,7 +134,9 @@ export default function App() {
           <Route path="vendors" element={<AdminVendors />} />
           <Route path="vendors/:id" element={<AdminVendorDetail />} />
           <Route path="suppliers" element={<Navigate to="/admin/vendors" replace />} />
-          {['evidence', 'reports', 'rules'].map(k => <Route key={k} path={k} element={<ComingStage page={k} />} />)}
+          <Route path="reports" element={<AdminReports />} />
+          <Route path="rules" element={<AdminRules />} />
+          <Route path="evidence" element={<ComingStage page="evidence" />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -153,7 +153,7 @@ export default function Obligations() {
           <VersionBar state={state} onPick={load} />
           <SummaryCard register={register} />
           <RuleTrace register={register} />
-          <RegisterTable register={register} topics={state.topics} parties={state.parties} />
+          <RegisterTable register={register} topics={state.topics} parties={state.parties} missed={state.missed || []} reference={ref} latest={!state.versions.length || state.versions[0].version === register.version} onChange={setState} />
           <div className="card rq-next">
             <Icon n="clock" s={20} />
             <div>
@@ -293,7 +293,8 @@ function RuleTrace({ register }) {
   );
 }
 
-function RegisterTable({ register, topics, parties }) {
+function RegisterTable({ register, topics, parties, missed, reference, latest, onChange }) {
+  const [reporting, setReporting] = useState(null);
   const [party, setParty] = useState('all');
   const [topic, setTopic] = useState('all');
   const [search, setSearch] = useState('');
@@ -334,7 +335,7 @@ function RegisterTable({ register, topics, parties }) {
         <div className="tw">
           <table className="ob-table">
             <thead>
-              <tr><th>Ref</th><th>Who</th><th>Obligation</th><th>When</th><th>Source</th><th>Confidence</th></tr>
+              <tr><th>Ref</th><th>Who</th><th>Obligation</th><th>When</th><th>If missed</th><th>Source</th><th>Confidence</th></tr>
             </thead>
             <tbody>
               {visible.map(obligation => (
@@ -349,7 +350,13 @@ function RegisterTable({ register, topics, parties }) {
                     {obligation.topics.length ? <div className="note">{obligation.topics.map(id => topicName[id]).join(' · ')}</div> : null}
                     {obligation.requirementControls.length ? <div className="note">Requirement controls: {obligation.requirementControls.join(', ')}</div> : null}
                   </td>
-                  <td>{describeTiming(obligation) || <span className="muted">—</span>}</td>
+                  <td>{describeTiming(obligation) || <span className="muted">—</span>}
+                    {obligation.monitored ? <div><span className="b b-plum" style={{ marginTop: 4 }}>Monitored</span></div> : null}</td>
+                  <td className="ob-if-missed">
+                    <Consequence obligation={obligation} />
+                    <MissedControl obligation={obligation} action={missed.filter(m => m.obligationId === obligation.id).at(-1)} canReport={latest}
+                      open={reporting === obligation.id} onOpen={() => setReporting(obligation.id)} onClose={() => setReporting(null)} reference={reference} onChange={onChange} />
+                  </td>
                   <td className="mono">Clause {obligation.source.clauseNumber}<div className="note">p. {obligation.source.page}</div></td>
                   <td><span className={'b ' + CONFIDENCE_TONE[obligation.confidence]}>{obligation.confidence}</span></td>
                 </tr>
@@ -359,5 +366,59 @@ function RegisterTable({ register, topics, parties }) {
         </div>
       )}
     </section>
+  );
+}
+
+/* What the contract says happens if the obligation is missed. */
+function Consequence({ obligation }) {
+  if (obligation.type === 'Right') return <span className="muted">—</span>;
+  if (obligation.consequence === undefined) return <span className="muted">Extract again to see it</span>;
+  if (!obligation.consequence) return <span className="note">Not stated in the contract</span>;
+  return (
+    <div className="note" title={obligation.consequence.text}>
+      {obligation.consequence.text.length > 90 ? obligation.consequence.text.slice(0, 88) + '…' : obligation.consequence.text}
+      <div>Clause {obligation.consequence.clauseNumber}{obligation.consequence.scope === 'contract' ? ' (general term)' : ''}</div>
+    </div>
+  );
+}
+
+/* Report a monitored obligation as missed: it becomes a Stage 8 action for whoever owns it. */
+function MissedControl({ obligation, action, canReport, open, onOpen, onClose, reference, onChange }) {
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  if (obligation.type === 'Right') return null;
+  const active = action && ['OPEN', 'RETURNED', 'SUBMITTED'].includes(action.status);
+  const canOpen = canReport && !active && (obligation.monitored || action);
+
+  async function send() {
+    setBusy(true); setError('');
+    try {
+      onChange(await api(`/assessments/${reference}/obligations/${obligation.id}/missed`, { method: 'POST', body: { note } }));
+      setNote(''); onClose();
+    } catch (err) { setError(err.message); } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="ob-missed">
+      {action ? (
+        <Link className={'b ' + (active ? 'b-coral' : 'b-sage')} to={'/remediation/' + reference} data-missed={obligation.id}>
+          Missed · {action.code} · {action.statusLabel}
+        </Link>
+      ) : null}
+      {canOpen && !open ? <button className="btn sm" onClick={onOpen} data-act="report-missed">{action ? 'Report again' : 'Report missed'}</button> : null}
+      {open ? (
+        <div className="ob-missed-form" data-section="report-missed">
+          <textarea rows={2} maxLength={1000} value={note} onChange={e => setNote(e.target.value)} aria-label={'What was missed: ' + obligation.id}
+            placeholder="What was missed and when (at least 10 characters)" />
+          {error ? <span className="form-err">{error}</span> : null}
+          <div className="row">
+            <button className="btn primary sm" disabled={busy} onClick={send} data-act="send-missed">{busy ? 'Sending…' : obligation.party === 'buyer' ? 'Create action' : 'Send to the vendor'}</button>
+            <button className="btn sm" onClick={onClose}>Cancel</button>
+          </div>
+          <span className="note">It becomes an action in Stage 8, due in 14 days.</span>
+        </div>
+      ) : null}
+    </div>
   );
 }

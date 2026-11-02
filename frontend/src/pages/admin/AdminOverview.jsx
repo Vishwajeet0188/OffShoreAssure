@@ -93,7 +93,7 @@ export default function AdminOverview() {
         </table></div>
       </div>
       <div className="card">
-        <div className="ch"><div><h2>Coming with later stages</h2><div className="sub">Admin areas for suppliers, assessments and reports fill in as each stage is built</div></div></div>
+        <div className="ch"><div><h2>Coming with later stages</h2><div className="sub">Admin areas that fill in when the client confirms the remaining rules</div></div></div>
         <div className="adm-later-grid">
           {Object.entries(LATER_PAGES).map(([k, p]) => (
             <Link key={k} to={'/admin/' + k} className="adm-later-item">

@@ -11,6 +11,7 @@ import ProfilePanel from '../../components/requirements/ProfilePanel.jsx';
 import { ELIGIBILITY, SELECTION_STATUS, SOURCE_LABEL } from '../../lib/selection.js';
 import InformationRequired from '../../components/requirements/InformationRequired.jsx';
 import Loading from '../../components/extras/Loading.jsx';
+import { POSITION_TONE, shortHash } from '../../lib/reports.js';
 
 /* Admin · Assessments across every buyer organisation (Stage 1 · Step 2 onwards). */
 export default function AdminAssessments() {
@@ -64,6 +65,9 @@ export function AdminAssessmentDetail() {
       {d.contract?.versions.length ? <ContractPanel state={d.contract} /> : null}
       {d.obligations?.register ? <ObligationsPanel state={d.obligations} /> : null}
       {d.transfers?.result ? <TransfersPanel state={d.transfers} /> : null}
+      {d.risks?.register ? <RisksPanel state={d.risks} /> : null}
+      {d.remediation?.actions?.length ? <RemediationPanel state={d.remediation} /> : null}
+      {d.report?.versions?.length || d.report?.monitoring?.checks?.length ? <ReportPanel state={d.report} /> : null}
       <AssessmentResult a={a} buyerName={a.buyerName} />
       {d.profiles ? <ProfilePanel profiles={d.profiles} timeline={d.timeline} catalogue={d.controlCatalogue} /> : null}
     </>
@@ -183,6 +187,67 @@ function TransfersPanel({ state }) {
       <div className="asr-block">
         <h3>Routes</h3>
         <ul>{result.routes.map(route => <li key={route.id}>{route.fromName} → {route.toName}: {route.statusLabel}</li>)}</ul>
+      </div>
+    </section>
+  );
+}
+
+/* Stage 7 for the admin: the latest risk register (read-only). */
+function RisksPanel({ state }) {
+  const register = state.register;
+  const word = { CRITICAL: 'Critical', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' };
+  return (
+    <section className="card" data-section="admin-risks">
+      <div className="ch">
+        <div>
+          <h2>Stage 7 · Risk identification</h2>
+          <div className="sub">Version {register.version} · saved {fmtTime(register.createdAt)} · {register.totals.risks} risks from {register.totals.findings} findings</div>
+        </div>
+        <Badge s={register.totals.critical || register.totals.high ? 'Restricted' : register.totals.risks ? 'Attention' : 'Complete'} label={'Highest: ' + register.overall.label} />
+      </div>
+      <div className="asr-block">
+        <h3>Risks</h3>
+        <ul>{register.risks.map(risk => <li key={risk.id}>{risk.id} · {risk.title}: {word[risk.rating]} ({risk.likelihood} × {risk.impact} = {risk.score})</li>)}</ul>
+      </div>
+    </section>
+  );
+}
+
+/* Stage 8 for the admin: actions and the remaining risk (read-only). */
+function RemediationPanel({ state }) {
+  const t = state.residual.totals;
+  return (
+    <section className="card" data-section="admin-remediation">
+      <div className="ch">
+        <div>
+          <h2>Stage 8 · Remediation</h2>
+          <div className="sub">{t.actions} actions · {t.open + t.proposed} outstanding · {t.awaitingReview} to review · {t.closed} closed · {t.accepted} accepted · {state.snapshots.length} snapshots</div>
+        </div>
+        <Badge s={t.open + t.proposed + t.awaitingReview ? 'Attention' : 'Complete'} label={'Remaining highest: ' + state.residual.overall.label} />
+      </div>
+      <div className="asr-block">
+        <h3>Actions</h3>
+        <ul>{state.actions.map(a => <li key={a.number}>{a.code} · {a.title} ({a.owner}): {a.statusLabel}{a.dueOn ? ` · due ${a.dueOn}` : ''}</li>)}</ul>
+      </div>
+    </section>
+  );
+}
+
+function ReportPanel({ state }) {
+  const latest = state.report;
+  return (
+    <section className="card" data-section="admin-report">
+      <div className="ch">
+        <div>
+          <h2>Stage 9 · Monitoring and audit</h2>
+          <div className="sub">{state.versions.length} report version{state.versions.length === 1 ? '' : 's'} · {state.monitoring.checks.length} monitoring check{state.monitoring.checks.length === 1 ? '' : 's'} · {state.monitoring.items.filter(i => i.severity !== 'low').length} item(s) need attention</div>
+        </div>
+        {latest ? <span className={'b ' + POSITION_TONE[latest.position.code]}>{latest.position.label}</span> : null}
+      </div>
+      <div className="asr-block">
+        <h3>Reports</h3>
+        {state.versions.length ? <ul>{state.versions.map(v => <li key={v.version}>v{v.version}.0 · {fmtTime(v.createdAt)} · {v.reason} · {v.position.label} <span className="mono note">{shortHash(v.snapshotSha256)}</span></li>)}</ul>
+          : <p className="note">No report yet; the buyer chose to continue monitoring.</p>}
       </div>
     </section>
   );

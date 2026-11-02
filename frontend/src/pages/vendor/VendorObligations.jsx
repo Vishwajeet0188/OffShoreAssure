@@ -97,6 +97,9 @@ export default function VendorObligations() {
                     {describeTiming(obligation) ? <> · <b>{describeTiming(obligation)}</b></> : null}
                     {obligation.party === 'both' ? ' · applies to both parties' : ''}
                   </div>
+                  {obligation.type !== 'Right' && obligation.consequence ? (
+                    <div className="note">If missed: {obligation.consequence.text} (clause {obligation.consequence.clauseNumber})</div>
+                  ) : null}
                 </div>
               </li>
             ))}
