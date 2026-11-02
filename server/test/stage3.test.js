@@ -35,6 +35,9 @@ async function signUp(email, role) {
   await c('POST', '/auth/verify', { email, code: r.body.devCode }); return c;
 }
 let admin, buyer, vendor, other, ref, vendorId;
+/* Step 8 inputs for a directory vendor (Stage 2 spec v2). */
+const choice = async body => ({ selectionSource: 'DIRECTORY', decision: 'SELECT_WITH_CONDITIONS', confirmedAt: new Date().toISOString(),
+  approverId: (await pool.query(`SELECT id FROM users WHERE email = 'sarah@ukcompany.example'`)).rows[0].id, ...body });
 const pdf = Buffer.from('%PDF-1.4 evidence');
 const up = (c, q) => c('POST', `/vendor/compliance/${ref}/evidence?${new URLSearchParams(q)}`, null, { type: 'application/pdf', data: pdf });
 
@@ -76,7 +79,7 @@ test('step 10: cannot start before a vendor is selected; then starts with the ap
   let r = await buyer('POST', `/assessments/${ref}/compliance`);
   assert.equal(r.status, 409); assert.equal(r.body.error, 'not_ready');
   await buyer('POST', `/assessments/${ref}/shortlist`, { vendorId });
-  assert.equal((await buyer('POST', `/assessments/${ref}/selection`, { vendorId, rationale: 'Best match on service and all delivery countries.' })).status, 201);
+  assert.equal((await buyer('POST', `/assessments/${ref}/selection`, await choice({ vendorId, rationale: 'Best match on service and all delivery countries.' }))).status, 201);
   r = await buyer('POST', `/assessments/${ref}/compliance`);
   assert.equal(r.status, 201, JSON.stringify(r.body));
   assert.equal(r.body.compliance.status, 'requested');
@@ -85,7 +88,9 @@ test('step 10: cannot start before a vendor is selected; then starts with the ap
   assert.equal((await buyer('POST', `/assessments/${ref}/compliance`)).status, 409, 'only once');
   const a = await buyer('GET', `/assessments/${ref}`);
   for (const s of [10, 11, 12]) assert.ok(a.body.timeline.some(t => t.stage === 3 && t.step === s), 'timeline step ' + s);
-  assert.equal((await buyer('POST', `/assessments/${ref}/selection`, { vendorId, rationale: 'Trying to change after start.', changeReason: 'test' })).body.error, 'compliance_started', 'vendor locked once started');
+  const second = (await pool.query(`SELECT id FROM organisations WHERE name = 'Pune Help'`)).rows[0]?.id;
+  if (second) await buyer('POST', `/assessments/${ref}/shortlist`, { vendorId: second });
+  assert.equal((await buyer('POST', `/assessments/${ref}/selection`, await choice({ vendorId: second || vendorId, rationale: 'Trying to change after start.', changeReason: 'test change' }))).body.error, 'compliance_started', 'vendor locked once started');
 });
 
 test('step 13: only the selected vendor sees it; answers saved as draft; evidence rules', async () => {

@@ -11,10 +11,11 @@ import { requirementsRouter } from './requirements/routes.js';
 import { assessmentsRouter } from './assessments/routes.js';
 import { selectionRouter, vendorPortalRouter } from './selection/routes.js';
 import { complianceBuyerRouter, complianceVendorRouter } from './compliance/routes.js';
+import { contractRouter } from './contracts/routes.js';
 import { feedbackRouter } from './feedback/routes.js';
 import { organisationRouter } from './organisation/routes.js';
-import { COUNTRIES } from './reference/countries.js';
-import { SECTORS, JOB_ROLES, VENDOR_JOB_ROLES, SERVICE_CATEGORIES } from './validation.js';
+import { COUNTRIES, CURRENCIES } from './reference/countries.js';
+import { SECTORS, JOB_ROLES, VENDOR_JOB_ROLES, SERVICE_CATEGORIES, VENDOR_CERTIFICATIONS, VENDOR_LANGUAGES } from './validation.js';
 
 export function createApp() {
   const app = express();
@@ -40,11 +41,13 @@ export function createApp() {
   api.use('/me', meRouter);
   api.use('/admin', adminRouter);
   // Lists used by the sign-up and profile forms.
-  api.get('/reference', (_req, res) => res.json({ countries: COUNTRIES, serviceCategories: SERVICE_CATEGORIES, sectors: SECTORS, buyerJobRoles: JOB_ROLES, vendorJobRoles: VENDOR_JOB_ROLES }));
+  api.get('/reference', (_req, res) => res.json({ countries: COUNTRIES, serviceCategories: SERVICE_CATEGORIES, sectors: SECTORS, buyerJobRoles: JOB_ROLES, vendorJobRoles: VENDOR_JOB_ROLES,
+    vendorCertifications: VENDOR_CERTIFICATIONS, vendorLanguages: VENDOR_LANGUAGES, currencies: CURRENCIES }));
   api.use('/requirements', requirementsRouter);
   api.use('/assessments', assessmentsRouter);
   api.use('/assessments', selectionRouter);
   api.use('/assessments', complianceBuyerRouter);
+  api.use('/assessments', contractRouter);
   api.use('/vendor', vendorPortalRouter);
   api.use('/vendor', complianceVendorRouter);
   api.use('/organisation', organisationRouter);

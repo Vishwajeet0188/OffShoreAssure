@@ -1,6 +1,7 @@
 /* Signed-in user (Stage 0). The session lives in an httpOnly cookie set by the API;
    this context only mirrors /api/me for the UI. */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { signupSource } from '../lib/utm.js';
 import { api } from '../lib/api.js';
 
 const AuthContext = createContext(null);
@@ -20,7 +21,8 @@ export function AuthProvider({ children }) {
     ...state,
     refresh,
     /* Each call returns the API response; errors are thrown as ApiError for the form to show. */
-    register: (email, password, role = 'buyer') => api('/auth/register', { method: 'POST', body: { email, password, role } }),
+    register: (email, password, role = 'buyer') =>
+      api('/auth/register', { method: 'POST', body: { email, password, role, source: signupSource() } }),
     verify: async (email, code) => { const r = await api('/auth/verify', { method: 'POST', body: { email, code } }); if (r.user) apply(r); return r; },
     resendCode: (email, purpose = 'register') => api('/auth/resend-code', { method: 'POST', body: { email, purpose } }),
     login: async (email, password) => { const r = await api('/auth/login', { method: 'POST', body: { email, password } }); apply(r); return r; },

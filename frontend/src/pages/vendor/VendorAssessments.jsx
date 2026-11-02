@@ -5,6 +5,7 @@ import { fmtTime } from '../../lib/format.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { PageHead } from '../../components/common/PageHead.jsx';
 import { Badge } from '../../components/common/Badges.jsx';
+import Loading from '../../components/extras/Loading.jsx';
 
 /* Vendor portal · Assessments: buyers that invited this company, and assessments where it has been selected (Stage 2 output).
    The questionnaire and evidence request arrive with Stage 3 (steps 12–13). */
@@ -14,7 +15,7 @@ export default function VendorAssessments() {
   useEffect(() => { api('/vendor/assessments').then(setD).catch(x => setErr(x.message)); api('/vendor/compliance').then(r => setQs(r.questionnaires)).catch(() => {}); }, []);
   const verified = auth.vendor?.verificationStatus === 'approved';
   if (err) return <p className="form-err">{err}</p>;
-  if (!d) return <p className="note">Loading…</p>;
+  if (!d) return <Loading />;
   return (
     <>
       <PageHead eyebrow="Vendor · Assessments" title="Assessments"

@@ -8,8 +8,9 @@ import { Badge } from '../../components/common/Badges.jsx';
 import { BackArrow } from '../../components/common/Icon.jsx';
 import AssessmentResult from '../../components/requirements/AssessmentResult.jsx';
 import ProfilePanel from '../../components/requirements/ProfilePanel.jsx';
-import { MATCH_LABEL, CHECK_SHORT } from '../../lib/selection.js';
+import { ELIGIBILITY, SELECTION_STATUS, SOURCE_LABEL } from '../../lib/selection.js';
 import InformationRequired from '../../components/requirements/InformationRequired.jsx';
+import Loading from '../../components/extras/Loading.jsx';
 
 /* Admin · Assessments across every buyer organisation (Stage 1 · Step 2 onwards). */
 export default function AdminAssessments() {
@@ -51,7 +52,7 @@ export function AdminAssessmentDetail() {
   useEffect(() => { api('/admin/assessments/' + encodeURIComponent(ref)).then(setD).catch(x => setErr(x.message)); }, [ref]);
   const back = <Link className="link" to="/admin/assessments" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><BackArrow s={14} /> Assessments</Link>;
   if (err) return <>{back}<p className="form-err">{err}</p></>;
-  if (!d) return <p className="note">Loading…</p>;
+  if (!d) return <Loading />;
   const a = d.assessment;
   return (
     <>
@@ -60,24 +61,31 @@ export function AdminAssessmentDetail() {
       {d.summary ? <InformationRequired s={d.summary} link={false} /> : null}
       {d.selection ? <SelectionPanel s={d.selection} /> : null}
       {d.compliance?.compliance ? <CompliancePanel s={d.compliance} /> : null}
+      {d.contract?.versions.length ? <ContractPanel state={d.contract} /> : null}
       <AssessmentResult a={a} buyerName={a.buyerName} />
       {d.profiles ? <ProfilePanel profiles={d.profiles} timeline={d.timeline} catalogue={d.controlCatalogue} /> : null}
     </>
   );
 }
 
-/* Stage 2 for the admin: shortlist and the saved selection (read-only). */
+/* Stage 2 for the admin: candidates and the saved Vendor Selection Record (read-only). */
 function SelectionPanel({ s }) {
   const cur = s.current;
+  const status = cur && SELECTION_STATUS[cur.status];
   return (
     <section className="card" data-section="admin-selection">
-      <div className="ch"><div><h2>Stage 2 · Vendor selection</h2><div className="sub">{cur ? `Selection v${cur.version} saved ${fmtTime(cur.selectedAt)} by ${cur.selectedByEmail}` : 'No vendor selected yet'}</div></div>
-        {cur ? <Badge s="Complete" label={'Selected: ' + cur.vendor.name} /> : <Badge s="Pending" label={`${s.shortlist.length} on shortlist`} />}</div>
-      {cur ? <div className="asr-block"><h3>Reason</h3><p style={{ margin: 0 }}>{cur.rationale}</p>{cur.acceptedFlags.length ? <p className="note">Accepted issues: {cur.acceptedFlags.map(f => CHECK_SHORT[f] || f).join(', ')}</p> : null}{cur.changeReason ? <p className="note">Change reason: {cur.changeReason}</p> : null}</div> : null}
-      {s.shortlist.length ? <div className="tw"><table><thead><tr><th>Shortlisted vendor</th><th>Match</th><th>Added</th></tr></thead>
-        <tbody>{s.shortlist.map(v => <tr key={v.id}><td><Link className="adm-ulink" to={'/admin/vendors/' + v.id}><b>{v.name}</b></Link>{cur?.vendorId === v.id ? <span className="b b-plum" style={{ marginLeft: 8 }}>Selected</span> : null}</td>
-          <td><Badge s={MATCH_LABEL[v.match.result][0]} label={MATCH_LABEL[v.match.result][1]} /></td><td className="mono">{fmtTime(v.addedAt)} · {v.addedByEmail}</td></tr>)}</tbody></table></div> : null}
-      {s.versions.length > 1 ? <div className="asr-block"><h3>Earlier selections</h3><ul>{s.versions.slice(0, -1).map(v => <li key={v.id}>v{v.version} · {v.vendor.name} · {fmtTime(v.selectedAt)}</li>)}</ul></div> : null}
+      <div className="ch"><div><h2>Stage 2 · Vendor selection</h2><div className="sub">{cur ? `Vendor Selection Record v${cur.recordVersion} saved ${fmtTime(cur.selectedAt)} by ${cur.selectedByEmail}` : 'No vendor selected yet'}</div></div>
+        {cur ? <Badge s={status ? status[0] : 'Complete'} label={`${status ? status[1] : 'Selected'}: ${cur.vendor.name}`} /> : <Badge s="Pending" label={`${s.candidates.length} candidate${s.candidates.length === 1 ? '' : 's'}`} />}</div>
+      {cur ? <div className="asr-block"><h3>Reason</h3><p style={{ margin: 0 }}>{cur.rationale}</p>
+        <p className="note">Source: {SOURCE_LABEL[cur.source] || cur.source}{cur.approver ? ` · approved by ${cur.approver.fullName || cur.approver.email}` : ''}</p>
+        {cur.exceptionReason ? <p className="note">Exception: {cur.exceptionReason}</p> : null}
+        {cur.conditions.length ? <p className="note">Conditions: {cur.conditions.join(' ')}</p> : null}
+        {cur.changeReason ? <p className="note">Change reason: {cur.changeReason}</p> : null}</div> : null}
+      {s.candidates.length ? <div className="tw"><table><thead><tr><th>Candidate</th><th>Source</th><th>Eligibility</th><th>Added</th></tr></thead>
+        <tbody>{s.candidates.map(v => <tr key={v.id}><td><Link className="adm-ulink" to={'/admin/vendors/' + v.id}><b>{v.name}</b></Link>{cur?.vendorId === v.id ? <span className="b b-plum" style={{ marginLeft: 8 }}>Selected</span> : null}</td>
+          <td>{SOURCE_LABEL[v.candidateSource]}{v.rank ? ` · #${v.rank}` : ''}</td>
+          <td><Badge s={ELIGIBILITY[v.fit.eligibility][0]} label={ELIGIBILITY[v.fit.eligibility][1]} /></td><td className="mono">{fmtTime(v.addedAt)} · {v.addedByEmail}</td></tr>)}</tbody></table></div> : null}
+      {s.versions.length > 1 ? <div className="asr-block"><h3>Earlier records</h3><ul>{s.versions.slice(0, -1).map(v => <li key={v.id}>v{v.recordVersion} · {v.vendor.name} · {fmtTime(v.selectedAt)}</li>)}</ul></div> : null}
     </section>
   );
 }
@@ -93,6 +101,41 @@ function CompliancePanel({ s }) {
         <div className="asr-block"><h3>Score by area</h3><ul className="cp-bars">{r.areas.map(a => <li key={a.id}><span className="cp-bar-l">{a.label}</span><span className="cp-bar-t"><i style={{ width: Math.max(a.score, 2) + '%' }} className={a.score < 60 ? 'low' : ''} /></span><b className="mono">{a.score}</b></li>)}</ul></div>
         <div className="asr-block"><h3>Gaps ({r.gaps.length})</h3>{r.gaps.length ? <ul>{r.gaps.map((g, i) => <li key={i}>{g.text}</li>)}</ul> : <p className="note" style={{ margin: 0 }}>None.</p>}</div>
       </> : null}
+    </section>
+  );
+}
+
+/* Stage 4 for the admin: contract versions and the latest analysis (read-only). */
+function ContractPanel({ state }) {
+  const latest = state.versions[0];
+  const { totals, notFound } = state.analysis;
+
+  return (
+    <section className="card" data-section="admin-contract">
+      <div className="ch">
+        <div>
+          <h2>Stage 4 · Contract analysis</h2>
+          <div className="sub">
+            {latest.fileName} · version {latest.version} of {state.versions.length} · uploaded {fmtTime(latest.uploadedAt)} by {latest.uploadedBy}
+          </div>
+        </div>
+        <Badge s="Complete" label={`${totals.clauses} clauses · ${totals.relevant} relevant`} />
+      </div>
+      <div className="asr-block">
+        <h3>Topics not found ({notFound.length})</h3>
+        {notFound.length ? <ul>{notFound.map(item => <li key={item.topicId}>{item.name}</li>)}</ul> : <p className="note" style={{ margin: 0 }}>None.</p>}
+      </div>
+      <div className="asr-block">
+        <h3>Versions</h3>
+        <ul>
+          {state.versions.map(v => (
+            <li key={v.version}>
+              v{v.version} · {v.fileName}{v.label ? ` (${v.label})` : ''} · {fmtTime(v.uploadedAt)}
+              {v.changeReason ? <span className="note"> · {v.changeReason}</span> : null}
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }

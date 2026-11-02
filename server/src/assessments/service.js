@@ -12,7 +12,7 @@ const label = Object.fromEntries(FIELDS.map(f => [f.key, f.label]));
 export async function ensureOrganisation(db, name, sector, kind = 'buyer', { withCreated = false } = {}) {
   const n = String(name || '').trim(); if (!n) return null;
   const r = await db.query(
-    `INSERT INTO organisations (name, sector, kind) VALUES ($1, $2, $3) ON CONFLICT (kind, (lower(name))) DO UPDATE SET name = organisations.name
+    `INSERT INTO organisations (name, sector, kind) VALUES ($1, $2, $3) ON CONFLICT (kind, (lower(name))) WHERE source = 'self_registered' DO UPDATE SET name = organisations.name
      RETURNING id, (xmax = 0) AS created`, [n, sector || null, kind]);
   return withCreated ? r.rows[0] : r.rows[0].id;
 }

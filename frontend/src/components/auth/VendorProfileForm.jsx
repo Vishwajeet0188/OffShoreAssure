@@ -3,11 +3,14 @@ import { api } from '../../lib/api.js';
 import CountryPicker from '../requirements/CountryPicker.jsx';
 
 const EMPTY = { fullName: '', jobRole: '', phone: '', organisationName: '', registrationNumber: '', country: '', services: [], deliveryCountries: [], website: '', description: '' };
+const EMPTY_DIRECTORY = { deliveryModel: '', industries: [], staffCount: '', foundedYear: '', certifications: [], insuranceCover: '', insuranceCurrency: '',
+  supportHours: '', languages: [], minAnnualValue: '', valueCurrency: '', usesSubprocessors: '' };
 
 /* Vendor (supplier) company profile: the person, plus the company's reusable profile shown to buyers once verified. */
 export default function VendorProfileForm({ initial, submitLabel, onSaved, extraButtons, notice }) {
   const [ref, setRef] = useState(null);
-  const [f, setF] = useState({ ...EMPTY, ...(initial || {}) });
+  const [f, setF] = useState({ ...EMPTY, ...(initial || {}), directory: { ...EMPTY_DIRECTORY, ...(initial?.directory || {}) } });
+  const [showDirectory, setShowDirectory] = useState(false);
   const [errs, setErrs] = useState({});
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
@@ -29,7 +32,7 @@ export default function VendorProfileForm({ initial, submitLabel, onSaved, extra
     setErrs(v); if (Object.keys(v).length) return;
     setBusy(true);
     try { await onSaved({ ...f }); }
-    catch (x) { setErrs(x.fields || {}); setMsg(x.message); } finally { setBusy(false); }
+    catch (x) { setErrs(x.fields || {}); setMsg(x.message); if (Object.keys(x.fields || {}).some(k => k.startsWith('directory.'))) setShowDirectory(true); } finally { setBusy(false); }
   };
   const err = k => errs[k] ? <span className="form-err">{errs[k]}</span> : null;
   if (!ref) return <p className="note">{msg || 'Loading…'}</p>;
@@ -56,11 +59,49 @@ export default function VendorProfileForm({ initial, submitLabel, onSaved, extra
         <span className="note">Where your staff work or access client systems from.</span>{err('deliveryCountries')}</div>
       <div className="field full"><label htmlFor="vp-desc">Short company description (optional)</label>
         <textarea id="vp-desc" maxLength={1000} value={f.description} onChange={set('description')} placeholder="What you do and for whom" />{err('description')}</div>
+      <div className="field full"><h3 className="vp-h">Directory details <span className="note">(optional)</span></h3>
+        <span className="note">Buyers can filter the OffshoreAssure directory by these. Anything you leave empty shows as "Not stated" and never hides your company.</span>
+        <button type="button" className="link vs-more" onClick={() => setShowDirectory(x => !x)} aria-expanded={showDirectory} data-act="directory-details">
+          {showDirectory ? 'Hide directory details' : 'Add directory details (experience, staff, certifications, insurance, languages…)'}</button></div>
+      {showDirectory ? <DirectoryDetails d={f.directory} set={d => setF(x => ({ ...x, directory: d }))} ref0={ref} errs={errs} /> : null}
       <div className="field full">
         {notice}
         {msg ? <p className="form-err" role="alert">{msg}</p> : null}
         <div className="row"><button className="btn primary" type="submit" disabled={busy}>{busy ? 'Saving…' : submitLabel}</button>{extraButtons}</div>
       </div>
     </form>
+  );
+}
+
+/* Optional details used by the Stage 2 directory filters. */
+function DirectoryDetails({ d, set, ref0, errs }) {
+  const on = k => e => set({ ...d, [k]: e.target.value });
+  const toggle = (k, v) => set({ ...d, [k]: d[k].includes(v) ? d[k].filter(x => x !== v) : [...d[k], v] });
+  const err = k => errs['directory.' + k] ? <span className="form-err">{errs['directory.' + k]}</span> : null;
+  const checks = (k, options, label) => (
+    <div className="field full"><label id={'vd-' + k}>{label}</label>
+      <div className="rq-checks" role="group" aria-labelledby={'vd-' + k}>{options.map(o => (
+        <label key={o} className={'rq-check' + (d[k].includes(o) ? ' on' : '')}><input type="checkbox" checked={d[k].includes(o)} onChange={() => toggle(k, o)} />{o}</label>))}</div>{err(k)}</div>);
+  const select = (k, options, label) => (
+    <div className="field"><label htmlFor={'vd-' + k}>{label}</label>
+      <select id={'vd-' + k} value={d[k]} onChange={on(k)}><option value="">Not stated</option>{options.map(o => <option key={o}>{o}</option>)}</select>{err(k)}</div>);
+  const money = (amount, currency, label) => (
+    <div className="field"><label htmlFor={'vd-' + amount}>{label}</label>
+      <div className="vs-money"><input id={'vd-' + amount} type="number" min="0" step="0.01" value={d[amount]} onChange={on(amount)} />
+        <select aria-label="Currency" value={d[currency]} onChange={on(currency)}><option value="">Currency</option>{ref0.currencies.map(c => <option key={c}>{c}</option>)}</select></div>
+      {err(amount)}{err(currency)}</div>);
+  return (
+    <>
+      {select('deliveryModel', ['Remote', 'Onsite', 'Hybrid'], 'Delivery model')}
+      {select('supportHours', ['Business hours', 'Extended hours', '24/7'], 'Support hours')}
+      <div className="field"><label htmlFor="vd-staffCount">Number of staff</label><input id="vd-staffCount" type="number" min="0" step="1" value={d.staffCount} onChange={on('staffCount')} />{err('staffCount')}</div>
+      <div className="field"><label htmlFor="vd-foundedYear">Year the company started</label><input id="vd-foundedYear" type="number" min="1800" step="1" value={d.foundedYear} onChange={on('foundedYear')} />{err('foundedYear')}</div>
+      {money('insuranceCover', 'insuranceCurrency', 'Insurance cover')}
+      {money('minAnnualValue', 'valueCurrency', 'Smallest annual contract you take on')}
+      {select('usesSubprocessors', ['Yes', 'No', 'Unknown'], 'Do you use subprocessors?')}
+      {checks('industries', ref0.sectors, 'Industry experience')}
+      {checks('certifications', ref0.vendorCertifications, 'Certifications held (checked later with evidence)')}
+      {checks('languages', ref0.vendorLanguages, 'Languages your team supports')}
+    </>
   );
 }

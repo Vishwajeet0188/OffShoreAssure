@@ -7,6 +7,7 @@ import { eventLabel, eventTone, eventDetail } from '../../lib/events.js';
 import { PageHead } from '../../components/common/PageHead.jsx';
 import { Badge } from '../../components/common/Badges.jsx';
 import { BackArrow } from '../../components/common/Icon.jsx';
+import Loading from '../../components/extras/Loading.jsx';
 
 const regionName = new Intl.DisplayNames(['en'], { type: 'region' });
 const countries = list => (list || []).map(c => regionName.of(c)).join(', ');
@@ -70,7 +71,7 @@ export function AdminVendorDetail() {
   };
   const back = <Link className="link" to="/admin/vendors" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><BackArrow s={14} /> Vendors</Link>;
   if (err && !d) return <>{back}<p className="form-err">{err}</p></>;
-  if (!d) return <p className="note">Loading…</p>;
+  if (!d) return <Loading />;
   const v = d.vendor; const st = v.verificationStatus;
   return (
     <>

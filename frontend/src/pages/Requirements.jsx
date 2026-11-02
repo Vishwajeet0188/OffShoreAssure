@@ -6,6 +6,7 @@ import { STAGES, BUILT_STEPS } from '../lib/stages.js';
 import { TIER_LABEL, TIER_TONE } from '../lib/assessments.js';
 import { PageHead } from '../components/common/PageHead.jsx';
 import { Badge } from '../components/common/Badges.jsx';
+import Loading from '../components/extras/Loading.jsx';
 
 /* Stage 1 · Requirement: the buyer's outsourcing requirements (live, from the API). */
 export default function Requirements() {
@@ -21,7 +22,7 @@ export default function Requirements() {
         right={<Link className="btn primary" to="/requirements/new" data-act="new-requirement">+ New requirement</Link>} />
       <div className="card" data-section="my-requirements">
         {err ? <p className="form-err" style={{ padding: '0 22px' }}>{err}</p> : null}
-        {!list ? <p className="note pad">Loading…</p> : list.length === 0 ? (
+        {!list ? <Loading pad /> : list.length === 0 ? (
           <p className="note pad">No requirements yet. Choose <b>New requirement</b> to start; you can save a draft and finish it later.</p>
         ) : (
           <div className="tw"><table>
