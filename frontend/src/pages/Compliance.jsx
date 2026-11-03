@@ -11,13 +11,8 @@ import Loading from '../components/extras/Loading.jsx';
 import { ReferenceTag } from '../components/extras/CopyButton.jsx';
 
 const BackArrow = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
+  <svg width="14" height="14" viewBox="0 0 24 24"
+    fill="none" stroke="currentColor" strokeWidth="2"
     aria-hidden="true"
   >
     <path d="M15 18l-6-6 6-6" />
@@ -42,10 +37,7 @@ export function ComplianceList() {
         lead="Send the selected vendor a questionnaire built from the controls that apply, collect its answers and evidence, and see a provisional score with the gaps."
       />
       <div className="card" data-section="compliance-list">
-        {err ? (
-          <p className="form-err" style={{ padding: '0 22px' }}>
-            {err}
-          </p>
+        {err ? ( <p className="form-err" style={{ padding: '0 22px' }}> {err} </p>
         ) : null}
         {!list ? (
           <Loading pad />
@@ -71,17 +63,9 @@ export function ComplianceList() {
               </thead>
               <tbody>
                 {list.map(a => (
-                  <tr
-                    key={a.reference}
-                    className="click"
-                    onClick={() => navigate('/compliance/' + a.reference)}
-                  >
+                  <tr key={a.reference} className="click" onClick={() => navigate('/compliance/' + a.reference)}>
                     <td>
-                      <Link
-                        className="adm-ulink"
-                        to={'/compliance/' + a.reference}
-                        onClick={e => e.stopPropagation()}
-                      >
+                      <Link className="adm-ulink" to={'/compliance/' + a.reference} onClick={e => e.stopPropagation()}>
                         <b className="mono">{a.reference}</b>
                       </Link>
                       <div className="note">{a.title}</div>
@@ -128,16 +112,8 @@ function ScoreRing({ score, rating }) {
     <div className="cp-ring" role="img" aria-label={`Provisional score ${score} out of 100, ${rating.label}`}>
       <svg viewBox="0 0 128 128">
         <circle cx="64" cy="64" r={r} fill="none" stroke="var(--line-2)" strokeWidth="12" />
-        <circle
-          cx="64"
-          cy="64"
-          r={r}
-          fill="none"
-          stroke={`var(--${RATING_TONE[rating.code]})`}
-          strokeWidth="12"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - score / 100)}
+        <circle cx="64" cy="64" r={r} fill="none" stroke={`var(--${RATING_TONE[rating.code]})`}
+          strokeWidth="12" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - score / 100)}
           transform="rotate(-90 64 64)"
         />
       </svg>
@@ -218,11 +194,7 @@ export default function Compliance() {
   const doneTo = !c ? 9 : c.status === 'submitted' ? 16 : 12;
   return (
     <div className="vs">
-      <Link
-        className="link"
-        to="/compliance"
-        style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}
-      >
+      <Link className="link" to="/compliance" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
         <BackArrow /> Compliance assessment
       </Link>
       <PageHead

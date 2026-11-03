@@ -67,29 +67,16 @@ function LpNav() {
           <div className="lp-actions">
             {auth.user ? (
               <>
-                <button
-                  className="btn outline"
-                  data-act="signout"
-                  title={'Signed in as ' + auth.user.email}
-                  onClick={() => {
-                    close();
+                <button className="btn outline" data-act="signout" title={'Signed in as ' + auth.user.email}
+                  onClick={() => { close();
                     auth.logout();
                   }}
                 >
                   Sign out
                 </button>
-                <button
-                  className="btn dark"
-                  data-act="go"
-                  data-v="dash"
-                  onClick={() => go(homeFor(auth.user))}
-                >
+                <button className="btn dark" data-act="go" data-v="dash" onClick={() => go(homeFor(auth.user))}>
                   <Icon n="layout" s={16} />
-                  {auth.user.isAdmin
-                    ? 'Admin console'
-                    : auth.user.role === 'vendor'
-                      ? 'Vendor portal'
-                      : 'Dashboard'}
+                  {auth.user.isAdmin ? 'Admin console' : auth.user.role === 'vendor' ? 'Vendor portal' : 'Dashboard'}
                 </button>
               </>
             ) : (
@@ -108,9 +95,7 @@ function LpNav() {
         <div className="lp-tools">
           <ThemeToggle />
         </div>
-        <button
-          className="lp-burger"
-          data-act="lpmenu"
+        <button className="lp-burger" data-act="lpmenu"
           aria-label={menu ? 'Close menu' : 'Open menu'}
           aria-expanded={menu}
           onClick={() => setMenu(m => !m)}
