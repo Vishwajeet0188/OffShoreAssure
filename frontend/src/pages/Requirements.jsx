@@ -42,7 +42,7 @@ export default function Requirements() {
         ) : list.length === 0 ? (
           <p className="note pad">
             No requirements yet. Choose <b>New requirement</b> to start; you can save a draft and finish it
-            later.
+            later whenever you want.
           </p>
         ) : (
           <div className="tw">
