@@ -79,16 +79,24 @@ export function proposeActions(risks, today = new Date(), alreadyPlanned = new S
     for (const owner of ['vendor', 'buyer']) {
       if (alreadyPlanned.has(`${risk.theme}:${owner}`)) continue;
       // A finding the vendor must act on goes to the vendor; everything else to the buyer.
-      const findings = risk.findings.filter(f => (owner === 'vendor' ? f.owner === 'Vendor' : f.owner !== 'Vendor'));
+      const findings = risk.findings.filter(f =>
+        owner === 'vendor' ? f.owner === 'Vendor' : f.owner !== 'Vendor',
+      );
       if (!findings.length) continue;
       const requests = [...new Set(findings.map(f => askFor(f, owner)))];
       actions.push({
         riskId: risk.id,
         theme: risk.theme,
-        title: owner === 'vendor' ? `${risk.title}: evidence and fixes from the vendor` : `${risk.title}: decisions and contract changes`,
+        title:
+          owner === 'vendor'
+            ? `${risk.title}: evidence and fixes from the vendor`
+            : `${risk.title}: decisions and contract changes`,
         owner,
         requests,
-        needsDocument: owner === 'vendor' ? findings.some(f => [3, 6].includes(f.stage)) : findings.some(f => [4, 5].includes(f.stage)),
+        needsDocument:
+          owner === 'vendor'
+            ? findings.some(f => [3, 6].includes(f.stage))
+            : findings.some(f => [4, 5].includes(f.stage)),
         sourceStages: [...new Set(findings.map(f => f.stage))].sort(),
         rating: risk.rating,
         score: risk.score,
@@ -117,15 +125,27 @@ export function residualRisks(risks, actions, today = new Date()) {
     let likelihood = risk.likelihood;
     let status = 'OPEN';
     if (accepted) status = 'ACCEPTED';
-    else if (mine.length && closed === mine.length) { likelihood = 1; status = 'MITIGATED'; }
-    else if (closed > 0) { likelihood = Math.max(1, likelihood - 1); status = 'PART_MITIGATED'; }
+    else if (mine.length && closed === mine.length) {
+      likelihood = 1;
+      status = 'MITIGATED';
+    } else if (closed > 0) {
+      likelihood = Math.max(1, likelihood - 1);
+      status = 'PART_MITIGATED';
+    }
 
     const score = likelihood * risk.impact;
     return {
-      id: risk.id, title: risk.title, theme: risk.theme, status,
+      id: risk.id,
+      title: risk.title,
+      theme: risk.theme,
+      status,
       original: { likelihood: risk.likelihood, impact: risk.impact, score: risk.score, rating: risk.rating },
-      likelihood, impact: risk.impact, score, rating: ratingFor(score).code,
-      actions: mine.length, closedActions: closed,
+      likelihood,
+      impact: risk.impact,
+      score,
+      rating: ratingFor(score).code,
+      actions: mine.length,
+      closedActions: closed,
     };
   });
 
@@ -134,10 +154,14 @@ export function residualRisks(risks, actions, today = new Date()) {
 
   const count = status => actions.filter(a => a.status === status).length;
   const open = actions.filter(a => ACTION_STATUS[a.status]?.open && a.status !== 'PROPOSED');
-  const overdue = open.filter(a => a.dueOn && String(a.dueOn).slice(0, 10) < todayIso && a.status !== 'SUBMITTED');
+  const overdue = open.filter(
+    a => a.dueOn && String(a.dueOn).slice(0, 10) < todayIso && a.status !== 'SUBMITTED',
+  );
 
   const recheck = [...new Set(actions.filter(a => a.status === 'CLOSED').flatMap(a => a.sourceStages || []))]
-    .filter(stage => RECHECK[stage]).sort().map(stage => ({ stage, text: RECHECK[stage] }));
+    .filter(stage => RECHECK[stage])
+    .sort()
+    .map(stage => ({ stage, text: RECHECK[stage] }));
 
   const live = residual.filter(r => r.status !== 'MITIGATED');
   const top = [...live].sort((a, b) => b.score - a.score)[0];
@@ -145,7 +169,9 @@ export function residualRisks(risks, actions, today = new Date()) {
     rulePackVersion: S8_RULE_PACK,
     risks: residual,
     grid,
-    overall: top ? { rating: top.rating, label: ratingFor(top.score).label } : { rating: 'NONE', label: 'No open risks' },
+    overall: top
+      ? { rating: top.rating, label: ratingFor(top.score).label }
+      : { rating: 'NONE', label: 'No open risks' },
     totals: {
       actions: actions.length,
       proposed: count('PROPOSED'),
@@ -165,7 +191,8 @@ export function residualRisks(risks, actions, today = new Date()) {
 /* Step 35: the automatic checks on a response before it reaches the buyer. */
 export function checkSubmission(action, response, evidenceCount) {
   const problems = [];
-  if (!response || response.trim().length < 10) problems.push('Explain what was done in at least 10 characters.');
+  if (!response || response.trim().length < 10)
+    problems.push('Explain what was done in at least 10 characters.');
   if (action.needs_document && evidenceCount === 0) problems.push('Upload at least one document as proof.');
   return problems;
 }

@@ -23,13 +23,54 @@ export const S6_RULE_PACK = 'RP-2026.10-S6-draft';
 export const TRANSFER_NOTE =
   'This is a route-by-route view of where personal data goes and what still needs checking. It is not a legal opinion. Check the adequacy list against the ICO’s current guidance.';
 
-const EEA = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU',
-  'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO'];
+const EEA = [
+  'AT',
+  'BE',
+  'BG',
+  'HR',
+  'CY',
+  'CZ',
+  'DK',
+  'EE',
+  'FI',
+  'FR',
+  'DE',
+  'GR',
+  'HU',
+  'IE',
+  'IT',
+  'LV',
+  'LT',
+  'LU',
+  'MT',
+  'NL',
+  'PL',
+  'PT',
+  'RO',
+  'SK',
+  'SI',
+  'ES',
+  'SE',
+  'IS',
+  'LI',
+  'NO',
+];
 
 /* Destinations covered by UK adequacy regulations ("data bridges"). Some only cover part of the destination. */
 export const ADEQUACY = {
   ...Object.fromEntries(EEA.map(code => [code, null])),
-  GI: null, AD: null, AR: null, FO: null, GG: null, IM: null, IL: null, JE: null, NZ: null, KR: null, CH: null, UY: null,
+  GI: null,
+  AD: null,
+  AR: null,
+  FO: null,
+  GG: null,
+  IM: null,
+  IL: null,
+  JE: null,
+  NZ: null,
+  KR: null,
+  CH: null,
+  UY: null,
   CA: 'Only for organisations covered by Canada’s commercial privacy law (PIPEDA).',
   JP: 'Only for the private sector.',
   US: 'Only for US organisations certified under the UK Extension to the EU–US Data Privacy Framework.',
@@ -62,15 +103,20 @@ const nameOf = code => (code === UNKNOWN ? 'Not confirmed' : countryName(code) |
  * which safeguards it names, which countries it allows, and the clause numbers.
  */
 export function readContractTransferTerms(clauses = []) {
-  const transferClauses = clauses.filter(clause => (clause.topics || []).some(t => t.topicId === 'international_transfer'));
+  const transferClauses = clauses.filter(clause =>
+    (clause.topics || []).some(t => t.topicId === 'international_transfer'),
+  );
   const text = transferClauses.map(clause => clause.text).join(' ');
   const lower = text.toLowerCase();
 
-  const safeguards = [...new Set(SAFEGUARD_TERMS.filter(([term]) => lower.includes(term)).map(([, label]) => label))];
+  const safeguards = [
+    ...new Set(SAFEGUARD_TERMS.filter(([term]) => lower.includes(term)).map(([, label]) => label)),
+  ];
 
   // "outside the United Kingdom except to India" → only the named countries are allowed.
   const limitsCountries = /\b(?:not|no)\b[^.]*\boutside\b[^.]*\b(?:except|other than|unless)\b/i.test(text);
-  const namedCountries = Object.keys(ADEQUACY).concat(['IN', 'PH', 'BR', 'ZA', 'MX', 'CN', 'SG', 'MY', 'EG', 'UA', 'VN', 'LK', 'PK', 'BD', 'AE', 'AU'])
+  const namedCountries = Object.keys(ADEQUACY)
+    .concat(['IN', 'PH', 'BR', 'ZA', 'MX', 'CN', 'SG', 'MY', 'EG', 'UA', 'VN', 'LK', 'PK', 'BD', 'AE', 'AU'])
     .filter(code => {
       const name = countryName(code);
       return name && new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(text);
@@ -100,13 +146,18 @@ export function mapRoutes(requirement, vendor) {
     }
     const route = routes.get(destination);
     if (!route.uses.includes(use)) route.uses.push(use);
-    if (!route.recipients.some(r => r.name === recipient && r.role === role)) route.recipients.push({ name: recipient, role });
+    if (!route.recipients.some(r => r.name === recipient && r.role === role))
+      route.recipients.push({ name: recipient, role });
   }
 
   const hostedInCloud = requirement.cloudServices === 'Yes';
   for (const country of requirement.storageCountries || []) {
-    addRoute(country, 'Data storage', hostedInCloud ? 'Cloud hosting provider (to be named)' : vendor.name,
-      hostedInCloud ? 'Sub-processor' : 'Processor');
+    addRoute(
+      country,
+      'Data storage',
+      hostedInCloud ? 'Cloud hosting provider (to be named)' : vendor.name,
+      hostedInCloud ? 'Sub-processor' : 'Processor',
+    );
   }
   for (const country of requirement.remoteAccessCountries || []) {
     addRoute(country, 'Remote access', vendor.name, 'Processor');
@@ -149,15 +200,22 @@ export function checkRoute(route, context) {
 
   if (route.to === UNKNOWN) {
     check('Destination', 'UNKNOWN', `${route.uses.join(', ')}: the location is not confirmed yet.`);
-    ask('vendor', route.uses.includes('Sub-processors')
-      ? 'List every sub-processor with the country where it stores or accesses the data.'
-      : 'Confirm the country where the data is stored or accessed from.');
+    ask(
+      'vendor',
+      route.uses.includes('Sub-processors')
+        ? 'List every sub-processor with the country where it stores or accesses the data.'
+        : 'Confirm the country where the data is stored or accessed from.',
+    );
     return { status: 'INFORMATION_NEEDED', checks, questions };
   }
 
   // 1. The buyer said the service must not be delivered from this country.
   if ((requirement.restrictedCountries || []).includes(route.to)) {
-    check('Restricted country', 'FAIL', `The requirement says the service must not be delivered from ${route.toName}.`);
+    check(
+      'Restricted country',
+      'FAIL',
+      `The requirement says the service must not be delivered from ${route.toName}.`,
+    );
     ask('buyer', `Confirm whether data may go to ${route.toName}, or ask the vendor to remove this route.`);
     return { status: 'NOT_PERMITTED', checks, questions };
   }
@@ -165,8 +223,13 @@ export function checkRoute(route, context) {
 
   // 2. Recipients and their roles.
   for (const recipient of route.recipients) {
-    check('Recipient', recipient.name.includes('to be') ? 'UNKNOWN' : 'OK', `${recipient.name} · ${recipient.role}`);
-    if (recipient.name.includes('to be')) ask('vendor', `Name the ${recipient.role.toLowerCase()} that receives the data in ${route.toName}.`);
+    check(
+      'Recipient',
+      recipient.name.includes('to be') ? 'UNKNOWN' : 'OK',
+      `${recipient.name} · ${recipient.role}`,
+    );
+    if (recipient.name.includes('to be'))
+      ask('vendor', `Name the ${recipient.role.toLowerCase()} that receives the data in ${route.toName}.`);
   }
   if (route.recipients.some(r => r.name === context.vendorName)) {
     ask('vendor', `Confirm the legal entity that receives the data in ${route.toName}.`);
@@ -175,42 +238,75 @@ export function checkRoute(route, context) {
   // 3. UK adequacy regulations.
   if (route.to in ADEQUACY) {
     const condition = ADEQUACY[route.to];
-    check('UK adequacy', condition ? 'CONDITION' : 'OK', condition || `${route.toName} is covered by UK adequacy regulations.`);
+    check(
+      'UK adequacy',
+      condition ? 'CONDITION' : 'OK',
+      condition || `${route.toName} is covered by UK adequacy regulations.`,
+    );
     if (condition) {
       ask('vendor', `${route.toName}: ${condition} Confirm that the recipient meets this.`);
       return { status: 'ADEQUATE_CHECK', checks, questions };
     }
     return { status: 'ADEQUATE', checks, questions };
   }
-  check('UK adequacy', 'NO', `${route.toName} is not covered by UK adequacy regulations, so a safeguard is needed.`);
+  check(
+    'UK adequacy',
+    'NO',
+    `${route.toName} is not covered by UK adequacy regulations, so a safeguard is needed.`,
+  );
 
   // 4. A safeguard in the contract that allows this country.
-  const clauses = contractTerms.clauseNumbers.length ? ` (clause ${contractTerms.clauseNumbers.join(', ')})` : '';
+  const clauses = contractTerms.clauseNumbers.length
+    ? ` (clause ${contractTerms.clauseNumbers.join(', ')})`
+    : '';
   if (contractTerms.safeguards.length === 0) {
-    check('Safeguard in contract', 'FAIL', 'The contract does not name a transfer safeguard such as the IDTA or the UK Addendum.');
+    check(
+      'Safeguard in contract',
+      'FAIL',
+      'The contract does not name a transfer safeguard such as the IDTA or the UK Addendum.',
+    );
     ask('buyer', `Add a transfer safeguard (IDTA or UK Addendum) to the contract for ${route.toName}.`);
     return { status: 'SAFEGUARD_MISSING', checks, questions };
   }
   if (contractTerms.limitsCountries && !contractTerms.allowedCountries.includes(route.to)) {
-    check('Safeguard in contract', 'FAIL', `The contract only allows transfers to ${contractTerms.allowedCountries.map(nameOf).join(', ') || 'named countries'}${clauses}, not to ${route.toName}.`);
-    ask('buyer', `Either add ${route.toName} to the contract’s transfer clause or ask the vendor to stop this route.`);
+    check(
+      'Safeguard in contract',
+      'FAIL',
+      `The contract only allows transfers to ${contractTerms.allowedCountries.map(nameOf).join(', ') || 'named countries'}${clauses}, not to ${route.toName}.`,
+    );
+    ask(
+      'buyer',
+      `Either add ${route.toName} to the contract’s transfer clause or ask the vendor to stop this route.`,
+    );
     return { status: 'SAFEGUARD_MISSING', checks, questions };
   }
   check('Safeguard in contract', 'OK', `${contractTerms.safeguards.join('; ')}${clauses}.`);
 
   // 5. A transfer risk assessment is needed for a safeguard route.
-  check('Transfer risk assessment', 'NEEDED', `A transfer risk assessment (TRA) is needed for ${route.toName}.`);
+  check(
+    'Transfer risk assessment',
+    'NEEDED',
+    `A transfer risk assessment (TRA) is needed for ${route.toName}.`,
+  );
   ask('vendor', `Provide the transfer risk assessment (TRA) for ${route.fromName} → ${route.toName}.`);
 
   // 6. What the vendor said about transfers in Stage 3.
   if (vendorTransferScore !== null && vendorTransferScore < 100) {
-    check('Vendor answers (Stage 3)', 'GAP', `The vendor’s transfer controls (ASS-005) scored ${vendorTransferScore}/100.`);
+    check(
+      'Vendor answers (Stage 3)',
+      'GAP',
+      `The vendor’s transfer controls (ASS-005) scored ${vendorTransferScore}/100.`,
+    );
     ask('vendor', 'Explain the gaps in your answers on international transfers (ASS-005).');
   }
 
   // 7. Special-category data raises the bar.
   if (requirement.specialCategory === 'Yes') {
-    check('Special-category data', 'HIGHER RISK', 'Special-category data is involved; the risk assessment needs extra care.');
+    check(
+      'Special-category data',
+      'HIGHER RISK',
+      'Special-category data is involved; the risk assessment needs extra care.',
+    );
   }
 
   return { status: 'SAFEGUARD_TRA_NEEDED', checks, questions };
@@ -228,19 +324,30 @@ export function assessTransfers({ requirement, vendor, contractClauses = [], ven
     return { ...route, ...result, statusLabel: ROUTE_STATUS[result.status].label };
   });
 
-  const worst = routes.reduce((current, route) =>
-    (!current || ROUTE_STATUS[route.status].rank > ROUTE_STATUS[current].rank ? route.status : current), null);
+  const worst = routes.reduce(
+    (current, route) =>
+      !current || ROUTE_STATUS[route.status].rank > ROUTE_STATUS[current].rank ? route.status : current,
+    null,
+  );
 
-  const questions = routes.flatMap(route => route.questions.map(q => ({ ...q, routeId: route.id, route: `${route.fromName} → ${route.toName}` })));
+  const questions = routes.flatMap(route =>
+    route.questions.map(q => ({ ...q, routeId: route.id, route: `${route.fromName} → ${route.toName}` })),
+  );
   const findings = routes
     .filter(route => ROUTE_STATUS[route.status].rank >= 3)
-    .map(route => ({ routeId: route.id, status: route.status, text: `${route.fromName} → ${route.toName}: ${ROUTE_STATUS[route.status].label.toLowerCase()}.` }));
+    .map(route => ({
+      routeId: route.id,
+      status: route.status,
+      text: `${route.fromName} → ${route.toName}: ${ROUTE_STATUS[route.status].label.toLowerCase()}.`,
+    }));
 
   const count = status => routes.filter(route => route.status === status).length;
 
   return {
     rulePackVersion: S6_RULE_PACK,
-    overall: worst ? { status: worst, label: ROUTE_STATUS[worst].label } : { status: 'NOT_RESTRICTED', label: ROUTE_STATUS.NOT_RESTRICTED.label },
+    overall: worst
+      ? { status: worst, label: ROUTE_STATUS[worst].label }
+      : { status: 'NOT_RESTRICTED', label: ROUTE_STATUS.NOT_RESTRICTED.label },
     totals: {
       routes: routes.length,
       restricted: routes.filter(route => route.status !== 'NOT_RESTRICTED').length,

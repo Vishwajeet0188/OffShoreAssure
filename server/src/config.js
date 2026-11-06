@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import { fileURLToPath } from 'node:url';
 
-const bool = (v, d = false) => (v == null || v === '' ? d : ['1', 'true', 'yes'].includes(String(v).toLowerCase()));
+const bool = (v, d = false) =>
+  v == null || v === '' ? d : ['1', 'true', 'yes'].includes(String(v).toLowerCase());
 const num = (v, d) => (v == null || v === '' || Number.isNaN(Number(v)) ? d : Number(v));
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -39,7 +40,7 @@ export const config = {
     secure: bool(process.env.SMTP_SECURE, false),
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '',
-    from: process.env.MAIL_FROM || 'OffshoreAssure <no-reply@offshoreassure.local>'
+    from: process.env.MAIL_FROM || 'OffshoreAssure <no-reply@offshoreassure.local>',
   },
   // Development/demo only: return the code to the browser so the flow can be tested without email.
   devShowCodes: !isProd && bool(process.env.DEV_SHOW_CODES, false),
@@ -47,7 +48,7 @@ export const config = {
   // Uploaded documents (Stage 1 onwards). Keep outside the web root; never commit it.
   storageDir: process.env.STORAGE_DIR || fileURLToPath(new URL('../storage/', import.meta.url)),
   // AES-256-GCM key for stored documents: 64 hex characters. In development a key is derived from JWT_SECRET.
-  storageKey: process.env.STORAGE_ENCRYPTION_KEY || (isProd ? null : 'derive')
+  storageKey: process.env.STORAGE_ENCRYPTION_KEY || (isProd ? null : 'derive'),
 };
 
 if (isProd && (!config.jwtSecret || !config.codeSecret || !config.storageKey)) {

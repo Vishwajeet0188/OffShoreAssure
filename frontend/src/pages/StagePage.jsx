@@ -12,16 +12,25 @@ export default function StagePage() {
     <>
       <PageHead eyebrow={`Buyer · Stage ${s.n}`} title={s.title} lead={s.summary} />
       <div className="card stage-later">
-        <div className="adm-later-head"><span className="adm-stage">Not available yet</span><span className="note">This stage is built after the earlier stages. Nothing here uses sample data.</span></div>
+        <div className="adm-later-head">
+          <span className="adm-stage">Not available yet</span>
+          <span className="note">
+            This stage is built after the earlier stages. Nothing here uses sample data.
+          </span>
+        </div>
         <ol className="steps-list">
           {s.steps.map(([n, t, from, to]) => (
             <li key={n} className={BUILT_STEPS.includes(n) ? 'on' : ''}>
-              <span className="journey-n">{n}</span><span>{t}</span>
+              <span className="journey-n">{n}</span>
+              <span>{t}</span>
               <span className="note">{from === to ? ACTORS[from] : `${ACTORS[from]} → ${ACTORS[to]}`}</span>
-            </li>))}
+            </li>
+          ))}
         </ol>
       </div>
-      <Link className="link" to="/dashboard">Back to dashboard</Link>
+      <Link className="link" to="/dashboard">
+        Back to dashboard
+      </Link>
     </>
   );
 }

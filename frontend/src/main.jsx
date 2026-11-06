@@ -7,7 +7,11 @@ import './styles.css';
 import { captureUtm } from './lib/utm.js';
 
 // The Phase 1 prototype kept sample assessments in the browser; remove them now that data comes from the API.
-try { localStorage.removeItem('offshoreassure-proto-v2'); } catch { /* storage unavailable */ }
+try {
+  localStorage.removeItem('offshoreassure-proto-v2');
+} catch {
+  /* storage unavailable */
+}
 
 // Remember where the visitor came from (UTM tags), to record it if they sign up.
 captureUtm();
@@ -19,5 +23,5 @@ createRoot(document.getElementById('app')).render(
         <App />
       </AuthProvider>
     </BrowserRouter>
-  </StrictMode>
+  </StrictMode>,
 );

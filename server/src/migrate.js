@@ -7,9 +7,14 @@ import { pool } from './db.js';
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'migrations');
 
 export async function migrate({ log = true } = {}) {
-  await pool.query('CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())');
+  await pool.query(
+    'CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())',
+  );
   const done = new Set((await pool.query('SELECT name FROM schema_migrations')).rows.map(r => r.name));
-  const files = fs.readdirSync(dir).filter(f => f.endsWith('.sql')).sort();
+  const files = fs
+    .readdirSync(dir)
+    .filter(f => f.endsWith('.sql'))
+    .sort();
   for (const f of files) {
     if (done.has(f)) continue;
     const sql = fs.readFileSync(path.join(dir, f), 'utf8');
@@ -30,6 +35,13 @@ export async function migrate({ log = true } = {}) {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  migrate().then(() => { console.log('migrations up to date'); return pool.end(); })
-    .catch(e => { console.error(e.message); process.exit(1); });
+  migrate()
+    .then(() => {
+      console.log('migrations up to date');
+      return pool.end();
+    })
+    .catch(e => {
+      console.error(e.message);
+      process.exit(1);
+    });
 }
