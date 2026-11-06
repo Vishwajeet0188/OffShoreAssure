@@ -1,0 +1,18 @@
+# Dependencies and builds
+node_modules
+dist
+
+# Secrets: never commit these
+.env
+.env.*
+!.env.example
+
+# Local data
+server/storage/
+*.log
+
+# Personal files kept in the project folder
+Claude outputs/
+*.xlsx
+
+.vscode/
