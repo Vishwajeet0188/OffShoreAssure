@@ -18,7 +18,7 @@ const { assessFit, directoryFilter, selectionStatus, conditionsFor, WEIGHTS } = 
 const { DIRECTORY_FILTERS, ONBOARDING_FIELDS, validateOnboarding } = await import(
   '../src/selection/vendorFields.js'
 );
-const { EXAMPLE } = await import('./fixtures.js');
+const { EXAMPLE, startStage3 } = await import('./fixtures.js');
 const bcrypt = (await import('bcryptjs')).default;
 
 // Emails are printed in tests; keep them so we can check who was told.
@@ -530,8 +530,17 @@ test('step 9: buyer-added vendor saved as CONDITIONALLY_SELECTED with the 12-fie
 });
 
 test('route B → Stage 3: the contact registers, takes over the company record and sees the selection', async () => {
-  const st = await buyer('POST', `/assessments/${ref}/compliance`, {});
-  assert.equal(st.status, 201, 'Stage 3 starts with a buyer-added vendor');
+  const st = await startStage3(buyer, ref);
+  assert.equal(st.status, 201, 'Stage 3 starts with a buyer-added vendor: ' + JSON.stringify(st.body));
+  assert.equal(
+    st.body.session.invitation.channel,
+    'CONTACT_EMAIL',
+    'nobody registered yet: the contact is asked',
+  );
+  assert.ok(
+    st.body.compliance.questionnaire.controls.some(c => c.id === 'CORP-03'),
+    'no previously verified evidence: fuller questionnaire',
+  );
   const c = await signUp('ewa@vistula.example', 'vendor');
   const r = await c('PUT', '/me/profile', {
     ...vendorProfile('Vistula Remote Admin Sp. z o.o.', ['IT Support'], ['PL']),

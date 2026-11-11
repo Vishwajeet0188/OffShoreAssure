@@ -17,7 +17,7 @@ const { pool } = await import('../src/db.js');
 const { migrate } = await import('../src/migrate.js');
 const { createApp } = await import('../src/app.js');
 const { extractObligations } = await import('../src/engine/obligations.js');
-const { EXAMPLE } = await import('./fixtures.js');
+const { EXAMPLE, startStage3, completeStage3, uploadSpecContract } = await import('./fixtures.js');
 const bcrypt = (await import('bcryptjs')).default;
 
 let server, base;
@@ -107,28 +107,24 @@ async function runStagesTwoToFive() {
     approverId: (await buyer('GET', '/me')).body.user.id,
     confirmedAt: new Date().toISOString(),
   });
-  await buyer('POST', `/assessments/${ref}/compliance`);
-  const questionnaire = (await vendor('GET', `/vendor/compliance/${ref}`)).body.compliance.questionnaire;
-  const answers = {};
-  for (const control of questionnaire)
-    for (const question of control.questions) answers[question.id] = { answer: 'Yes' };
-  answers['006-1'] = { answer: 'No' }; // no up-to-date sub-processor list
-  answers['008-2'] = { answer: 'No' }; // continuity plan not tested
-  await vendor('PUT', `/vendor/compliance/${ref}/answers`, { answers });
-  // An ISO certificate that runs out in 30 days, so monitoring has something to find.
-  const soon = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
-  const up = await vendor(
-    'POST',
-    `/vendor/compliance/${ref}/evidence?control=${questionnaire[1].id}&type=certificate&name=iso27001.pdf&expires=${soon}`,
-    null,
-    { type: 'application/pdf', data: Buffer.from('%PDF-1.4 iso') },
-  );
-  assert.equal(up.status, 201, JSON.stringify(up.body));
-  assert.equal((await vendor('POST', `/vendor/compliance/${ref}/submit`)).status, 201);
-  const ct = await buyer('POST', `/assessments/${ref}/contract?name=contract.pdf`, null, {
-    type: 'application/pdf',
-    data: fixture('contract.pdf'),
+  assert.equal((await startStage3(buyer, ref)).status, 201);
+  // No commitment on subprocessor approval, and the continuity plan not tested.
+  const submitted = await completeStage3(vendor, ref, {
+    overrides: { 'SUB-02': { answer: 'No' }, 'BCP-02': { answer: 'No' } },
+    // An ISO certificate that runs out in 30 days, so monitoring has something to find.
+    beforeSubmit: async () => {
+      const soon = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+      const up = await vendor(
+        'POST',
+        `/vendor/compliance/${ref}/evidence?control=SEC-02&type=CERTIFICATION&name=iso27001.pdf&issuer=BSI&expires=${soon}`,
+        null,
+        { type: 'application/pdf', data: Buffer.from('%PDF-1.4 iso') },
+      );
+      assert.equal(up.status, 201, JSON.stringify(up.body));
+    },
   });
+  assert.equal(submitted.status, 201, JSON.stringify(submitted.body));
+  const ct = await uploadSpecContract(buyer, ref, fixture('contract.pdf'));
   assert.equal(ct.status, 201, JSON.stringify(ct.body));
   assert.equal((await buyer('POST', `/assessments/${ref}/obligations`)).status, 201);
 }

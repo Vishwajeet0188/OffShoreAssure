@@ -19,7 +19,8 @@ import { query, tx } from '../db.js';
 import { audit } from '../audit.js';
 import { config } from '../config.js';
 import { sendNotice } from '../mailer.js';
-import { scoreAssessment, S3_RULE_PACK } from '../engine/questionnaire.js';
+import { scoreAssessment, S3_RULE_PACK as LEGACY_RULE_PACK } from '../engine/questionnaire.js';
+import { scoreCompliance } from '../engine/assurance.js';
 import { monitoringItems, S9_RULE_PACK } from '../engine/report.js';
 import { gatherSources, sameInputs, saveRiskRegister } from '../risks/routes.js';
 import { createRenewalRequests, expiringEvidence, monitoringRequests } from '../reports/routes.js';
@@ -94,9 +95,26 @@ async function checkOne(a, today) {
       // Renewed proof checked and closed by the buyer: the old expiry no longer applies.
       return renewal?.status === 'CLOSED' ? { ...e, expiresOn: null, renewedBy: renewal.code } : e;
     });
-    const scored = scoreAssessment(a.questionnaire, latest.answers, evidence, today);
+    // Each assessment keeps the rule pack it started with (the earlier draft, or the Stage 3 specification).
+    const legacy = latest.rule_pack_version === LEGACY_RULE_PACK;
+    const scored = legacy
+      ? scoreAssessment(a.questionnaire, latest.answers, evidence, today)
+      : scoreCompliance(a.questionnaire, latest.answers, evidence, today, { assessmentId: a.id });
     if (scoreKey(scored) !== scoreKey(latest.result)) {
       const version = latest.version + 1;
+      const [major, minor] = String(latest.snapshot_version || '')
+        .split('.')
+        .map(Number);
+      const snapshotVersion = legacy ? null : `${major || 1}.${(minor || 0) + 1}`;
+      if (!legacy) {
+        scored.snapshot = {
+          ...(latest.result.snapshot || {}),
+          version: snapshotVersion,
+          previousVersion: latest.snapshot_version,
+          createdAt: today.toISOString(),
+        };
+        scored.reason = 'Automatic check (Stage 9).';
+      }
       const record = {
         reference: a.reference,
         version,
@@ -106,8 +124,8 @@ async function checkOne(a, today) {
         automatic: true,
       };
       await db.query(
-        `INSERT INTO compliance_results (compliance_id, version, overall_score, rating, result, answers, evidence, rule_pack_version, snapshot_sha256, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL)`,
+        `INSERT INTO compliance_results (compliance_id, version, overall_score, rating, result, answers, evidence, rule_pack_version, snapshot_sha256, created_by, snapshot_version)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL, $10)`,
         [
           a.compliance_id,
           version,
@@ -116,8 +134,9 @@ async function checkOne(a, today) {
           JSON.stringify(scored),
           JSON.stringify(latest.answers),
           JSON.stringify(evidence),
-          S3_RULE_PACK,
+          latest.rule_pack_version,
           sha(record),
+          snapshotVersion,
         ],
       );
       const why =

@@ -265,7 +265,13 @@ export function collectFindings({
 
   // Stage 3: questionnaire answers and evidence.
   for (const gap of compliance?.result?.gaps || []) {
-    const severity = gap.kind === 'answer' || gap.kind === 'expired' ? 'fail' : 'gap';
+    // A failed answer, expired evidence, a contradiction or an open critical control counts as a failure.
+    const severity =
+      ['answer', 'expired', 'contradiction', 'mismatch'].includes(gap.kind) || gap.critical
+        ? 'fail'
+        : gap.kind === 'unknown' || gap.kind === 'missing'
+          ? 'unknown'
+          : 'gap';
     add(themeForControl(gap.controlId), {
       stage: 3,
       source: 'Compliance assessment',
@@ -286,6 +292,18 @@ export function collectFindings({
       severity: 'fail',
       owner: 'Buyer',
       text: topic.text,
+    });
+  }
+  // Partial clauses and clauses that need human review (Stage 4 specification).
+  for (const f of contract?.findings || []) {
+    if (!['PARTIAL', 'HUMAN_REVIEW'].includes(f.status)) continue;
+    add(themeForTopic(f.topic), {
+      stage: 4,
+      source: 'Contract analysis',
+      ref: f.categoryId + ' ' + f.name,
+      severity: f.status === 'PARTIAL' ? 'gap' : 'unknown',
+      owner: 'Buyer',
+      text: `${f.categoryId} ${f.name}: ${f.explanation}`,
     });
   }
 

@@ -164,9 +164,9 @@ async function gatherInputs(run, assessment) {
   if (!assessment.selected_vendor_id) return { blocked: 'Select a vendor first (Stage 2).' };
 
   const { rows: contracts } = await run(
-    `SELECT d.version, ca.clauses
-       FROM contract_documents d JOIN contract_analyses ca ON ca.contract_id = d.id
-      WHERE d.assessment_id = $1 ORDER BY d.version DESC LIMIT 1`,
+    `SELECT ca.version, ca.clauses
+       FROM contract_analyses ca JOIN contract_documents d ON d.id = ca.contract_id
+      WHERE ca.assessment_id = $1 AND jsonb_array_length(ca.clauses) > 0 ORDER BY ca.version DESC LIMIT 1`,
     [assessment.id],
   );
   if (!contracts[0]) return { blocked: 'Upload and analyse the contract first (Stage 4).' };

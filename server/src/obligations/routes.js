@@ -432,9 +432,10 @@ async function vendorOrganisation(userId) {
 
 async function latestAnalysedContract(run, assessmentId) {
   const { rows } = await run(
-    `SELECT d.id, d.version, d.file_name, ca.clauses
-       FROM contract_documents d JOIN contract_analyses ca ON ca.contract_id = d.id
-      WHERE d.assessment_id = $1 ORDER BY d.version DESC LIMIT 1`,
+    // The latest analysis of the contract set (Stage 4) that has clauses; its version is the "contract version".
+    `SELECT d.id, ca.version, d.file_name, ca.clauses
+       FROM contract_analyses ca JOIN contract_documents d ON d.id = ca.contract_id
+      WHERE ca.assessment_id = $1 AND jsonb_array_length(ca.clauses) > 0 ORDER BY ca.version DESC LIMIT 1`,
     [assessmentId],
   );
   return rows[0] || null;

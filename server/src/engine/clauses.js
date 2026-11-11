@@ -1,23 +1,30 @@
 /*
- * Stage 4 – Contract analysis (step 18: extract the text and identify the clauses).
+ * Stage 4 – Contract analysis (client specification "Input / Output Stage 4, 5, 6", steps 17–20).
  *
- * The contract text is split into numbered clauses, and each clause is checked
- * against a list of topics (data protection, security, breach notification …).
- * A clause can match more than one topic.
+ * Step 18: the text of each contract document is split into numbered clauses. Each clause gets the
+ * 10 fields of the specification (clause ID, document ID, page, section, heading, text, category,
+ * responsible party, extraction confidence, review status) and is placed in one or more of the 20
+ * clause categories CL-01 … CL-20.
+ * Step 20: each category becomes a finding: FOUND, PARTIAL, MISSING, NOT APPLICABLE or HUMAN REVIEW.
  *
- * These topics and keywords are PROVISIONAL (rule pack RP-2026.10-S4-draft).
- * They follow the Use Case 1 prototype and the assurance controls from the
- * Stage 1 specification, and will be replaced when the client sends the
- * Stage 4 specification.
+ * Two rules from the specification shape the checks:
+ *  - a heading alone is not proof: the clause text must contain what the category asks for;
+ *  - a clause cannot be reported as missing when the text could not be read well enough.
+ * Article 28 terms are only required for a controller–processor relationship; commercial clauses
+ * are never treated as statutory requirements.
  *
- * The result is a reading aid for the buyer. It does not say whether the
- * contract is adequate or compliant.
+ * TOPICS below are the older, broader topic tags. They are kept on every clause because Stages 5 and 6
+ * read them (obligation rules and transfer terms).
+ *
+ * The result is a reading aid for review, not a legal opinion or a compliance conclusion.
  */
 
-export const S4_RULE_PACK = 'RP-2026.10-S4-draft';
+export const S4_RULE_PACK = 'RP-2026.11-S4';
+export const EXTRACTION_MODEL_VERSION =
+  'OA-EXTRACT-2026.11 (unpdf / mammoth text + rule-based clause reader)';
 
 export const ANALYSIS_NOTE =
-  'Clauses are identified automatically from the text. This is a reading aid for review, not a legal opinion or a compliance conclusion.';
+  'Clauses are identified automatically from the text and checked against the clause categories. These are preliminary findings for review, not a legal opinion or a compliance conclusion. A heading alone is not treated as proof.';
 
 /*
  * Each topic has:
@@ -332,58 +339,708 @@ export function findKeyTerms(text) {
   return terms;
 }
 
-/**
- * Runs the full analysis on the extracted pages.
- *
- * @param {string[]} pages
- * @param {{ applicableControls?: string[] }} options  controls from the requirement profile (Stage 1)
- */
-export function analyseContract(pages, { applicableControls = [] } = {}) {
-  const clauses = splitIntoClauses(pages).map((clause, index) => {
-    const topics = classifyClause(clause);
+/* ---------- Step 18: the 20 clause categories ----------
+   heading: words in a clause heading that point to the category (a hint only, never proof).
+   phrases: words in the clause text that place a clause in the category.
+   context: if set, the clause text must also contain one of these (e.g. "sub-processor").
+   requires: what the text must show for the category to be FOUND. Each item has a label and either
+             "any" (phrases) or "re" (a pattern). Some found → PARTIAL, none → heading only.
+   topic: the older topic tag (used by Stage 7 to pick the risk theme).
+   group: ART28 (UK GDPR Article 28 processor terms), TRANSFER (Chapter V) or CONTRACT (commercial). */
+const C = (id, name, check, def) => ({ id, name, check, ...def });
+export const CATEGORIES = [
+  C('CL-01', 'Subject matter and duration', 'Defined processing and contract period', {
+    group: 'ART28',
+    article: '28(3)',
+    topic: 'data_protection',
+    heading: ['subject matter', 'duration', 'details of processing', 'processing details'],
+    phrases: [
+      'subject matter',
+      'duration of the processing',
+      'for the duration of',
+      'term of this agreement',
+    ],
+    requires: [
+      { label: 'the subject matter of the processing', any: ['subject matter', 'the services'] },
+      { label: 'the duration', any: ['duration', 'term of this agreement', 'for the term', 'until'] },
+    ],
+  }),
+  C('CL-02', 'Nature and purpose', 'Processing activities clearly described', {
+    group: 'ART28',
+    article: '28(3)',
+    topic: 'data_protection',
+    heading: ['nature and purpose', 'purpose of processing', 'details of processing', 'processing details'],
+    phrases: [
+      'nature and purpose',
+      'purpose of the processing',
+      'purposes of the processing',
+      'processing activities',
+    ],
+    requires: [
+      { label: 'the nature of the processing', any: ['nature', 'processing activities'] },
+      { label: 'the purpose', any: ['purpose'] },
+    ],
+  }),
+  C('CL-03', 'Data and data subjects', 'Categories and scope documented', {
+    group: 'ART28',
+    article: '28(3)',
+    topic: 'data_protection',
+    heading: ['categories of data', 'data subjects', 'types of personal data'],
+    phrases: [
+      'categories of personal data',
+      'types of personal data',
+      'categories of data subjects',
+      'data subjects',
+    ],
+    requires: [
+      {
+        label: 'the types of personal data',
+        any: ['categories of personal data', 'types of personal data', 'personal data categories'],
+      },
+      { label: 'the categories of data subjects', any: ['data subjects'] },
+    ],
+  }),
+  C('CL-04', 'Documented instructions', 'Processor acts on controller instructions', {
+    group: 'ART28',
+    article: '28(3)(a)',
+    topic: 'data_protection',
+    heading: ['instructions'],
+    phrases: [
+      'documented instructions',
+      'only on the instructions',
+      'written instructions',
+      'on the instructions of',
+    ],
+    requires: [
+      {
+        label: 'processing only on documented instructions',
+        any: [
+          'documented instructions',
+          'only on the instructions',
+          'only on the written instructions',
+          'only on the documented',
+        ],
+      },
+    ],
+  }),
+  C('CL-05', 'Confidentiality', 'Personnel confidentiality commitments', {
+    group: 'ART28',
+    article: '28(3)(b)',
+    topic: 'confidentiality',
+    heading: ['confidentiality'],
+    phrases: [
+      'bound by confidentiality',
+      'duty of confidentiality',
+      'obligation of confidentiality',
+      'confidentiality obligations',
+      'keep confidential',
+    ],
+    requires: [
+      {
+        label: 'the people who handle the data',
+        any: ['persons authorised', 'personnel', 'staff', 'employees', 'persons'],
+      },
+      { label: 'a confidentiality commitment', any: ['confidential'] },
+    ],
+  }),
+  C('CL-06', 'Security measures', 'Appropriate technical and organisational measures', {
+    group: 'ART28',
+    article: '28(3)(c) and Art. 32',
+    topic: 'security',
+    heading: ['security'],
+    phrases: [
+      'technical and organisational measures',
+      'article 32',
+      'security measures',
+      'encryption',
+      'access control',
+    ],
+    requires: [
+      {
+        label: 'appropriate technical and organisational measures',
+        any: ['technical and organisational measures', 'security measures', 'article 32'],
+      },
+    ],
+    alsoWhen: x => x.controls.includes('ASS-002'),
+  }),
+  C('CL-07', 'Subprocessor authorisation', 'Specific or general authorisation where required', {
+    group: 'ART28',
+    article: '28(2)',
+    topic: 'subprocessors',
+    heading: ['sub-processor', 'subprocessor', 'subcontract'],
+    phrases: ['sub-processor', 'subprocessor', 'sub-contractor', 'subcontractor'],
+    requires: [
+      {
+        label: 'prior specific or general written authorisation',
+        any: [
+          'prior written consent',
+          'prior specific',
+          'general written authorisation',
+          'prior written authorisation',
+          'written authorisation',
+        ],
+      },
+    ],
+  }),
+  C('CL-08', 'Subprocessor changes', 'Notice and objection provisions', {
+    group: 'ART28',
+    article: '28(2)',
+    topic: 'subprocessors',
+    heading: ['changes to sub', 'change of sub', 'new sub'],
+    phrases: [
+      'intended changes',
+      'new sub-processor',
+      'new subprocessor',
+      'replacement of',
+      'object to',
+      'objection',
+      'addition or replacement',
+    ],
+    context: ['sub-processor', 'subprocessor', 'subcontract'],
+    requires: [
+      { label: 'notice of changes', any: ['notify', 'notice', 'inform'] },
+      { label: 'a way to object', any: ['object', 'objection'] },
+    ],
+  }),
+  C('CL-09', 'Flow-down obligations', 'Required downstream processor protections', {
+    group: 'ART28',
+    article: '28(4)',
+    topic: 'subprocessors',
+    heading: ['flow down', 'flow-down'],
+    phrases: [
+      'same data protection obligations',
+      'flow down',
+      'flow-down',
+      'equivalent obligations',
+      'same obligations',
+    ],
+    context: ['sub-processor', 'subprocessor', 'subcontract'],
+    requires: [
+      {
+        label: 'the same data protection duties passed to subprocessors',
+        any: [
+          'same data protection obligations',
+          'same obligations',
+          'equivalent obligations',
+          'flow down',
+          'flow-down',
+        ],
+      },
+    ],
+  }),
+  C('CL-10', 'Data-subject rights', 'Processor assistance obligations', {
+    group: 'ART28',
+    article: '28(3)(e)',
+    topic: 'data_protection',
+    heading: ['data subject rights', 'rights of data subjects'],
+    phrases: [
+      'data subject rights',
+      'rights of data subjects',
+      'data subject request',
+      'exercise of rights',
+      'subject access',
+    ],
+    requires: [
+      { label: 'help with data-subject requests', any: ['assist', 'assistance', 'support', 'help'] },
+      { label: 'the data subjects’ rights', any: ['data subject', 'subject access'] },
+    ],
+  }),
+  C('CL-11', 'Breach / DPIA assistance', 'Applicable assistance duties', {
+    group: 'ART28',
+    article: '28(3)(f)',
+    topic: 'data_protection',
+    heading: ['impact assessment', 'dpia', 'assistance'],
+    phrases: [
+      'data protection impact assessment',
+      'dpia',
+      'articles 32 to 36',
+      'prior consultation',
+      'assist the customer in ensuring compliance',
+    ],
+    requires: [
+      { label: 'a duty to assist', any: ['assist', 'assistance'] },
+      {
+        label: 'breach and impact-assessment duties',
+        any: ['impact assessment', 'dpia', 'articles 32 to 36', 'breach', 'prior consultation'],
+      },
+    ],
+  }),
+  C('CL-12', 'Return and deletion', 'End-of-service handling', {
+    group: 'ART28',
+    article: '28(3)(g)',
+    topic: 'return_deletion',
+    heading: ['return', 'deletion', 'exit'],
+    phrases: [
+      'return or securely delete',
+      'return or delete',
+      'delete all personal data',
+      'destroy',
+      'deletion',
+    ],
+    requires: [
+      { label: 'return or deletion of the data', any: ['return', 'delete', 'destroy'] },
+      {
+        label: 'when it happens (end of the service)',
+        any: ['termination', 'end of', 'expiry', 'on completion', 'cessation'],
+      },
+    ],
+  }),
+  C('CL-13', 'Audit rights', 'Information and audit / inspection rights', {
+    group: 'ART28',
+    article: '28(3)(h)',
+    topic: 'audit_rights',
+    heading: ['audit', 'inspection'],
+    phrases: ['audit', 'inspect', 'inspection'],
+    requires: [
+      { label: 'audits or inspections', any: ['audit', 'inspect'] },
+      { label: 'information to show compliance', any: ['information', 'records', 'demonstrate'] },
+    ],
+    alsoWhen: x => x.controls.includes('ASS-013'),
+  }),
+  C('CL-14', 'International transfers', 'Instructions, routes and safeguards', {
+    group: 'TRANSFER',
+    topic: 'international_transfer',
+    heading: ['international transfer', 'transfers', 'data location'],
+    phrases: [
+      'outside the united kingdom',
+      'outside the uk',
+      'international data transfer agreement',
+      'idta',
+      'standard contractual clauses',
+      'addendum',
+      'transfer personal data',
+      'transfers of personal data',
+    ],
+    requires: [
+      {
+        label: 'which transfers are allowed',
+        any: ['except', 'only', 'consent', 'authorised', 'instructions'],
+      },
+      {
+        label: 'a transfer safeguard',
+        any: [
+          'international data transfer agreement',
+          'idta',
+          'standard contractual clauses',
+          'addendum',
+          'adequacy',
+          'appropriate safeguard',
+        ],
+      },
+    ],
+  }),
+  C('CL-15', 'Incident notification', 'Contractual notice triggers and deadlines', {
+    group: 'CONTRACT',
+    rule: 'Art. 33(2) and contract term',
+    topic: 'breach_notification',
+    heading: ['breach', 'incident', 'notification'],
+    phrases: ['personal data breach', 'security incident', 'without undue delay', 'becoming aware'],
+    requires: [
+      { label: 'what triggers a notice', any: ['breach', 'incident'] },
+      { label: 'a deadline', re: /within\s+\d+\s*(hours?|days?)|without undue delay/i },
+    ],
+    when: x => x.controls.includes('ASS-007'),
+  }),
+  C('CL-16', 'Service levels', 'Availability, response, resolution', {
+    group: 'CONTRACT',
+    topic: 'service_levels',
+    heading: ['service level', 'sla', 'performance'],
+    phrases: [
+      'service level',
+      'availability',
+      'uptime',
+      'response time',
+      'resolution time',
+      'respond to',
+      'resolve',
+    ],
+    requires: [
+      { label: 'availability', any: ['availability', 'uptime'] },
+      { label: 'response times', any: ['respond', 'response'] },
+      { label: 'resolution times', any: ['resolve', 'resolution'] },
+    ],
+    when: x => x.controls.includes('ASS-012'),
+  }),
+  C('CL-17', 'Business continuity', 'Recovery and continuity commitments', {
+    group: 'CONTRACT',
+    topic: 'business_continuity',
+    heading: ['business continuity', 'disaster recovery'],
+    phrases: ['business continuity', 'disaster recovery', 'recovery time', 'recovery point', 'backup'],
+    requires: [
+      { label: 'a continuity or recovery plan', any: ['business continuity', 'disaster recovery'] },
+      {
+        label: 'recovery targets or testing',
+        any: ['recovery time', 'recovery point', 'rto', 'rpo', 'test'],
+      },
+    ],
+    when: x => x.controls.includes('ASS-008'),
+  }),
+  C('CL-18', 'Termination and exit', 'Exit support, access revocation', {
+    group: 'CONTRACT',
+    topic: 'termination',
+    heading: ['termination', 'exit'],
+    phrases: ['terminate', 'termination', 'exit plan', 'exit assistance', 'transition'],
+    requires: [
+      { label: 'termination rights', any: ['terminat'] },
+      {
+        label: 'exit support or access removal',
+        any: ['exit', 'transition', 'handover', 'hand over', 'revoke', 'revocation', 'remove access'],
+      },
+    ],
+  }),
+  C('CL-19', 'Liability and indemnity', 'Contractual liability allocation', {
+    group: 'CONTRACT',
+    topic: 'liability',
+    heading: ['liability', 'indemn'],
+    phrases: ['liability', 'indemnify', 'indemnity', 'shall not exceed', 'limitation of liability'],
+    requires: [{ label: 'how liability is shared or limited', any: ['liability', 'indemn'] }],
+  }),
+  C('CL-20', 'Change control', 'Material-change approval process', {
+    group: 'CONTRACT',
+    topic: 'contract_terms',
+    heading: ['change control', 'variation', 'changes to the services'],
+    phrases: ['change control', 'change request', 'variation', 'material change', 'amendment'],
+    requires: [
+      { label: 'how changes are approved', any: ['agree', 'approval', 'approve', 'in writing', 'signed'] },
+    ],
+  }),
+];
+export const CATEGORY = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
+
+export const DOCUMENT_TYPES = ['MSA', 'SOW', 'SLA', 'DPA', 'NDA', 'SCC', 'OTHER'];
+export const EXECUTION_STATUSES = ['DRAFT', 'SIGNED', 'EXPIRED', 'TERMINATED'];
+export const SUPPORTED_LANGUAGES = ['en'];
+export const FINDING_STATUSES = {
+  FOUND: 'Found',
+  PARTIAL: 'Partial',
+  MISSING: 'Missing',
+  NOT_APPLICABLE: 'Not applicable',
+  HUMAN_REVIEW: 'Human review',
+};
+export const REVIEW_STATUSES = { EXTRACTED: 'Extracted', HUMAN_REVIEW: 'Human review', VERIFIED: 'Verified' };
+
+const lower = s => String(s || '').toLowerCase();
+const hasAny = (text, list) => list.filter(w => text.includes(w));
+
+/* Which categories a clause belongs to, with how sure we are (0–1). */
+export function categoriseClause(clause) {
+  const heading = lower(clause.heading);
+  const body = lower(clause.text);
+  const out = [];
+  for (const c of CATEGORIES) {
+    const headingHit = hasAny(heading, c.heading).length > 0;
+    const phraseHits = hasAny(body, c.phrases);
+    if (c.context && !hasAny(body, c.context).length) continue;
+    if (!headingHit && !phraseHits.length) continue;
+    // A heading alone counts only weakly; the text decides.
+    const confidence = !phraseHits.length
+      ? 0.4
+      : Math.min(0.97, 0.55 + 0.1 * Math.min(phraseHits.length, 3) + (headingHit ? 0.12 : 0));
+    out.push({
+      categoryId: c.id,
+      confidence: Math.round(confidence * 100) / 100,
+      headingOnly: !phraseHits.length,
+    });
+  }
+  return out.sort((a, b) => b.confidence - a.confidence);
+}
+
+/* Who the clause puts the duty on (step 18 "responsible party"). */
+export function responsibleParty(text, { buyerName = '', vendorName = '' } = {}) {
+  const t = lower(text);
+  const first = w => lower(w).split(/\s+/)[0];
+  const vendorWords = [
+    'supplier',
+    'processor',
+    'vendor',
+    'contractor',
+    'service provider',
+    first(vendorName),
+  ].filter(w => w.length > 2);
+  const buyerWords = ['customer', 'controller', 'client', 'buyer', first(buyerName)].filter(
+    w => w.length > 2,
+  );
+  const duty = /\b(shall|must|will|agrees? to|may)\b/;
+  let vendor = false,
+    buyer = false,
+    both = /\b(either|each|both) part(y|ies)\b/.test(t);
+  for (const sentence of t.split(/(?<=[.;])\s+/)) {
+    const m = sentence.match(duty);
+    if (!m) continue;
+    const subject = sentence.slice(0, m.index);
+    if (vendorWords.some(w => subject.includes(w))) vendor = true;
+    if (buyerWords.some(w => subject.includes(w))) buyer = true;
+  }
+  if (both || (vendor && buyer)) return 'Both parties';
+  if (vendor) return vendorName || 'Supplier';
+  if (buyer) return buyerName || 'Customer';
+  return 'Not stated';
+}
+
+/* Step 18 for one document: the clause register (10 fields per clause). */
+export function readDocument(
+  pages,
+  { documentId, documentNo, version, buyerName, vendorName, startAt = 1 } = {},
+) {
+  const raw = splitIntoClauses(pages);
+  const paragraphs = raw.some(c => /^P\d+$/.test(c.number));
+  return {
+    paragraphs,
+    clauses: raw.map((clause, i) => {
+      const cats = categoriseClause(clause);
+      const topics = classifyClause(clause);
+      const base = cats[0]?.confidence ?? (topics.length ? 0.5 : 0.4);
+      const confidence = Math.round(Math.max(0.1, base * (paragraphs ? 0.7 : 1)) * 100) / 100;
+      return {
+        id: `CLA-${String(startAt + i).padStart(3, '0')}`,
+        key: `${documentId || documentNo}:${i + 1}`, // stable across analyses; reviewer corrections point here
+        documentId: documentNo,
+        documentUuid: documentId,
+        documentVersion: version,
+        page: clause.page,
+        number: clause.number,
+        heading: clause.heading,
+        text: clause.text,
+        category: cats[0]?.categoryId || null,
+        categories: cats.map(c => c.categoryId),
+        headingOnly: cats.filter(c => c.headingOnly).map(c => c.categoryId),
+        responsibleParty: responsibleParty(clause.text, { buyerName, vendorName }),
+        confidence,
+        reviewStatus: confidence < 0.5 && cats.length ? 'HUMAN_REVIEW' : 'EXTRACTED',
+        topics,
+        keyTerms: findKeyTerms(clause.text),
+        relevant: cats.length > 0 || topics.length > 0,
+      };
+    }),
+  };
+}
+
+/* Applying a reviewer's corrections to a clause register. The original text never changes. */
+export function applyCorrections(clauses, corrections = []) {
+  const byKey = new Map(clauses.map(c => [c.key, { ...c }]));
+  for (const k of corrections) {
+    const c = byKey.get(k.clauseKey);
+    if (!c) continue;
+    if (k.action === 'VERIFY') {
+      c.reviewStatus = 'VERIFIED';
+      c.confidence = 1;
+    }
+    if (k.action === 'RECATEGORISE') {
+      c.categories = k.categoryId ? [k.categoryId] : [];
+      c.category = k.categoryId || null;
+      c.headingOnly = [];
+      c.reviewStatus = 'VERIFIED';
+      c.confidence = 1;
+    }
+    if (k.action === 'SET_PARTY') c.responsibleParty = k.party;
+  }
+  return [...byKey.values()];
+}
+
+/* Whether a category applies to this relationship (step 18 legal logic). */
+export function categoryApplies(c, x) {
+  if (c.group === 'ART28') {
+    if (x.processorRelationship) return { applies: true };
+    if (c.alsoWhen?.(x)) return { applies: true, contractOnly: true };
     return {
-      id: `C${String(index + 1).padStart(3, '0')}`,
-      number: clause.number,
-      heading: clause.heading,
-      page: clause.page,
-      text: clause.text,
-      topics,
-      keyTerms: findKeyTerms(clause.text),
-      relevant: topics.length > 0,
+      applies: false,
+      why: 'No controller–processor relationship, so this Article 28 term is not required.',
     };
-  });
+  }
+  if (c.group === 'TRANSFER')
+    return x.transferReview
+      ? { applies: true }
+      : {
+          applies: false,
+          why: 'No personal data leaves the buyer’s country (Stage 1), so no transfer terms are needed.',
+        };
+  if (c.when && !c.when(x))
+    return { applies: false, why: 'The related control does not apply to this requirement (Stage 1).' };
+  return { applies: true };
+}
+export function ruleFor(c, x, contractOnly = false) {
+  if (c.group === 'ART28' && !contractOnly) return `${x.law} Art. ${c.article}`;
+  if (c.group === 'TRANSFER') return `${x.law} Chapter V (Art. 44–46)`;
+  if (c.rule) return x.processorRelationship ? `${x.law} ${c.rule}` : 'Contract term (not statutory)';
+  return 'Contract term (not statutory)';
+}
 
-  const topicSummary = TOPICS.map(topic => {
-    const found = clauses.filter(clause => clause.topics.some(t => t.topicId === topic.id));
-    const linkedToRequirement = topic.controls.some(id => applicableControls.includes(id));
-    return {
-      id: topic.id,
-      name: topic.name,
-      controls: topic.controls,
-      clauseIds: found.map(clause => clause.id),
-      clauseNumbers: found.map(clause => clause.number),
-      expected: topic.expected || linkedToRequirement,
-      status: found.length > 0 ? 'FOUND' : 'NOT_FOUND',
+/* Step 20: one finding per category with the 9 output fields. */
+export function assessFindings(clauses, x, { quality = { ok: true, reasons: [] }, overrides = [] } = {}) {
+  return CATEGORIES.map(c => {
+    const { applies, why, contractOnly } = categoryApplies(c, x);
+    const hits = clauses.filter(k => k.categories.includes(c.id));
+    const first = hits[0];
+    const source = hits.map(k => `${k.documentId} §${k.number}${k.page ? ' p.' + k.page : ''}`).join('; ');
+    const text = lower(hits.map(k => k.text).join(' '));
+    const found = c.requires.filter(r => (r.re ? r.re.test(text) : hasAny(text, r.any).length));
+    const missing = c.requires.filter(r => !found.includes(r));
+    const confidence = hits.length ? Math.max(...hits.map(k => k.confidence)) : quality.ok ? 0.9 : 0.3;
+    let status, explanation, action;
+    if (!applies) {
+      status = 'NOT_APPLICABLE';
+      explanation = why;
+      action = 'None.';
+    } else if (!hits.length) {
+      if (!quality.ok) {
+        status = 'HUMAN_REVIEW';
+        explanation = `No clause was found, but this cannot be reported as missing: ${quality.reasons.join(' ')}`;
+        action = 'Read the contract and its schedules by hand, or upload a readable copy.';
+      } else {
+        status = 'MISSING';
+        explanation = `No clause about ${c.name.toLowerCase()} was found (${c.check.toLowerCase()}).`;
+        action = `Add a clause covering ${c.check.toLowerCase()}, or upload the schedule that covers it.`;
+      }
+    } else if (!found.length) {
+      status = 'PARTIAL';
+      explanation = `A clause is headed or worded like this, but its text does not show ${missing.map(r => r.label).join(' or ')}. A heading alone is not proof.`;
+      action = 'Check the clause and its schedules; add the missing wording.';
+    } else if (missing.length) {
+      status = 'PARTIAL';
+      explanation = `The clause covers ${found.map(r => r.label).join(' and ')}, but ${missing.map(r => r.label).join(' and ')} ${missing.length === 1 ? 'is' : 'are'} unclear.`;
+      action = `Clarify ${missing.map(r => r.label).join(' and ')}.`;
+    } else if (confidence < 0.5) {
+      status = 'HUMAN_REVIEW';
+      explanation = 'A matching clause was found, but the extraction confidence is low.';
+      action = 'Check the clause by hand and mark it verified.';
+    } else {
+      status = 'FOUND';
+      explanation = `Covers ${found.map(r => r.label).join(' and ')}.`;
+      action = 'None.';
+    }
+    const finding = {
+      categoryId: c.id,
+      name: c.name,
+      check: c.check,
+      clauseId: first?.id || null,
+      clauseIds: hits.map(k => k.id),
+      heading: first?.heading || null,
+      page: first?.page || null,
+      sourceRef: source || null,
+      rule: ruleFor(c, x, contractOnly),
+      statutory: (c.group === 'ART28' && !contractOnly) || c.group === 'TRANSFER',
+      status,
+      explanation,
+      confidence: Math.round(confidence * 100) / 100,
+      recommendedAction: action,
+      topic: c.topic,
     };
+    const o = [...overrides].reverse().find(k => k.categoryId === c.id);
+    if (o) {
+      finding.status = o.status;
+      finding.explanation = `${o.note} (reviewer)`;
+      finding.reviewed = { by: o.by, at: o.at };
+      finding.confidence = 1;
+      if (o.status === 'FOUND' || o.status === 'NOT_APPLICABLE') finding.recommendedAction = 'None.';
+    }
+    return finding;
   });
+}
 
-  const notFound = topicSummary.filter(topic => topic.expected && topic.status === 'NOT_FOUND');
+/* The context the checks need, from Stage 1 and Stage 3. */
+export function reviewContext({ data = {}, controls = [], processingRole = null, transferReview = false }) {
+  const pd = ['Yes', 'Unknown'].includes(data.personalData);
+  const bc = data.buyerCountry || 'GB';
+  return {
+    law: bc === 'GB' ? 'UK GDPR' : 'GDPR',
+    controls,
+    processorRelationship: pd && processingRole !== 'controller',
+    transferReview,
+  };
+}
 
+/* Step 18 for the whole contract set: clauses from every current document, findings and totals. */
+export function analyseSet(documents, x, { corrections = [], buyerName = '', vendorName = '' } = {}) {
+  const quality = { ok: true, reasons: [] };
+  const readable = documents.filter(d => d.clauses.length);
+  if (!readable.length) {
+    quality.ok = false;
+    quality.reasons.push('no document could be read.');
+  }
+  for (const d of documents) {
+    if (d.extractionStatus === 'UNREADABLE') {
+      quality.ok = false;
+      quality.reasons.push(`${d.documentNo} could not be read.`);
+    }
+    if (d.extractionStatus === 'LANGUAGE') {
+      quality.ok = false;
+      quality.reasons.push(`${d.documentNo} is not in a supported language.`);
+    }
+    if (d.paragraphs) {
+      quality.ok = false;
+      quality.reasons.push(`${d.documentNo} has no clause numbering, so clauses were read as paragraphs.`);
+    }
+  }
+  // Clause IDs run across the whole set (CLA-001, CLA-002 …); corrections follow the stable key.
+  const clauses = applyCorrections(
+    documents.flatMap(d => d.clauses).map((k, i) => ({ ...k, id: `CLA-${String(i + 1).padStart(3, '0')}` })),
+    corrections,
+  );
+  const findings = assessFindings(clauses, x, {
+    quality,
+    overrides: corrections.filter(k => k.action === 'SET_FINDING'),
+  });
+  const count = s => findings.filter(f => f.status === s).length;
+  const preliminary = [];
+  for (const d of documents) {
+    if (d.executionStatus === 'DRAFT')
+      preliminary.push(
+        `${d.documentNo} (${d.title}) is an unsigned draft: its terms are not yet binding and are not treated as an executed agreement.`,
+      );
+    if (d.executionStatus === 'EXPIRED' || d.executionStatus === 'TERMINATED')
+      preliminary.push(`${d.documentNo} (${d.title}) is ${d.executionStatus.toLowerCase()}.`);
+    if (d.partiesMissing?.length)
+      preliminary.push(
+        `${d.documentNo}: ${d.partiesMissing.join(' and ')} not named in the text. Check the parties.`,
+      );
+  }
+  const notFound = findings
+    .filter(f => f.status === 'MISSING')
+    .map(f => ({ topicId: f.topic, categoryId: f.categoryId, name: f.name, text: f.explanation }));
   return {
     rulePackVersion: S4_RULE_PACK,
-    totals: {
-      clauses: clauses.length,
-      relevant: clauses.filter(clause => clause.relevant).length,
-      topicsFound: topicSummary.filter(topic => topic.status === 'FOUND').length,
-      expectedNotFound: notFound.length,
-    },
+    status: quality.ok ? 'ANALYSED' : 'HUMAN_REVIEW',
+    quality,
     clauses,
-    topics: topicSummary,
-    notFound: notFound.map(topic => ({
-      topicId: topic.id,
-      name: topic.name,
-      text: `No clause about ${topic.name.toLowerCase()} was found. Check the contract and its schedules manually.`,
+    findings,
+    preliminary,
+    notFound,
+    topics: TOPICS.map(t => ({
+      id: t.id,
+      name: t.name,
+      controls: t.controls,
+      clauseIds: clauses.filter(k => k.topics.some(z => z.topicId === t.id)).map(k => k.id),
+      status: clauses.some(k => k.topics.some(z => z.topicId === t.id)) ? 'FOUND' : 'NOT_FOUND',
     })),
+    totals: {
+      documents: documents.length,
+      clauses: clauses.length,
+      relevant: clauses.filter(k => k.relevant).length,
+      found: count('FOUND'),
+      partial: count('PARTIAL'),
+      missing: count('MISSING'),
+      notApplicable: count('NOT_APPLICABLE'),
+      humanReview: count('HUMAN_REVIEW'),
+      toReview: clauses.filter(k => k.reviewStatus === 'HUMAN_REVIEW').length,
+    },
     note: ANALYSIS_NOTE,
   };
+}
+
+/**
+ * Kept for the engine tests and the obligation tests: a single document, read straight from its pages.
+ * @param {string[]} pages
+ */
+export function analyseContract(
+  pages,
+  { applicableControls = [], data = { personalData: 'Yes' }, processingRole = 'processor' } = {},
+) {
+  const doc = readDocument(pages, { documentId: null, documentNo: 'DOC-001', version: 1 });
+  const x = reviewContext({
+    data,
+    controls: applicableControls,
+    processingRole,
+    transferReview: applicableControls.includes('ASS-005'),
+  });
+  return analyseSet([{ documentNo: 'DOC-001', title: 'Contract', ...doc }], x);
 }

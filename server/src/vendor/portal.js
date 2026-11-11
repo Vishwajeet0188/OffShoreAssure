@@ -310,6 +310,8 @@ export async function vendorOverview(vendorId) {
     let questionnaire = { label: 'Not sent yet', tone: 'mute' };
     if (q && q.status === 'submitted')
       questionnaire = { label: `Answered · score ${row.score}/100`, tone: 'sage' };
+    else if (q && q.status === 'clarification')
+      questionnaire = { label: `Clarification requested · by ${day(q.due)}`, tone: 'amber' };
     else if (q) questionnaire = { label: `To answer by ${day(q.due)}`, tone: 'amber' };
 
     // Where the work stands, in one line, for the vendor.

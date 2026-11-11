@@ -1,4 +1,5 @@
-/* Stage 3 — Compliance assessment (steps 11 and 14).
+/* EARLIER DRAFT (kept for assessments started before the Stage 3 specification; new ones use engine/assurance.js).
+   Stage 3 — Compliance assessment (steps 11 and 14).
    Step 11: generate the control set and questionnaire from the controls that apply (requirement profile, Stage 1 Step 3).
    Step 14: validate the vendor's answers and evidence and calculate a provisional score.
    PROVISIONAL rule pack RP-2026.10-S3-draft: questions, evidence rules, areas, weights and bands follow the Use Case 1

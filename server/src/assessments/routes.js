@@ -196,9 +196,9 @@ assessmentsRouter.get('/', async (req, res) => {
     await query(
       `SELECT a.*, r.title, sv.name AS selected_vendor, (SELECT count(*)::int FROM vendor_shortlist s WHERE s.assessment_id = a.id) AS shortlisted,
         c.status AS compliance_status, (SELECT cr.overall_score FROM compliance_results cr WHERE cr.compliance_id = c.id ORDER BY version DESC LIMIT 1) AS compliance_score,
-        (SELECT json_build_object('version', d.version, 'fileName', d.file_name, 'uploadedAt', d.uploaded_at, 'totals', ca.totals)
-           FROM contract_documents d JOIN contract_analyses ca ON ca.contract_id = d.id
-          WHERE d.assessment_id = a.id ORDER BY d.version DESC LIMIT 1) AS contract,
+        (SELECT json_build_object('version', ca.version, 'fileName', d.file_name, 'uploadedAt', ca.created_at, 'totals', ca.totals, 'status', ca.status)
+           FROM contract_analyses ca JOIN contract_documents d ON d.id = ca.contract_id
+          WHERE ca.assessment_id = a.id ORDER BY ca.version DESC LIMIT 1) AS contract,
         (SELECT json_build_object('version', g.version, 'contractVersion', g.contract_version, 'totals', g.totals)
            FROM obligation_registers g WHERE g.assessment_id = a.id ORDER BY g.version DESC LIMIT 1) AS obligations,
         (SELECT json_build_object('version', t.version, 'overall', t.overall, 'totals', t.totals)
