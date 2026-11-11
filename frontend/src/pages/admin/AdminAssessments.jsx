@@ -413,8 +413,11 @@ function ObligationsPanel({ state }) {
         <div>
           <h2>Stage 5 · Obligation extraction</h2>
           <div className="sub">
-            Register v{register.version} from contract v{register.contractVersion} · saved{' '}
+            Obligation Register v{register.label} from contract analysis v{register.contractVersion} · saved{' '}
             {fmtTime(register.createdAt)}
+            {register.totals.requiresVerification
+              ? ` · ${register.totals.requiresVerification} to verify`
+              : ''}
           </div>
         </div>
         <Badge
@@ -455,13 +458,15 @@ function TransfersPanel({ state }) {
         <div>
           <h2>Stage 6 · Transfer assessment</h2>
           <div className="sub">
-            Version {result.version} · saved {fmtTime(result.createdAt)} · {result.totals.routes} routes ·{' '}
-            {result.totals.questions} questions
+            Transfer Assessment Register v{result.label} · saved {fmtTime(result.createdAt)} ·{' '}
+            {result.totals.routes} routes · {result.totals.questions} questions
           </div>
         </div>
         <Badge
           s={
-            result.overall.status === 'ADEQUATE' || result.overall.status === 'NOT_RESTRICTED'
+            ['ADEQUATE', 'NOT_RESTRICTED', 'ADEQUACY_ROUTE', 'NO_RESTRICTED_TRANSFER'].includes(
+              result.overall.status,
+            )
               ? 'Complete'
               : 'Attention'
           }
@@ -473,7 +478,10 @@ function TransfersPanel({ state }) {
         <ul>
           {result.routes.map(route => (
             <li key={route.id}>
-              {route.fromName} → {route.toName}: {route.statusLabel}
+              {route.importer
+                ? `${route.id} · ${route.exporter.name} → ${route.importer.name} (${route.toName})`
+                : `${route.fromName} → ${route.toName}`}
+              : {route.statusLabel}
             </li>
           ))}
         </ul>

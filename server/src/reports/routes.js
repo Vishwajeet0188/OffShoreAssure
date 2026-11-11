@@ -148,7 +148,9 @@ async function gatherSources(db, a) {
       overall: transfers.overall.label,
       sha256: transfers.snapshot_sha256,
       routes: transfers.routes.map(r => ({
-        route: `${r.id} · ${r.fromName || r.from} → ${r.toName || r.to}`,
+        route: r.importer
+          ? `${r.id} · ${r.exporter.name} → ${r.importer.name} (${r.toName})`
+          : `${r.id} · ${r.fromName || r.from} → ${r.toName || r.to}`,
         status: r.statusLabel || r.status,
       })),
     },

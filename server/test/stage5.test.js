@@ -17,7 +17,9 @@ const { pool } = await import('../src/db.js');
 const { migrate } = await import('../src/migrate.js');
 const { createApp } = await import('../src/app.js');
 const { analyseContract } = await import('../src/engine/clauses.js');
-const { buildRegister, splitSentences, findPartyNames } = await import('../src/engine/obligations.js');
+const { buildRegister, splitSentences, findPartyNames, findDeadline, RULES } = await import(
+  '../src/engine/obligations.js'
+);
 const { EXAMPLE, startStage3, completeStage3, uploadSpecContract } = await import('./fixtures.js');
 const bcrypt = (await import('bcryptjs')).default;
 
@@ -119,7 +121,18 @@ async function vendorSubmitsCompliance() {
 }
 
 const CONTROLS = ['ASS-004', 'ASS-005', 'ASS-006', 'ASS-007', 'ASS-012', 'ASS-013', 'ASS-014'];
-const exampleClauses = () => analyseContract([fixture('contract.txt').toString('utf8')]).clauses;
+// The Stage 4 analysis of the example contract (clauses + the 20 category findings).
+const exampleAnalysis = (controls = CONTROLS) =>
+  analyseContract([fixture('contract.txt').toString('utf8')], { applicableControls: controls });
+
+const CONTEXT = {
+  buyerName: 'UK Company Ltd',
+  vendorName: 'Vendor A Test Ltd',
+  applicableControls: CONTROLS,
+  documents: {
+    'DOC-001': { type: 'MSA', title: 'IT Support Services Agreement', executionStatus: 'SIGNED' },
+  },
+};
 
 async function uploadContractAfterStage3() {
   await buyer('POST', `/assessments/${ref}/shortlist`, { vendorId });
@@ -137,7 +150,11 @@ async function uploadContractAfterStage3() {
   assert.equal(r.status, 201, JSON.stringify(r.body));
 }
 
-test('engine: sentences, party names and obligation types', () => {
+/* ------------------------------------------------------------------ */
+/*  Engine                                                            */
+/* ------------------------------------------------------------------ */
+
+test('engine: sentences and party names', () => {
   assert.deepEqual(
     splitSentences('The Supplier shall respond within 4 hours. Availability is 99.5% each month.'),
     ['The Supplier shall respond within 4 hours.', 'Availability is 99.5% each month.'],
@@ -149,55 +166,162 @@ test('engine: sentences, party names and obligation types', () => {
   );
   assert.equal(names.client, 'buyer');
   assert.equal(names.provider, 'vendor');
+});
 
-  const register = buildRegister(exampleClauses(), {
-    buyerName: 'UK Company Ltd',
-    vendorName: 'Vendor A Test Ltd',
-    applicableControls: CONTROLS,
-  });
-  const byClause = number => register.obligations.find(o => o.source.clauseNumber === number);
+test('step 21: the 12 fields per obligation, from the example contract', () => {
+  const register = buildRegister(exampleAnalysis(), CONTEXT);
+  const bySection = section => register.obligations.find(o => o.sourceClause.section === section);
 
-  assert.equal(byClause('6.1').party, 'vendor');
-  assert.equal(byClause('6.1').type, 'Obligation');
-  assert.ok(byClause('6.1').deadline.includes('within 24 hours'));
-  assert.ok(byClause('6.1').rules.includes('R-BRE-01'));
-  assert.equal(byClause('7.1').type, 'Prohibition');
-  assert.equal(byClause('9.1').type, 'Right');
-  assert.equal(byClause('9.1').party, 'buyer');
-  assert.equal(byClause('9.1').frequency, 'once in any 12 month period');
-  assert.equal(byClause('10.1').party, 'both');
-  assert.equal(byClause('10.2').condition, 'On termination');
-  assert.equal(register.totals.gaps, 0, 'the example contract covers every rule');
+  // The breach notice: OBL id, source document and clause, parties, trigger, deadline, frequency, evidence.
+  const breach = bySection('6.1');
+  assert.match(breach.id, /^OBL-\d{3}$/);
+  assert.equal(breach.sourceDocument.id, 'DOC-001');
+  assert.equal(breach.sourceDocument.type, 'MSA');
+  assert.match(breach.sourceClause.clauseId, /^CLA-\d{3}$/);
+  assert.equal(breach.responsibleParty.party, 'vendor');
+  assert.equal(breach.responsibleParty.name, 'Vendor A Test Ltd');
+  assert.equal(breach.beneficiary.name, 'UK Company Ltd');
+  assert.match(breach.description, /^Notify the Customer/);
+  assert.equal(breach.trigger.type, 'EVENT');
+  assert.match(breach.trigger.text, /aware/i);
+  assert.deepEqual(breach.deadline, { type: 'DURATION', text: 'within 24 hours' });
+  assert.equal(breach.frequency, 'EVENT_DRIVEN');
+  assert.ok(breach.requiredEvidence.includes('Incident notification record'));
+  assert.ok(breach.consequence, 'a consequence is always recorded, even "not stated"');
+  assert.ok(['UNVERIFIED', 'REQUIRES_VERIFICATION'].includes(breach.status));
+  assert.ok(breach.confidence > 0 && breach.confidence <= 1);
+
+  // Types and parties.
+  assert.equal(bySection('7.1').type, 'Prohibition');
+  assert.equal(bySection('9.1').type, 'Right');
+  assert.equal(bySection('9.1').party, 'buyer');
+  assert.equal(bySection('9.1').frequency, 'PERIODIC');
+  assert.equal(bySection('10.1').party, 'both');
+  assert.equal(bySection('10.2').trigger.type, 'ON_TERMINATION');
+  assert.equal(bySection('10.2').frequency, 'ONE_OFF');
+  assert.equal(bySection('3.2').frequency, 'MONTHLY');
+  assert.equal(
+    bySection('3.2').consequence.type,
+    'CONTRACTUAL_REMEDY',
+    'service credits in the same section',
+  );
+
   assert.ok(!/\bcompliant\b/i.test(JSON.stringify(register)));
 });
 
-test('engine: a rule with no obligation is a gap only when it applies to the requirement', () => {
-  const clauses = analyseContract([
-    '1. Services\n1.1 The Supplier shall provide IT support services to the Customer during business hours.',
-  ]).clauses;
-  const withTransfer = buildRegister(clauses, { applicableControls: ['ASS-005'] });
-  assert.ok(withTransfer.gaps.some(gap => gap.ruleId === 'R-TRF-01'));
-  const withoutTransfer = buildRegister(clauses, { applicableControls: [] });
-  assert.ok(!withoutTransfer.gaps.some(gap => gap.ruleId === 'R-TRF-01'));
+test('step 21 boundary: no deadline in the contract is stored as UNSPECIFIED, never invented', () => {
+  assert.deepEqual(findDeadline('The Supplier shall keep the data secure.'), {
+    type: 'UNSPECIFIED',
+    text: 'UNSPECIFIED',
+  });
+  assert.deepEqual(findDeadline('The Supplier shall notify the Customer without undue delay.'), {
+    type: 'QUALITATIVE',
+    text: 'Without undue delay',
+  });
+  assert.equal(findDeadline('The Supplier shall deliver the plan by 31 March 2027.').type, 'DATE');
+
+  const register = buildRegister(exampleAnalysis(), CONTEXT);
+  const security = register.obligations.find(o => o.sourceClause.section === '5.1');
+  assert.equal(security.deadline.type, 'UNSPECIFIED');
+  assert.ok(register.totals.unspecifiedDeadline > 0);
 });
 
-test('engine: an audit clause covers the audit rule whichever party the sentence starts with', () => {
-  // Found in practice: "the Customer may audit … and the Supplier shall provide the evidence" is read as a
-  // vendor obligation ("shall"); the audit rule must still count as covered.
-  const clauses = analyseContract([
+test('step 22: the 8 mapping fields, legal versus contractual basis, and the rule trace', () => {
+  const register = buildRegister(exampleAnalysis(), CONTEXT);
+  const breach = register.obligations.find(o => o.sourceClause.section === '6.1');
+
+  const mapping = register.mappings.find(m => m.obligationId === breach.id);
+  for (const field of [
+    'obligationId',
+    'clauseId',
+    'requirementId',
+    'ruleId',
+    'ruleVersion',
+    'applicabilityStatus',
+    'mappingConfidence',
+    'reviewerStatus',
+  ]) {
+    assert.ok(field in mapping, 'mapping field ' + field);
+  }
+  assert.equal(mapping.ruleId, 'R-CON-01');
+  assert.equal(mapping.reviewerStatus, 'UNREVIEWED');
+
+  // Article 28 terms are legal for a controller–processor relationship; incident notice is a contract term.
+  const trace = id => register.ruleTrace.find(rule => rule.id === id);
+  assert.equal(trace('R-A28-04').basis, 'LEGAL');
+  assert.equal(trace('R-A28-04').status, 'COVERED');
+  assert.equal(trace('R-CON-01').basis, 'CONTRACTUAL');
+
+  // One rule may need several clauses: sub-processor authorisation AND change notice.
+  assert.deepEqual(trace('R-A28-05').categories, ['CL-07', 'CL-08']);
+  assert.ok(['PARTIAL', 'COVERED'].includes(trace('R-A28-05').status));
+  assert.ok(register.checks.some(check => check.kind === 'BASIS'));
+  assert.equal(RULES.length, register.ruleTrace.length);
+});
+
+test('step 22: a controller relationship turns Article 28 terms off; missing rules become gaps', () => {
+  const controller = analyseContract([fixture('contract.txt').toString('utf8')], {
+    applicableControls: CONTROLS,
+    processingRole: 'controller',
+  });
+  const register = buildRegister(controller, CONTEXT);
+  assert.equal(register.ruleTrace.find(rule => rule.id === 'R-A28-07').status, 'NOT_APPLICABLE');
+  assert.ok(!register.gaps.some(gap => gap.ruleId.startsWith('R-A28')));
+
+  const thin = analyseContract(
+    [
+      '1. Services\n1.1 The Supplier shall provide IT support services to the Customer during business hours.',
+    ],
+    { applicableControls: ['ASS-005'] },
+  );
+  const withGaps = buildRegister(thin, { applicableControls: ['ASS-005'] });
+  assert.ok(withGaps.gaps.some(gap => gap.ruleId === 'R-A28-04' && gap.kind === 'MISSING'));
+});
+
+test('step 22 checks: wrong party, conflicting deadlines and downstream duties', () => {
+  const analysis = analyseContract([
+    [
+      '1. Security',
+      '1.1 The Customer shall implement appropriate technical and organisational security measures to protect Personal Data.',
+      '2. Incident notification',
+      '2.1 The Supplier shall notify the Customer of any security incident within 24 hours.',
+      '3. Incident reporting',
+      '3.1 The Supplier shall notify the Customer of any security incident within 72 hours of the incident.',
+    ].join('\n'),
+  ]);
+  const register = buildRegister(analysis, { ...CONTEXT, subprocessorsUsed: true });
+  const kinds = register.checks.map(check => check.kind);
+
+  assert.ok(kinds.includes('PARTY'), 'security duty put on the buyer');
+  assert.ok(kinds.includes('CONFLICT'), '24 hours against 72 hours');
+  assert.ok(
+    register.checks.some(check => check.kind === 'DOWNSTREAM' && check.severity === 'issue'),
+    'no flow-down while sub-processors are used',
+  );
+});
+
+test('step 23 boundary: a low-confidence obligation needs verification and is not monitored', () => {
+  const analysis = analyseContract(['The service will be delivered by the team as agreed between them.']);
+  const register = buildRegister(analysis, CONTEXT);
+  const unclear = register.obligations[0];
+  assert.equal(unclear.status, 'REQUIRES_VERIFICATION');
+  assert.ok(unclear.confidence < 0.6);
+  assert.ok(!register.monitors.some(m => m.obligationId === unclear.id && m.state === 'ACTIVE'));
+});
+
+test('engine: the audit rule is covered whichever party the sentence starts with', () => {
+  // Found in practice: "the Customer may audit … and the Supplier shall provide the evidence".
+  const analysis = analyseContract([
     "1. Audit\n1.1 The Customer, or an auditor appointed by it, may audit the Supplier's compliance with this " +
       "Agreement on 30 days' written notice, and the Supplier shall provide the supporting evidence requested.",
-  ]).clauses;
-  const register = buildRegister(clauses, {
-    buyerName: 'UK Company Ltd',
-    vendorName: 'ABC',
-    applicableControls: ['ASS-013'],
-  });
-
-  const audit = register.ruleTrace.find(rule => rule.id === 'R-AUD-01');
-  assert.equal(audit.status, 'COVERED');
-  assert.ok(!register.gaps.some(gap => gap.ruleId === 'R-AUD-01'), 'no false "no obligation" gap');
+  ]);
+  const register = buildRegister(analysis, { ...CONTEXT, applicableControls: ['ASS-013'] });
+  assert.equal(register.ruleTrace.find(rule => rule.id === 'R-A28-10').status, 'COVERED');
 });
+
+/* ------------------------------------------------------------------ */
+/*  API                                                               */
+/* ------------------------------------------------------------------ */
 
 test('step 21: blocked until the contract has been analysed (Stage 4)', async () => {
   const r = await buyer('POST', `/assessments/${ref}/obligations`);
@@ -206,7 +330,9 @@ test('step 21: blocked until the contract has been analysed (Stage 4)', async ()
   assert.equal((await buyer('GET', `/assessments/${ref}/obligations`)).body.canExtract, false);
 });
 
-test('steps 21–24: register extracted, saved, on the timeline; Stage 6 next', async () => {
+let firstObligation;
+
+test('steps 21–24: Obligation Register v1.0 saved with the 10 stored fields; Stage 6 next', async () => {
   await uploadContractAfterStage3();
   let state = await buyer('GET', `/assessments/${ref}/obligations`);
   assert.equal(state.body.canExtract, true);
@@ -214,17 +340,38 @@ test('steps 21–24: register extracted, saved, on the timeline; Stage 6 next', 
 
   const r = await buyer('POST', `/assessments/${ref}/obligations`);
   assert.equal(r.status, 201, JSON.stringify(r.body));
-  assert.equal(r.body.register.version, 1);
-  assert.equal(r.body.register.contractVersion, 1);
-  assert.ok(r.body.register.obligations.length >= 10);
-  assert.match(r.body.register.snapshotSha256, /^[0-9a-f]{64}$/);
+  const register = r.body.register;
+  assert.equal(register.label, '1.0');
+  assert.equal(register.contractVersion, 1);
+  assert.ok(register.obligations.length >= 10);
+  assert.ok(register.mappings.length > 0);
+  assert.ok(register.monitors.length > 0, 'monitoring triggers created');
+  assert.match(register.snapshotSha256, /^[0-9a-f]{64}$/);
   assert.equal(r.body.canExtract, false);
 
-  assert.equal(
-    (await buyer('POST', `/assessments/${ref}/obligations`)).body.error,
-    'up_to_date',
-    'same contract → not again',
-  );
+  // The 10 stored fields.
+  const record = register.records[0];
+  for (const field of [
+    'obligationId',
+    'assessmentId',
+    'contractId',
+    'clauseId',
+    'ruleIds',
+    'responsibleParty',
+    'deadlineRule',
+    'status',
+    'version',
+    'timestamp',
+  ]) {
+    assert.ok(field in record, 'stored field ' + field);
+  }
+  assert.equal(record.assessmentId, ref);
+  assert.equal(record.version, '1.0');
+
+  firstObligation = register.obligations.find(o => o.sourceClause.section === '6.1');
+  assert.ok(firstObligation);
+
+  assert.equal((await buyer('POST', `/assessments/${ref}/obligations`)).body.error, 'up_to_date');
 
   const assessment = await buyer('GET', `/assessments/${ref}`);
   for (const step of [21, 22, 23, 24]) {
@@ -242,7 +389,56 @@ test('steps 21–24: register extracted, saved, on the timeline; Stage 6 next', 
   assert.equal(list.body.assessments[0].obligations.version, 1);
 });
 
-test('a new contract version allows register v2; v1 is kept and locked', async () => {
+test('step 24 boundary: a reviewer edit makes v1.1, attributed, keeping the original source', async () => {
+  // An edit must say why.
+  const noReason = await buyer('POST', `/assessments/${ref}/obligations/review`, {
+    obligationId: firstObligation.id,
+    action: 'EDIT',
+    changes: { deadline: { type: 'DURATION', text: 'within 12 hours' } },
+  });
+  assert.equal(noReason.status, 400);
+
+  const r = await buyer('POST', `/assessments/${ref}/obligations/review`, {
+    obligationId: firstObligation.id,
+    action: 'EDIT',
+    changes: { deadline: { type: 'DURATION', text: 'within 12 hours' } },
+    note: 'Schedule 2 shortens the notice period to 12 hours.',
+  });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  assert.equal(r.body.register.label, '1.1');
+
+  const edited = r.body.register.obligations.find(o => o.id === firstObligation.id);
+  assert.equal(edited.deadline.text, 'within 12 hours');
+  assert.equal(edited.original.deadline.text, 'within 24 hours', 'the extracted value is kept');
+  assert.equal(edited.text, firstObligation.text, 'the contract text never changes');
+  assert.deepEqual(edited.sourceClause, firstObligation.sourceClause);
+  assert.equal(edited.status, 'VERIFIED');
+  assert.equal(edited.version, 2);
+  assert.equal(r.body.register.edit.by, 'sarah@ukcompany.example');
+
+  // A mapping review is also a new version.
+  const m = await buyer('POST', `/assessments/${ref}/obligations/review`, {
+    obligationId: firstObligation.id,
+    action: 'CONFIRM_MAPPING',
+    ruleId: 'R-CON-01',
+  });
+  assert.equal(m.status, 201);
+  assert.equal(m.body.register.label, '1.2');
+  assert.equal(
+    m.body.register.mappings.find(x => x.obligationId === firstObligation.id && x.ruleId === 'R-CON-01')
+      .reviewerStatus,
+    'CONFIRMED',
+  );
+
+  // v1.0 is still there and unchanged.
+  const v1 = await buyer('GET', `/assessments/${ref}/obligations?version=1`);
+  assert.equal(
+    v1.body.register.obligations.find(o => o.id === firstObligation.id).deadline.text,
+    'within 24 hours',
+  );
+});
+
+test('a new contract version gives v2.0; reviewer edits carry over; earlier versions are locked', async () => {
   await uploadContract(
     buyer,
     { name: 'contract.docx', reason: 'Signed copy received from the vendor' },
@@ -251,28 +447,51 @@ test('a new contract version allows register v2; v1 is kept and locked', async (
   );
   const r = await buyer('POST', `/assessments/${ref}/obligations`);
   assert.equal(r.status, 201);
-  assert.equal(r.body.register.version, 2);
-  assert.equal(r.body.register.contractVersion, 2);
-  assert.equal(r.body.versions.length, 2);
-  assert.equal((await buyer('GET', `/assessments/${ref}/obligations?version=1`)).body.register.version, 1);
+  assert.equal(r.body.register.label, '2.0');
+  assert.equal(r.body.versions.length, 4);
 
   await assert.rejects(pool.query('UPDATE obligation_registers SET totals = $1', ['{}']), /append-only/);
-  const events = (await pool.query(`SELECT event FROM audit_events WHERE stage = 'stage-5'`)).rows.map(
-    e => e.event,
-  );
-  assert.deepEqual(events, ['obligations.extracted', 'obligations.extracted']);
+  const events = (
+    await pool.query(`SELECT event FROM audit_events WHERE stage = 'stage-5' ORDER BY at`)
+  ).rows.map(e => e.event);
+  assert.deepEqual(events, [
+    'obligations.extracted',
+    'obligations.reviewed',
+    'obligations.reviewed',
+    'obligations.extracted',
+  ]);
+});
+
+test('missed obligations: only monitored and verified ones can be escalated', async () => {
+  const state = (await buyer('GET', `/assessments/${ref}/obligations`)).body.register;
+  const waiting = state.monitors.find(m => m.state === 'AWAITING_VERIFICATION');
+  if (waiting) {
+    const refused = await buyer('POST', `/assessments/${ref}/obligations/${waiting.obligationId}/missed`, {
+      note: 'Not done on time last month.',
+    });
+    assert.equal(refused.status, 409);
+    assert.equal(refused.body.error, 'needs_verification');
+  }
+
+  const active = state.monitors.find(m => m.state === 'ACTIVE' && m.owner === 'vendor');
+  const r = await buyer('POST', `/assessments/${ref}/obligations/${active.obligationId}/missed`, {
+    note: 'The breach on 3 Nov was reported after two days.',
+  });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  assert.ok(r.body.missed.some(m => m.obligationId === active.obligationId));
 });
 
 test('vendor sees only its own obligations; other buyers and admins', async () => {
   const list = await vendor('GET', '/vendor/obligations');
   assert.equal(list.body.registers.length, 1);
+  assert.equal(list.body.registers[0].label, '2.0');
   assert.ok(list.body.registers[0].yourObligations > 5);
 
   const own = await vendor('GET', `/vendor/obligations/${ref}`);
   assert.equal(own.status, 200);
   assert.ok(own.body.obligations.every(o => o.party === 'vendor' || o.party === 'both'));
   assert.ok(
-    !own.body.obligations.some(o => o.source.clauseNumber === '9.1'),
+    !own.body.obligations.some(o => o.sourceClause.section === '9.1'),
     'the buyer’s audit right is not listed as a vendor obligation',
   );
 
@@ -280,5 +499,5 @@ test('vendor sees only its own obligations; other buyers and admins', async () =
   assert.equal((await vendor('GET', `/assessments/${ref}/obligations`)).status, 403);
 
   const detail = await admin('GET', `/admin/assessments/${ref}`);
-  assert.equal(detail.body.obligations.versions.length, 2);
+  assert.equal(detail.body.obligations.versions.length, 4);
 });

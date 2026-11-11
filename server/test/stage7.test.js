@@ -146,18 +146,27 @@ test('engine step 29: findings from every stage are tagged with a theme, stage a
     },
     obligations: {
       gaps: [
-        { ruleId: 'R-SUB-01', text: 'No obligation found for sub-processors.', source: 'UK GDPR Art. 28(2)' },
+        {
+          ruleId: 'R-A28-05',
+          kind: 'MISSING',
+          text: 'No obligation found: sub-processor authorisation.',
+          source: 'UK GDPR Art. 28(2)',
+        },
       ],
     },
     transfers: {
       routes: [
         {
-          id: 'RT-05',
-          status: 'INFORMATION_NEEDED',
-          uses: ['Sub-processors'],
-          fromName: 'United Kingdom',
+          id: 'TR-005',
+          status: 'INFORMATION_REQUIRED',
+          statusLabel: 'Information required',
+          riskSeverity: 'unknown',
+          subprocessorRelationship: { isSubprocessor: true, reference: null },
+          exporter: { name: 'Krakow IT' },
+          importer: { name: 'Sub-processors (not yet listed)' },
+          fromName: 'Poland',
           toName: 'Not confirmed',
-          statusLabel: 'Information needed',
+          output: { rationale: 'The location is not known, so no final route decision can be made.' },
         },
       ],
     },

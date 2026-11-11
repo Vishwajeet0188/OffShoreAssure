@@ -10760,3 +10760,189 @@ button.user {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ================================================================== */
+/*  Stage 5 and Stage 6 to the client's specification (Nov 2026)      */
+/* ================================================================== */
+
+/* An obligation or a route opened in its table. */
+.ob-detail-row > td {
+  background: var(--card-2);
+}
+.ob-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 4px;
+}
+.ob-detail h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+/* Label and value pairs (the specification's fields). */
+.ob-fields {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) minmax(0, 1fr);
+  gap: 4px 14px;
+  margin: 0;
+}
+.ob-fields dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+.ob-fields dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.ob-quote {
+  font-style: italic;
+  color: var(--ink-2);
+}
+
+/* The 8 mapping fields, and the edit form. */
+.ob-map td,
+.ob-map th {
+  font-size: 13px;
+  vertical-align: top;
+}
+.ob-edit {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  gap: 8px;
+  max-width: 720px;
+}
+.ob-edit label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.ob-edit input,
+.ob-edit select,
+.ob-edit textarea {
+  font: inherit;
+  color: var(--ink);
+}
+
+/* Stage 6: two columns (route and decision) that stack on a phone. */
+.tr-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.tr-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+.tr-table td {
+  vertical-align: top;
+  font-size: 13px;
+  min-width: 110px;
+}
+/* Rationale and required action are sentences: give them room. */
+.tr-table td:nth-child(9),
+.tr-table td:nth-child(10) {
+  min-width: 220px;
+}
+
+/* The legal decision sequence, one numbered step per line. */
+.tr-seq {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tr-seq li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.tr-seq .journey-n {
+  flex: none;
+}
+
+/* The visual data-flow map. */
+.tr-map-wrap {
+  overflow-x: auto;
+  padding: 0 16px 16px;
+}
+.tr-map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.tr-node rect {
+  fill: var(--card);
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+.tr-node.tr-buyer rect {
+  fill: var(--plum-soft);
+  stroke: var(--plum);
+}
+.tr-node.tr-vendor rect {
+  fill: var(--copper-soft);
+  stroke: var(--copper-line);
+}
+.tr-node-name {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+.tr-node-country {
+  font-size: 12px;
+  fill: var(--muted);
+}
+.tr-edge path {
+  fill: none;
+  stroke-width: 2;
+  stroke: var(--muted);
+}
+.tr-edge text {
+  font-size: 11px;
+  fill: var(--muted);
+}
+.tr-edge.b-sage path {
+  stroke: var(--sage-fill);
+}
+.tr-edge.b-amber path {
+  stroke: var(--amber-fill);
+  stroke-dasharray: 6 4;
+}
+.tr-edge.b-coral path {
+  stroke: var(--coral-fill);
+  stroke-dasharray: 3 3;
+}
+/* The status classes are for badges; on the map they only colour the lines. */
+.tr-edge.b-sage,
+.tr-edge.b-amber,
+.tr-edge.b-coral {
+  background: none;
+}
+
+@media (max-width: 760px) {
+  .tr-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ob-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ob-fields dt {
+    margin-top: 6px;
+  }
+}
+/* Text boxes in the edit and facts forms look like the dropdowns next to them. */
+.ob-edit input:not([type='checkbox']),
+.ob-edit textarea {
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+}

@@ -19,7 +19,7 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
   - `cookie-consent`: full-width cookie banner with Accept / Reject (local; built on `contact-support`)
   - `mobile-menu`: slide-out menu on phones for the admin console and portals (current work, built on `cookie-consent`)
   - `main` stays on the Phase 1 prototype until the client is ready.
-- **Last updated:** 10 Nov 2026, after Stage 4 was rebuilt to the client's Stage 4 PDF (branch `stage-4-spec`)
+- **Last updated:** 11 Nov 2026, after Stages 5 and 6 were rebuilt to the client's Stage 4, 5, 6 PDF (branch `stage-5-6-spec`)
 
 ---
 
@@ -41,8 +41,8 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 | 2 · Vendor selection | 5–9 | ✅ Done (21 Oct) |
 | 3 · Compliance assessment | 10–16 | ✅ Done (22 Oct); rebuilt to the client's Stage 3 PDF (10 Nov) |
 | 4 · Contract analysis | 17–20 | ✅ Done (23 Oct); rebuilt to the client's Stage 4 PDF (10 Nov) |
-| 5 · Obligation extraction | 21–24 | ✅ Done (23 Oct) |
-| 6 · Transfer assessment | 25–28 | ✅ Done (23 Oct) |
+| 5 · Obligation extraction | 21–24 | ✅ Done (23 Oct); rebuilt to the client's Stage 4, 5, 6 PDF (11 Nov) |
+| 6 · Transfer assessment | 25–28 | ✅ Done (23 Oct); rebuilt to the client's Stage 4, 5, 6 PDF (11 Nov) |
 | 7 · Risk identification | 29–32 | ✅ Done (25 Oct) |
 | 8 · Remediation | 33–38 | ✅ Done (25 Oct) |
 | **9 · Monitoring and audit** | 39–43 | ✅ **Done (25 Oct)** |
@@ -837,6 +837,21 @@ Branch `stage-4-spec` (local, built on `stage-3-spec`).
 - **Tests:** API 119, all pass (Stage 4 rewritten: 9 tests). Frontend build passes; checked in a browser (upload form → findings → reviewer correction → history).
 - **Project documents** updated to version 1.1.
 
+### Stages 5 and 6 rebuilt to the client's "Input / Output Stage 4, 5, 6" PDF (11 Nov 2026) ✅
+Branch `stage-5-6-spec` (local, built on `stage-4-spec`, which now sits on `main` at fc02e4c with the Stage 3 and 4 files applied).
+- **Step 21 · Draft Obligation Register:** each obligation has the 12 fields: OBL-001, source document (DOC-xxx and its type), source clause (CLA-xxx, section, page), responsible party, beneficiary, description in plain words (the contract sentence is kept too), trigger (event, request, termination, scheduled, ongoing), deadline as written (duration, date or words such as "without undue delay"; otherwise **UNSPECIFIED**, never invented), frequency, required evidence (by clause category), consequence (remedy in the same section, general breach term, escalation route, or "not stated") and status.
+- **Step 22 · Mapping and checks:** 17 rules over the 20 clause categories (one rule may need several clauses: R-A28-05 needs CL-07 and CL-08). Legal or contractual basis comes from the Stage 4 findings, so Article 28 rules are legal only for a controller–processor relationship. Each obligation–rule pair has the 8 mapping fields. Checks: legal/contractual basis, wrong responsible party, completeness, conflicting deadlines or permissions, missing flow-down to sub-processors, evidence.
+- **Step 23 · Register:** 9 columns, filters for party, deadline, status and source document, search. An obligation opens to show every field and its mappings. Confidence below 0.6 or an unclear party = **Requires verification**; its monitoring trigger waits, and it cannot be reported missed until verified.
+- **Step 24 · Versions:** Obligation Register v1.0 with the 10 stored fields per obligation and the monitoring triggers. Verify / correct / reject an obligation, or confirm / reject a mapping → v1.1, v1.2 … (attributed, with a reason; the extracted values and the contract text are kept). A new contract analysis → v2.0, carrying the edits over.
+- **Step 25 · Routes between legal entities:** buyer → selected vendor; vendor → its teams in other countries, each sub-processor named in Stage 3 (SUB-01), cloud/storage locations, and "sub-processors not yet listed". 18 fields per route; encryption and access controls from the Stage 3 results. Visual data-flow map (entities as boxes, routes coloured by status).
+- **Step 26 · Legal decision sequence (the client's diagram):** regime → initiator and recipient → outside the UK and a separate legal entity (the vendor's own staff abroad are not a further restricted transfer; an unknown entity stops the decision) → UK adequacy (US, Canada, Japan need the recipient's eligibility) → safeguard (buyer's facts, contract CL-14 / SCC document for the countries it allows, or the vendor's TRF-03 answer) or exception → TRA and extra measures → instrument signed (a draft IDTA never satisfies it) → legal review. 12 decision fields per route.
+- **Step 27 · Findings:** 10 fields per route with NO RESTRICTED TRANSFER IDENTIFIED, ADEQUACY ROUTE, SAFEGUARD REVIEW, EXCEPTION REVIEW, INFORMATION REQUIRED or LEGAL REVIEW REQUIRED, plus questions for the buyer and the vendor. A safeguard route that is signed with a completed TRA is "conditional clearance subject to the other controls" — never "cleared".
+- **Step 28 · Saving:** Transfer Assessment Register v1.0, and each route saved on its own (`transfer_routes`) with the 12 stored fields. The buyer confirms facts for a route (entity, country, role, separate entity, safeguard, signed or draft, TRA and reference, extra measures, document references, legal review conclusion) with where they come from; facts are versioned (`transfer_route_facts`) and the routes are reassessed at once. A changed route gets the next route version.
+- **Later stages:** Stage 7 reads the new gaps (missing = failure, partial = gap) and each route's own severity; old rule IDs still map to themes for registers saved earlier. Report, search, vendor portal and admin panels show the new labels. Earlier registers and assessments keep their rule packs and are shown as before.
+- **Database:** `023_stage5_spec.sql`, `024_stage6_spec.sql`. **Rules:** `RP-2026.11-S5`, `RP-2026.11-S6`.
+- **Tests:** API 130, all pass (Stage 5: 14, Stage 6: 9). Frontend build passes; checked in a browser (register, obligation detail, data-flow map, route decision and facts form, phone width).
+- **Project documents** updated to version 1.2.
+
 ---
 
 ## 4. Decisions
@@ -894,8 +909,8 @@ Branch `stage-4-spec` (local, built on `stage-3-spec`).
 | 5 | Revised Step 5 (Stage 2) specification from Moumita. Stage 2 is built with provisional match rules; this will confirm or adjust them | Oct 2026 | Final Stage 2 match rules |
 | 8 | Stage 3: the specification arrived and is built. Still to confirm: continuity targets (RTO/RPO), minimum insured limit, critical-control policy (escalate or block), control weights, and the virus scanner for the live server | 10 Nov | Final Stage 3 settings (provisional values in use) |
 | 9 | Stage 4: the specification arrived and is built. Still to confirm: the keyword lists per clause category, whether a non-English contract should be translated, and whether the contract must wait for Stage 3 | 10 Nov | Final Stage 4 wording rules |
-| 10 | Stage 5: which rules each obligation is checked against, obligation categories, and how deadlines and frequencies are recorded | 23 Oct | Final Stage 5 rules (provisional ones are built and in use) |
-| 11 | Stage 6: the transfer rules (adequacy list to use, IDTA / Addendum, transfer risk assessment questions, how to treat sub-processors with unknown locations) | 23 Oct | Final Stage 6 rules (provisional ones are built and in use) |
+| 10 | Stage 5: the specification arrived and is built. Still to confirm: the rule list (17 rules over CL-01 … CL-20), the required-evidence list per category, the confidence threshold for verification (0.6) | 11 Nov | Final Stage 5 settings (provisional values in use) |
+| 11 | Stage 6: the specification arrived and is built. Still to confirm: the adequacy list (to check against the ICO), which Article 49 exceptions to allow, the TRA questions, and who may record a legal review | 11 Nov | Final Stage 6 settings (provisional values in use) |
 | 6 | Production hosting (UK region) for the API and database | Oct 2026 | Going live |
 | 7 | Evidence retention period (how long requirement documents and profiles are kept) | 20 Oct | Retention policy (Step 3 boundary) |
 
@@ -929,7 +944,7 @@ npm run dev                     # http://localhost:5173 (proxies /api to :4000)
 
 | Suite | Count | Last result |
 |---|---|---|
-| API (`server`, `npm test`) | 109 (Support tickets: 4, Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 13, Stage 3: 4, Stage 4: 6, Stage 5: 7, Stage 6: 5, Stage 7: 5, Stage 8: 7, Stage 9: 8, Completion items: 10, Website: 2, Sign-up source: 1) | ✅ all pass |
+| API (`server`, `npm test`) | 130 (Support tickets: 4, Stage 0: 13, Stage 1: 19, Roles: 5, Stage 2: 13, Stage 3: 11, Stage 4: 9, Stage 5: 14, Stage 6: 9, Stage 7: 5, Stage 8: 7, Stage 9: 8, Completion items: 10, Website: 2, Sign-up source: 1) | ✅ all pass |
 | Browser, Stage 0 + admin console | 49 checks | ✅ all pass |
 | Browser, Stage 1 (Steps 1–4) + clean build | 51 checks | ✅ all pass |
 | Browser, roles (buyer / vendor / admin / membership) | 32 checks | ✅ all pass |

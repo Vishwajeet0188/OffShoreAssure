@@ -44,7 +44,7 @@ export const THEMES = [
     impact: 4,
     controls: ['ASS-004'],
     topics: ['data_protection'],
-    rules: ['R-DP-01'],
+    rules: ['R-A28-01', 'R-A28-02', 'R-A28-07', 'R-DP-01'],
   },
   {
     id: 'security',
@@ -52,7 +52,7 @@ export const THEMES = [
     impact: 4,
     controls: ['ASS-002', 'ASS-003', 'ASS-009'],
     topics: ['security'],
-    rules: ['R-SEC-01'],
+    rules: ['R-A28-04', 'R-SEC-01'],
   },
   {
     id: 'incidents',
@@ -60,7 +60,7 @@ export const THEMES = [
     impact: 4,
     controls: ['ASS-007'],
     topics: ['breach_notification'],
-    rules: ['R-BRE-01'],
+    rules: ['R-A28-08', 'R-CON-01', 'R-BRE-01'],
   },
   {
     id: 'subprocessors',
@@ -68,7 +68,7 @@ export const THEMES = [
     impact: 3,
     controls: ['ASS-006'],
     topics: ['subprocessors'],
-    rules: ['R-SUB-01'],
+    rules: ['R-A28-05', 'R-A28-06', 'R-SUB-01'],
   },
   {
     id: 'identity',
@@ -84,7 +84,7 @@ export const THEMES = [
     impact: 3,
     controls: ['ASS-010'],
     topics: ['confidentiality'],
-    rules: ['R-DP-02'],
+    rules: ['R-A28-03', 'R-DP-02'],
   },
   {
     id: 'exit',
@@ -92,7 +92,7 @@ export const THEMES = [
     impact: 3,
     controls: ['ASS-014'],
     topics: ['return_deletion'],
-    rules: ['R-EXIT-01'],
+    rules: ['R-A28-09', 'R-CON-04', 'R-EXIT-01'],
   },
   {
     id: 'continuity',
@@ -100,7 +100,7 @@ export const THEMES = [
     impact: 3,
     controls: ['ASS-008'],
     topics: ['business_continuity'],
-    rules: [],
+    rules: ['R-CON-03'],
   },
   { id: 'sector', name: 'Sector rules', impact: 3, controls: ['ASS-015'], topics: [], rules: [] },
   {
@@ -109,7 +109,7 @@ export const THEMES = [
     impact: 2,
     controls: ['ASS-013'],
     topics: ['audit_rights'],
-    rules: ['R-AUD-01'],
+    rules: ['R-A28-10', 'R-AUD-01'],
   },
   {
     id: 'service',
@@ -117,7 +117,7 @@ export const THEMES = [
     impact: 2,
     controls: ['ASS-012'],
     topics: ['service_levels'],
-    rules: ['R-SLA-01'],
+    rules: ['R-CON-02', 'R-SLA-01'],
   },
   {
     id: 'insurance',
@@ -133,7 +133,7 @@ export const THEMES = [
     impact: 2,
     controls: [],
     topics: ['liability', 'termination', 'governing_law'],
-    rules: [],
+    rules: ['R-CON-05', 'R-CON-06'],
   },
   {
     id: 'requirement',
@@ -168,6 +168,7 @@ export const ratingFor = score => RATINGS.find(r => score >= r.min);
 const themeById = id => THEMES.find(t => t.id === id);
 const themeForControl = id => THEMES.find(t => t.controls.includes(id))?.id || 'requirement';
 const themeForTopic = id => THEMES.find(t => t.topics.includes(id))?.id || 'contract_terms';
+// Stage 5 rule IDs (RP-2026.11-S5); the older IDs (R-DP-01 …) are kept for registers saved before it.
 const themeForRule = id => THEMES.find(t => t.rules.includes(id))?.id || 'contract_terms';
 
 // Stage 1 answers that belong to a theme other than "unconfirmed requirement details".
@@ -307,13 +308,14 @@ export function collectFindings({
     });
   }
 
-  // Stage 5: rules with no obligation in the contract.
+  // Stage 5: rules with no obligation (or only part of one) in the contract.
   for (const gap of obligations?.gaps || []) {
     add(themeForRule(gap.ruleId), {
       stage: 5,
       source: 'Obligation extraction',
       ref: gap.ruleId,
-      severity: 'fail',
+      // A rule with no obligation is a failure; a rule only partly covered is a gap.
+      severity: gap.kind === 'PARTIAL' ? 'gap' : 'fail',
       owner: 'Buyer',
       text: `${gap.text} (${gap.source})`,
     });
@@ -321,16 +323,26 @@ export function collectFindings({
 
   // Stage 6: transfer routes that still need action.
   for (const route of transfers?.routes || []) {
-    const severity = ROUTE_SEVERITY[route.status];
+    // Routes saved with the client's specification carry their own severity; older ones use the status.
+    const severity = 'riskSeverity' in route ? route.riskSeverity : ROUTE_SEVERITY[route.status];
     if (!severity) continue;
-    const theme = route.uses?.includes('Sub-processors') ? 'subprocessors' : 'transfers';
+
+    const isSubprocessor =
+      route.subprocessorRelationship?.isSubprocessor || route.uses?.includes('Sub-processors');
+    const theme = isSubprocessor ? 'subprocessors' : 'transfers';
+
+    // "Krakow IT → BR Helpdesk Ltda (Brazil): safeguard review. …" or, for older routes, "United Kingdom → India: …".
+    const text = route.output
+      ? `${route.exporter.name} → ${route.importer.name} (${route.toName}): ${route.statusLabel.toLowerCase()}. ${route.output.rationale}`
+      : `${route.fromName} → ${route.toName}: ${route.statusLabel.toLowerCase()}.`;
+
     add(theme, {
       stage: 6,
       source: 'Transfer assessment',
       ref: route.id,
       severity,
       owner: severity === 'unknown' || severity === 'gap' ? 'Vendor' : 'Buyer',
-      text: `${route.fromName} → ${route.toName}: ${route.statusLabel.toLowerCase()}.`,
+      text,
     });
   }
 
