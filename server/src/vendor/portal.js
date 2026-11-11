@@ -184,8 +184,8 @@ export async function vendorSearch(vendorId, text) {
       [vendorId, pattern],
     ),
     query(
-      `SELECT a.reference, item ->> 'id' AS id, item ->> 'text' AS text,
-              item -> 'source' ->> 'clauseNumber' AS clause
+      `SELECT a.reference, item ->> 'id' AS id, coalesce(item ->> 'description', item ->> 'text') AS text,
+              coalesce(item -> 'sourceClause' ->> 'section', item -> 'source' ->> 'clauseNumber') AS clause
          FROM (SELECT DISTINCT ON (assessment_id) assessment_id, obligations
                  FROM obligation_registers
                 ORDER BY assessment_id, version DESC) latest
@@ -193,7 +193,8 @@ export async function vendorSearch(vendorId, text) {
          CROSS JOIN LATERAL jsonb_array_elements(latest.obligations) AS item
         WHERE a.selected_vendor_id = $1
           AND item ->> 'party' IN ('vendor', 'both')
-          AND (item ->> 'text' ILIKE $2 OR item ->> 'id' ILIKE $2)
+          AND coalesce(item ->> 'status', '') <> 'REJECTED'
+          AND (item ->> 'text' ILIKE $2 OR item ->> 'description' ILIKE $2 OR item ->> 'id' ILIKE $2)
         LIMIT ${PER_GROUP}`,
       [vendorId, pattern],
     ),

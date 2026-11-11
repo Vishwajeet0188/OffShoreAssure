@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../lib/api.js';
 import { fmtTime } from '../../lib/format.js';
-import { TYPE_TONE, describeTiming } from '../../lib/obligations.js';
+import { TYPE_TONE, describeTiming, sourceOf, consequenceOf } from '../../lib/obligations.js';
 import { PageHead } from '../../components/common/PageHead.jsx';
 import { Icon } from '../../components/common/Icon.jsx';
 import Loading from '../../components/extras/Loading.jsx';
@@ -56,7 +56,9 @@ export function VendorObligationsList() {
                     <td>{register.buyerName}</td>
                     <td>
                       {register.yourObligations}
-                      <div className="note">from contract v{register.contractVersion}</div>
+                      <div className="note">
+                        register v{register.label} · contract v{register.contractVersion}
+                      </div>
                     </td>
                     <td className="mono">{fmtTime(register.createdAt)}</td>
                     <td style={{ textAlign: 'right' }}>
@@ -109,7 +111,7 @@ export default function VendorObligations() {
       <PageHead
         eyebrow={`Vendor · Obligations · ${data.reference}`}
         title={data.title}
-        lead={`Your obligations to ${data.buyerName}, from contract v${data.contractVersion} (register v${data.version}, ${fmtTime(data.createdAt)}).`}
+        lead={`Your obligations to ${data.buyerName}, from contract v${data.contractVersion} (Obligation Register v${data.label}, ${fmtTime(data.createdAt)}).`}
       />
 
       {groups.map(group => (
@@ -131,20 +133,34 @@ export default function VendorObligations() {
                       : 'Must'}
                 </span>
                 <div>
-                  <p>{obligation.text}</p>
+                  {/* What to do, in plain words, then the contract's own sentence. */}
+                  <p>{obligation.description || obligation.text}</p>
+                  {obligation.description ? <p className="note ob-quote">“{obligation.text}”</p> : null}
+
                   <div className="note">
-                    Clause {obligation.source.clauseNumber}
-                    {describeTiming(obligation) ? (
+                    {sourceOf(obligation)}
+                    {describeTiming(obligation, data.frequencies) ? (
                       <>
                         {' '}
-                        · <b>{describeTiming(obligation)}</b>
+                        · <b>{describeTiming(obligation, data.frequencies)}</b>
                       </>
                     ) : null}
+                    {obligation.deadline?.type === 'UNSPECIFIED' && obligation.type !== 'Right'
+                      ? ' · no deadline stated'
+                      : ''}
                     {obligation.party === 'both' ? ' · applies to both parties' : ''}
                   </div>
-                  {obligation.type !== 'Right' && obligation.consequence ? (
+
+                  {obligation.requiredEvidence?.length ? (
+                    <div className="note">Keep as evidence: {obligation.requiredEvidence.join('; ')}</div>
+                  ) : null}
+
+                  {obligation.type !== 'Right' && consequenceOf(obligation) ? (
                     <div className="note">
-                      If missed: {obligation.consequence.text} (clause {obligation.consequence.clauseNumber})
+                      If missed: {consequenceOf(obligation).text}
+                      {consequenceOf(obligation).clause
+                        ? ` (clause ${consequenceOf(obligation).clause})`
+                        : ''}
                     </div>
                   ) : null}
                 </div>

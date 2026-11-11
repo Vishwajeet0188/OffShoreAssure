@@ -16,7 +16,7 @@ process.env.STORAGE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'oa-done-'));
 const { pool } = await import('../src/db.js');
 const { migrate } = await import('../src/migrate.js');
 const { createApp } = await import('../src/app.js');
-const { extractObligations } = await import('../src/engine/obligations.js');
+const { extractObligations, monitoringTriggers } = await import('../src/engine/obligations.js');
 const { EXAMPLE, startStage3, completeStage3, uploadSpecContract } = await import('./fixtures.js');
 const bcrypt = (await import('bcryptjs')).default;
 
@@ -224,22 +224,29 @@ test('engine: each obligation gets a trigger, a consequence and whether it is mo
     },
   ];
   const obs = extractObligations(clauses, { buyerName: 'UK Company Ltd', vendorName: 'Vendor A Test Ltd' });
-  const by = n => obs.find(o => o.source.clauseNumber === n);
-  assert.equal(by('3.1').trigger, 'within 30 minutes');
-  assert.equal(by('3.1').monitored, true);
+  const monitors = monitoringTriggers(obs);
+  const by = n => obs.find(o => o.sourceClause.section === n);
+  const monitored = n => monitors.some(m => m.obligationId === by(n).id);
+
+  assert.deepEqual(by('3.1').deadline, { type: 'DURATION', text: 'within 30 minutes' });
+  assert.equal(by('3.1').trigger.type, 'EVENT', 'a priority incident starts the clock');
+  assert.ok(monitored('3.1'));
   assert.match(by('3.1').consequence.text, /Service credits/);
-  assert.equal(by('3.1').consequence.clauseNumber, '3.2', 'found in the same section');
-  assert.equal(by('4.1').consequence, null, 'not stated');
-  assert.equal(by('4.1').monitored, false);
+  assert.equal(by('3.1').consequence.clauseRef, '3.2', 'found in the same section');
+  assert.equal(by('4.1').consequence.type, 'NOT_STATED', 'not stated, and never invented');
+  assert.equal(by('4.1').deadline.type, 'UNSPECIFIED');
+  assert.ok(!monitored('4.1'), 'a continuous duty with no deadline has nothing to watch');
   assert.equal(by('9.1').type, 'Right');
   assert.equal(by('9.1').consequence, null);
-  assert.equal(by('9.1').monitored, false);
+  assert.ok(!monitored('9.1'));
 });
 
 test('a missed obligation becomes a Stage 8 action for its owner; not twice; rights cannot be missed', async () => {
   await runStagesTwoToFive();
   let r = await buyer('GET', `/assessments/${ref}/obligations`);
-  const monitored = r.body.register.obligations.find(o => o.monitored && o.party === 'vendor');
+  // An active monitoring trigger owned by the vendor (verified or confident enough to escalate).
+  const trigger = r.body.register.monitors.find(m => m.state === 'ACTIVE' && m.owner === 'vendor');
+  const monitored = r.body.register.obligations.find(o => o.id === trigger.obligationId);
   const right = r.body.register.obligations.find(o => o.type === 'Right');
   assert.ok(monitored && monitored.trigger && 'consequence' in monitored);
   assert.equal(

@@ -110,13 +110,14 @@ async function searchContracts(buyerId, pattern) {
 
 async function searchObligations(buyerId, pattern) {
   const { rows } = await query(
-    `SELECT a.reference, item ->> 'id' AS id, item ->> 'text' AS text, item -> 'source' ->> 'clauseNumber' AS clause
+    `SELECT a.reference, item ->> 'id' AS id, coalesce(item ->> 'description', item ->> 'text') AS text, coalesce(item -> 'sourceClause' ->> 'section', item -> 'source' ->> 'clauseNumber') AS clause
        FROM (SELECT DISTINCT ON (assessment_id) assessment_id, obligations
                FROM obligation_registers
               ORDER BY assessment_id, version DESC) latest
        JOIN assessments a ON a.id = latest.assessment_id
        CROSS JOIN LATERAL jsonb_array_elements(latest.obligations) AS item
-      WHERE a.buyer_id = $1 AND (item ->> 'text' ILIKE $2 OR item ->> 'id' ILIKE $2)
+      WHERE a.buyer_id = $1 AND coalesce(item ->> 'status', '') <> 'REJECTED'
+          AND (item ->> 'text' ILIKE $2 OR item ->> 'description' ILIKE $2 OR item ->> 'id' ILIKE $2)
       LIMIT ${PER_GROUP}`,
     [buyerId, pattern],
   );
