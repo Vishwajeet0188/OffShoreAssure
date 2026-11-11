@@ -1,4 +1,4 @@
-/* Stage 4 · Contract analysis API tests (steps 17–20). */
+/* Stage 4 · Contract analysis tests (client specification "Input / Output Stage 4, 5, 6", steps 17–20). */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import os from 'node:os';
@@ -16,8 +16,10 @@ process.env.STORAGE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'oa-s4-'));
 const { pool } = await import('../src/db.js');
 const { migrate } = await import('../src/migrate.js');
 const { createApp } = await import('../src/app.js');
-const { analyseContract, splitIntoClauses, findKeyTerms } = await import('../src/engine/clauses.js');
-const { EXAMPLE } = await import('./fixtures.js');
+const { analyseContract, splitIntoClauses, findKeyTerms, CATEGORIES } = await import(
+  '../src/engine/clauses.js'
+);
+const { EXAMPLE, startStage3, completeStage3, uploadSpecContract } = await import('./fixtures.js');
 const bcrypt = (await import('bcryptjs')).default;
 
 let server, base;
@@ -50,8 +52,20 @@ async function signUp(email, role) {
 }
 let admin, buyer, vendor, other, ref, vendorId;
 const fixture = name => fs.readFileSync(new URL('./fixtures/' + name, import.meta.url));
-const uploadContract = (c, query, data, type = 'application/pdf') =>
-  c('POST', `/assessments/${ref}/contract?${new URLSearchParams(query)}`, null, { type, data });
+const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const upload = (data, meta = {}) => uploadSpecContract(buyer, ref, data, meta);
+const ALL = [
+  'ASS-002',
+  'ASS-004',
+  'ASS-005',
+  'ASS-006',
+  'ASS-007',
+  'ASS-008',
+  'ASS-012',
+  'ASS-013',
+  'ASS-014',
+];
+const status = (analysis, id) => analysis.findings.find(f => f.categoryId === id).status;
 
 before(async () => {
   await pool.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
@@ -108,151 +122,301 @@ async function selectVendorAndStartCompliance() {
     approverId: (await buyer('GET', '/me')).body.user.id,
     confirmedAt: new Date().toISOString(),
   });
-  await buyer('POST', `/assessments/${ref}/compliance`);
+  assert.equal((await startStage3(buyer, ref)).status, 201);
 }
 
 async function vendorSubmitsCompliance() {
-  const questionnaire = (await vendor('GET', `/vendor/compliance/${ref}`)).body.compliance.questionnaire;
-  const answers = {};
-  for (const control of questionnaire)
-    for (const question of control.questions) answers[question.id] = { answer: 'Yes' };
-  await vendor('PUT', `/vendor/compliance/${ref}/answers`, { answers });
-  const r = await vendor('POST', `/vendor/compliance/${ref}/submit`);
+  const r = await completeStage3(vendor, ref);
   assert.equal(r.status, 201, JSON.stringify(r.body));
 }
 
-test('engine: numbered clauses are split, classified and key terms found', () => {
+test('engine step 18: clauses with the 10 fields, categories CL-01 to CL-20, key terms', () => {
   const pages = [fixture('contract.txt').toString('utf8')];
   const clauses = splitIntoClauses(pages);
   assert.equal(clauses.length, 15);
   assert.deepEqual(clauses.map(c => c.number).slice(0, 3), ['1.1', '2.1', '3.1']);
-  assert.equal(clauses.find(c => c.number === '6.1').heading, 'Personal Data Breach');
+  assert.equal(CATEGORIES.length, 20);
 
-  const analysis = analyseContract(pages, { applicableControls: ['ASS-004', 'ASS-005'] });
+  const analysis = analyseContract(pages, { applicableControls: ALL });
   const breach = analysis.clauses.find(c => c.number === '6.1');
-  assert.equal(breach.topics[0].topicId, 'breach_notification');
+  for (const k of [
+    'id',
+    'documentId',
+    'page',
+    'number',
+    'heading',
+    'text',
+    'category',
+    'responsibleParty',
+    'confidence',
+    'reviewStatus',
+  ])
+    assert.ok(k in breach, k);
+  assert.match(breach.id, /^CLA-\d{3}$/);
+  assert.equal(breach.documentId, 'DOC-001');
+  assert.equal(breach.category, 'CL-15');
+  assert.equal(breach.responsibleParty, 'Supplier');
+  assert.ok(breach.confidence > 0.5 && breach.confidence <= 1);
+  assert.equal(
+    breach.topics[0].topicId,
+    'breach_notification',
+    'older topic tags are kept for Stages 5 and 6',
+  );
   assert.ok(breach.keyTerms.some(t => t.value === 'within 24 hours'));
-  assert.equal(analysis.notFound.length, 0, 'the example contract covers every expected topic');
-  assert.ok(!/\bcompliant\b/i.test(JSON.stringify(analysis)));
-
   assert.deepEqual(
     findKeyTerms('availability of 99.5% and a cap of £250,000').map(t => t.value),
     ['99.5%', '£250,000'],
   );
+  assert.ok(!/\bcompliant\b/i.test(JSON.stringify(analysis)));
 });
 
-test('engine: an expected topic with no clause is reported as not found', () => {
-  const pages = [
-    '1. Services\n1.1 The Supplier shall provide IT support services to the Customer.\n2. Fees\n2.1 The Customer shall pay the fees within 30 days of invoice.',
-  ];
-  const analysis = analyseContract(pages);
-  const missing = analysis.notFound.map(item => item.topicId);
-  for (const topic of ['data_protection', 'breach_notification', 'audit_rights', 'international_transfer']) {
-    assert.ok(missing.includes(topic), topic + ' should be reported');
-  }
+test('engine step 20: FOUND, PARTIAL, MISSING, NOT APPLICABLE, HUMAN REVIEW with the 9 finding fields', () => {
+  const pages = [fixture('contract.txt').toString('utf8')];
+  let a = analyseContract(pages, { applicableControls: ALL });
+  for (const k of [
+    'clauseId',
+    'heading',
+    'page',
+    'sourceRef',
+    'rule',
+    'status',
+    'explanation',
+    'confidence',
+    'recommendedAction',
+  ])
+    assert.ok(k in a.findings[0], k);
+  assert.equal(status(a, 'CL-05'), 'FOUND', 'confidentiality, section 4.2');
+  assert.match(a.findings.find(f => f.categoryId === 'CL-05').sourceRef, /§4\.2/);
+  assert.equal(status(a, 'CL-06'), 'FOUND');
+  assert.equal(status(a, 'CL-14'), 'FOUND', 'transfers with the IDTA');
+  assert.equal(status(a, 'CL-08'), 'MISSING', 'no notice-and-objection clause for subprocessor changes');
+  assert.equal(status(a, 'CL-13'), 'PARTIAL', 'audit right without information rights');
+  assert.equal(a.findings.find(f => f.categoryId === 'CL-04').rule, 'UK GDPR Art. 28(3)(a)');
+  assert.equal(a.findings.find(f => f.categoryId === 'CL-19').rule, 'Contract term (not statutory)');
+  assert.ok(a.notFound.some(n => n.categoryId === 'CL-08' && n.topicId === 'subprocessors'));
+
+  // The specification's example: notice is given but the objection procedure is unclear.
+  a = analyseContract(
+    [
+      '1. Sub-processors\n1.1 The Supplier shall notify the Customer of any new sub-processor 30 days in advance.',
+    ],
+    { applicableControls: ALL },
+  );
+  assert.equal(status(a, 'CL-08'), 'PARTIAL');
+  assert.match(a.findings.find(f => f.categoryId === 'CL-08').explanation, /a way to object .*unclear/);
+
+  // A heading alone is not proof.
+  a = analyseContract(['1. Audit\n1.1 To be agreed.'], { applicableControls: ALL });
+  assert.equal(status(a, 'CL-13'), 'PARTIAL');
+  assert.match(a.findings.find(f => f.categoryId === 'CL-13').explanation, /heading alone is not proof/);
+
+  // No controller–processor relationship: Article 28 terms are not required; commercial ones still are.
+  a = analyseContract(pages, { applicableControls: ['ASS-012'], data: { personalData: 'No' } });
+  assert.equal(status(a, 'CL-04'), 'NOT_APPLICABLE');
+  assert.equal(status(a, 'CL-14'), 'NOT_APPLICABLE');
+  assert.equal(status(a, 'CL-16'), 'FOUND');
+
+  // Text with no clause numbering is read as paragraphs: nothing is reported as missing.
+  a = analyseContract(
+    ['This agreement covers IT support for the customer and its staff in the United Kingdom.'],
+    {
+      applicableControls: ALL,
+    },
+  );
+  assert.equal(a.status, 'HUMAN_REVIEW');
+  assert.equal(status(a, 'CL-08'), 'HUMAN_REVIEW');
+  assert.equal(a.notFound.length, 0);
 });
 
 test('step 17: blocked until a vendor is selected and the compliance answers are submitted', async () => {
-  let r = await uploadContract(buyer, { name: 'contract.pdf' }, fixture('contract.pdf'));
+  let r = await upload(fixture('contract.pdf'));
   assert.equal(r.status, 409);
   assert.match(r.body.message, /Select a vendor/);
-
   await selectVendorAndStartCompliance();
-  r = await uploadContract(buyer, { name: 'contract.pdf' }, fixture('contract.pdf'));
+  r = await upload(fixture('contract.pdf'));
   assert.equal(r.status, 409);
   assert.match(r.body.message, /not submitted/);
-
   await vendorSubmitsCompliance();
   const state = await buyer('GET', `/assessments/${ref}/contract`);
   assert.equal(state.body.blocked, null);
-  assert.equal(state.body.versions.length, 0);
+  assert.equal(state.body.documents.length, 0);
+  assert.equal(state.body.relationship.processor, true);
 });
 
-test('steps 17–20: a PDF is uploaded, analysed, saved and shown; timeline moves to Stage 5', async () => {
-  const bad = await uploadContract(buyer, { name: 'contract.exe' }, Buffer.from('x'));
-  assert.equal(bad.status, 400);
-
-  const scanned = await uploadContract(buyer, { name: 'scan.txt' }, Buffer.from('page 1'), 'text/plain');
-  assert.equal(scanned.status, 422, 'too little text is refused');
-
-  const r = await uploadContract(
-    buyer,
-    { name: 'contract.pdf', label: 'Draft from vendor' },
-    fixture('contract.pdf'),
+test('step 17: the 11 fields are checked; unsafe and unsupported files are refused', async () => {
+  const field = async (meta, expected) => {
+    const r = await upload(fixture('contract.pdf'), meta);
+    assert.equal(r.status, 400, JSON.stringify(meta));
+    assert.equal(r.body.field, expected);
+  };
+  await field({ assessmentId: '00000000-0000-0000-0000-000000000000' }, 'assessmentId');
+  await field({ documentType: 'LETTER' }, 'documentType');
+  await field({ title: '' }, 'title');
+  await field({ title: 'x'.repeat(201) }, 'title');
+  await field({ buyerEntity: vendorId }, 'buyerEntity');
+  await field(
+    {
+      supplierEntity: (await pool.query(`SELECT id FROM organisations WHERE name = 'UK Company Ltd'`)).rows[0]
+        .id,
+    },
+    'supplierEntity',
   );
-  assert.equal(r.status, 201, JSON.stringify(r.body));
-  assert.equal(r.body.shownVersion, 1);
-  assert.equal(r.body.versions[0].pages, 2);
-  assert.equal(r.body.analysis.totals.clauses, 15);
-  assert.ok(r.body.analysis.totals.relevant >= 12);
-  assert.match(r.body.analysis.snapshotSha256, /^[0-9a-f]{64}$/);
+  await field({ governingLaw: 'Narnia' }, 'governingLaw');
+  await field({ executionStatus: 'FINAL' }, 'executionStatus');
+  await field({ effectiveOn: '' }, 'effectiveOn');
+  await field({ effectiveOn: '2027-01-01', expiresOn: '2026-01-01' }, 'expiryExplanation');
+  await field({ language: 'xx' }, 'language');
+  await field({ name: 'contract.txt' }, 'file');
+  // Malware and file-type checks.
+  let r = await upload(Buffer.from('MZ\x90\x00 program'), { name: 'contract.pdf' });
+  assert.equal(r.body.error, 'file_blocked');
+  r = await upload(Buffer.from('hello'), { name: 'contract.pdf' });
+  assert.equal(r.body.error, 'file_blocked', 'content does not match the extension');
+});
 
-  const assessment = await buyer('GET', `/assessments/${ref}`);
-  for (const step of [17, 18, 19, 20]) {
+test('steps 17–20: a signed MSA is uploaded, analysed and saved; the clause table and timeline', async () => {
+  const r = await upload(fixture('contract.pdf'));
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  assert.deepEqual(
+    { id: r.body.upload.documentId, v: r.body.upload.version, s: r.body.upload.analysisStatus },
+    { id: 'DOC-001', v: 1, s: 'ANALYSED' },
+  );
+  const a = r.body.analysis;
+  assert.equal(a.version, 1);
+  assert.equal(a.totals.clauses, 15);
+  assert.equal(a.findings.length, 20);
+  assert.ok(a.totals.found >= 8 && a.totals.missing >= 3);
+  assert.equal(status(a, 'CL-05'), 'FOUND');
+  assert.match(a.snapshotSha256, /^[0-9a-f]{64}$/);
+  const doc = r.body.documents[0];
+  assert.equal(doc.documentType, 'MSA');
+  assert.equal(doc.executed, true);
+  assert.equal(doc.governingLaw.name, 'England and Wales');
+  assert.match(doc.textSha256, /^[0-9a-f]{64}$/);
+  assert.ok(doc.extractionJobId);
+  assert.ok(r.body.versions[0].trigger === 'upload');
+
+  const tl = (await buyer('GET', `/assessments/${ref}`)).body.timeline;
+  for (const step of [17, 18, 19, 20])
     assert.ok(
-      assessment.body.timeline.some(t => t.stage === 4 && t.step === step),
+      tl.some(t => t.stage === 4 && t.step === step),
       'timeline step ' + step,
     );
-  }
-  assert.ok(
-    assessment.body.timeline.some(t => t.stage === 5 && t.status === 'next'),
-    'Stage 5 is next',
-  );
-
-  const download = await buyer('GET', `/assessments/${ref}/contract/1/file`);
-  assert.equal(download.status, 200);
+  assert.ok(tl.some(t => t.stage === 5 && t.status === 'next'));
+  const download = await buyer('GET', `/assessments/${ref}/contract/file/${doc.id}`);
   assert.ok(download.body.equals(fixture('contract.pdf')), 'the original file comes back unchanged');
-
-  const list = await buyer('GET', '/assessments');
-  assert.equal(list.body.assessments[0].contract.version, 1);
+  assert.equal((await buyer('GET', '/assessments')).body.assessments[0].contract.version, 1);
 });
 
-test('a new version needs a reason; earlier versions are kept and cannot be changed', async () => {
-  let r = await uploadContract(
-    buyer,
-    { name: 'contract.docx' },
-    fixture('contract.docx'),
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  );
-  assert.equal(r.status, 400);
-  assert.equal(r.body.error, 'reason_required');
-
-  r = await uploadContract(
-    buyer,
-    { name: 'contract.docx', reason: 'Signed copy received from the vendor' },
-    fixture('contract.docx'),
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  );
+test('a draft DPA joins the set; an unsigned draft is not treated as executed; new versions need a reason', async () => {
+  let r = await upload(fixture('contract.docx'), {
+    name: 'dpa-draft.docx',
+    type: DOCX,
+    documentType: 'DPA',
+    title: 'Data Processing Agreement',
+    executionStatus: 'DRAFT',
+    effectiveOn: '',
+  });
   assert.equal(r.status, 201, JSON.stringify(r.body));
-  assert.equal(r.body.shownVersion, 2);
-  assert.equal(r.body.versions.length, 2);
+  assert.equal(r.body.upload.documentId, 'DOC-002');
+  assert.equal(r.body.analysis.version, 2);
+  assert.equal(r.body.analysis.totals.documents, 2);
+  assert.ok(r.body.analysis.preliminary.some(p => /DOC-002 .*unsigned draft/.test(p)));
+  assert.equal(r.body.documents.find(d => d.documentId === 'DOC-002').executed, false);
 
-  const first = await buyer('GET', `/assessments/${ref}/contract?version=1`);
-  assert.equal(first.body.shownVersion, 1);
-  assert.equal(first.body.versions.find(v => v.version === 1).fileName, 'contract.pdf');
+  r = await upload(fixture('contract.docx'), {
+    name: 'dpa.docx',
+    type: DOCX,
+    documentType: 'DPA',
+    replaces: 'DOC-002',
+  });
+  assert.equal(r.status, 400);
+  assert.equal(r.body.field, 'reason');
+  r = await upload(fixture('contract.docx'), {
+    name: 'dpa-signed.docx',
+    type: DOCX,
+    documentType: 'DPA',
+    title: 'Data Processing Agreement',
+    replaces: 'DOC-002',
+    reason: 'Signed copy received from the vendor',
+  });
+  assert.equal(r.status, 201);
+  assert.equal(r.body.upload.documentId, 'DOC-002');
+  assert.equal(r.body.upload.version, 2);
+  assert.equal(r.body.analysis.totals.documents, 2, 'the set still has two documents');
+  assert.ok(!r.body.analysis.preliminary.some(p => /unsigned draft/.test(p)));
+  assert.equal(r.body.documents.length, 3, 'the earlier version is kept');
+});
 
+test('an unreadable file is kept for manual review; nothing is reported missing from it', async () => {
+  const r = await upload(Buffer.from('%PDF-1.4 scanned image only'), {
+    name: 'schedule.pdf',
+    documentType: 'OTHER',
+    title: 'Security Schedule',
+  });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  assert.equal(r.body.upload.extractionStatus, 'UNREADABLE');
+  assert.equal(r.body.analysis.status, 'HUMAN_REVIEW');
+  assert.ok(r.body.analysis.quality.reasons.some(x => /DOC-003 could not be read/.test(x)));
+  assert.equal(
+    r.body.analysis.notFound.length,
+    0,
+    'a missing clause cannot be reported while a document is unreadable',
+  );
+  assert.ok(r.body.analysis.findings.some(f => f.status === 'HUMAN_REVIEW'));
+});
+
+test('step 19: reviewer corrections are attributed, saved as a new version and never change the original', async () => {
+  const before = (await buyer('GET', `/assessments/${ref}/contract`)).body;
+  const audit = before.analysis.clauses.find(c => c.number === '9.1');
+  let r = await buyer('POST', `/assessments/${ref}/contract/review`, {
+    action: 'SET_FINDING',
+    categoryId: 'CL-13',
+    status: 'FOUND',
+  });
+  assert.equal(r.status, 400, 'a note is needed');
+  r = await buyer('POST', `/assessments/${ref}/contract/review`, {
+    action: 'SET_FINDING',
+    categoryId: 'CL-13',
+    status: 'FOUND',
+    note: 'Information rights are in Schedule 4, checked by hand.',
+  });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  assert.equal(r.body.analysis.version, before.analysis.version + 1);
+  assert.equal(r.body.analysis.trigger, 'review');
+  const f = r.body.analysis.findings.find(x => x.categoryId === 'CL-13');
+  assert.equal(f.status, 'FOUND');
+  assert.equal(f.reviewed.by, 'sarah@ukcompany.example');
+  r = await buyer('POST', `/assessments/${ref}/contract/review`, { action: 'VERIFY', clauseKey: audit.key });
+  const verified = r.body.analysis.clauses.find(c => c.key === audit.key);
+  assert.equal(verified.reviewStatus, 'VERIFIED');
+  assert.equal(verified.text, audit.text, 'the extracted text is not changed');
+  assert.equal(r.body.analysis.corrections.length, 2);
+  const earlier = await buyer('GET', `/assessments/${ref}/contract?version=${before.analysis.version}`);
+  assert.equal(
+    earlier.body.analysis.findings.find(x => x.categoryId === 'CL-13').status,
+    before.analysis.findings.find(x => x.categoryId === 'CL-13').status,
+    'history kept',
+  );
   await assert.rejects(
     pool.query('UPDATE contract_documents SET file_name = $1', ['changed.pdf']),
     /append-only/,
   );
   await assert.rejects(pool.query('DELETE FROM contract_analyses'), /append-only/);
-
   const events = (
     await pool.query(`SELECT event FROM audit_events WHERE stage = 'stage-4' ORDER BY id`)
   ).rows.map(e => e.event);
-  assert.deepEqual(events, [
-    'contract.uploaded',
-    'contract.analysed',
-    'contract.version_uploaded',
-    'contract.analysed',
-  ]);
+  assert.ok(
+    events.includes('contract.corrected') &&
+      events.includes('contract.version_uploaded') &&
+      events.includes('contract.file_blocked'),
+  );
 });
 
-test('another buyer cannot see or upload; admin sees the contract on the assessment', async () => {
+test('another buyer cannot see or upload; admin sees the contract set on the assessment', async () => {
   assert.equal((await other('GET', `/assessments/${ref}/contract`)).status, 404);
   assert.equal((await vendor('GET', `/assessments/${ref}/contract`)).status, 403);
-
   const detail = await admin('GET', `/admin/assessments/${ref}`);
-  assert.equal(detail.body.contract.versions.length, 2);
-  assert.equal(detail.body.contract.analysis.totals.clauses, 15);
+  assert.equal(detail.body.contract.documents.length, 4);
+  assert.equal(detail.body.contract.analysis.findings.length, 20);
 });

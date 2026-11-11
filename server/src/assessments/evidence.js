@@ -29,16 +29,28 @@ function expiryStatus(expiresOn) {
   return 'Valid';
 }
 
+const POLICIES = [
+  'policy',
+  'INFOSEC_POLICY',
+  'PRIVACY_POLICY',
+  'ACCESS_POLICY',
+  'INCIDENT_PLAN',
+  'BCP',
+  'DR_PLAN',
+  'HR_POLICY',
+];
+const CERTIFICATES = ['certificate', 'insurance', 'CERTIFICATION', 'INSURANCE_CERT', 'REGISTRATION'];
+
 function groupOf(docType) {
-  if (docType === 'policy') return 'Policies';
-  if (docType === 'certificate' || docType === 'insurance') return 'Certificates';
+  if (POLICIES.includes(docType)) return 'Policies';
+  if (CERTIFICATES.includes(docType)) return 'Certificates';
   return 'Other';
 }
 
 export async function buyerEvidence(buyerId) {
   const [contracts, questionnaire, actions] = await Promise.all([
     query(
-      `SELECT c.id, c.file_name, c.version, c.label, c.uploaded_at, a.reference, v.name AS vendor,
+      `SELECT c.id, c.file_name, c.version, c.document_no, c.document_type, c.label, c.uploaded_at, a.reference, v.name AS vendor,
               EXISTS (SELECT 1 FROM contract_analyses x WHERE x.contract_id = c.id) AS analysed
          FROM contract_documents c
          JOIN assessments a ON a.id = c.assessment_id
@@ -71,7 +83,7 @@ export async function buyerEvidence(buyerId) {
       id: row.id,
       name: row.file_name,
       group: 'Contracts',
-      relatedTo: `Contract, version ${row.version}${row.label ? ' (' + row.label + ')' : ''}`,
+      relatedTo: `Contract DOC-${String(row.document_no).padStart(3, '0')} v${row.version}${row.document_type ? ' · ' + row.document_type : ''}${row.label ? ' (' + row.label + ')' : ''}`,
       reference: row.reference,
       vendor: row.vendor,
       uploadedAt: row.uploaded_at,

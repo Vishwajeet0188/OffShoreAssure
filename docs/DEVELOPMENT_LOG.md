@@ -19,7 +19,7 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
   - `cookie-consent`: full-width cookie banner with Accept / Reject (local; built on `contact-support`)
   - `mobile-menu`: slide-out menu on phones for the admin console and portals (current work, built on `cookie-consent`)
   - `main` stays on the Phase 1 prototype until the client is ready.
-- **Last updated:** 26 Oct 2026, after the slide-out menu on phones
+- **Last updated:** 10 Nov 2026, after Stage 4 was rebuilt to the client's Stage 4 PDF (branch `stage-4-spec`)
 
 ---
 
@@ -39,8 +39,8 @@ This is the running record of the OffshoreAssure build, from the Phase 1 prototy
 | 0 · Registration, roles and admin | — | ✅ Done |
 | 1 · Requirement | 1–4 | ✅ Done (21 Oct) |
 | 2 · Vendor selection | 5–9 | ✅ Done (21 Oct) |
-| 3 · Compliance assessment | 10–16 | ✅ Done (22 Oct) |
-| 4 · Contract analysis | 17–20 | ✅ Done (23 Oct) |
+| 3 · Compliance assessment | 10–16 | ✅ Done (22 Oct); rebuilt to the client's Stage 3 PDF (10 Nov) |
+| 4 · Contract analysis | 17–20 | ✅ Done (23 Oct); rebuilt to the client's Stage 4 PDF (10 Nov) |
 | 5 · Obligation extraction | 21–24 | ✅ Done (23 Oct) |
 | 6 · Transfer assessment | 25–28 | ✅ Done (23 Oct) |
 | 7 · Risk identification | 29–32 | ✅ Done (25 Oct) |
@@ -198,7 +198,9 @@ Development follows only these documents:
 1. **Sequence diagram:** 9 stages, 43 steps, 4 lanes (Buyer, OffshoreAssure Engine, Offshore Vendor, Evidence Record). It sets the order of work.
 2. **"Offshore Assure – Stage 1 Inputs and Logics"** (Moumita, received 19 Oct 2026). Defines the 32 input fields, the 15 system fields, the 15 stored fields, the 10 output fields, controls ASS-001 to ASS-015, the boundary rules and the worked example (UK Company Ltd, IT Support).
 3. **Earlier client documents** used for the prototype: Technical Architecture, Functional UI Prototype Flow, Use Case 1, Use Case 2.
-4. **Mukesh's instructions:** for example, Stage 0 should register customers "the similar way as ScotWarm" and show registered users in the system.
+4. **"Offshore Assure – Stage 3 Inputs and Outputs"** (received Nov 2026). Defines the 8 start fields (step 10), the 10 fields per control (step 11), the 9 request fields (step 12), the 9 fields per answer/evidence item (step 13), the step 14 checks and scoring rules, the 12 fields per control result (step 15) and the 10 dashboard fields (step 16).
+5. **"Offshore Assure – Input / Output Stage 4, 5, 6"** (received Nov 2026). Stage 4: the 11 upload fields (step 17), 10 fields per clause and the 20 clause categories CL-01 … CL-20 (step 18), the 11 saved fields (step 19) and the 9 fields per finding (step 20). Stages 5 and 6 are in the same file and are next.
+6. **Mukesh's instructions:** for example, Stage 0 should register customers "the similar way as ScotWarm" and show registered users in the system.
 
 Specifications for Stages 2–9 (field lists, rules) will come from the client stage by stage, in the same format as the Stage 1 PDF.
 
@@ -799,6 +801,42 @@ Requested by Vishwajeet before starting Stage 3: make the user-facing site clear
   - a new admin added through Admin team, who set their password through Forgot password and signed in
   - the admin verified "Demo": the vendor portal now shows **Verified** ("verified on 21 Oct 10:43 … can now be presented to UK buyers"), and the verification email arrived. The vendor flow works end to end.
 
+### Stage 3 rebuilt to the client's "Stage 3 Inputs and Outputs" PDF (10 Nov 2026) ✅
+Branch `stage-3-spec` (local, from `main`). The earlier draft questionnaire is replaced by the client's specification.
+- **Step 10 · Start:** a form with the 8 fields: Assessment ID, Vendor ID, assessment type (initial / renewal / event-driven), service scope, vendor processing role (controller / processor / subprocessor / unknown), relevant jurisdictions, assigned reviewer and an optional target date. An invalid vendor reference, a rejected vendor, a vendor with no name or country, or a vendor nobody can be invited from blocks the start. The output is the session ID, status IN PROGRESS and the vendor invitation readiness.
+- **Step 11 · Control set:** a control library of 33 controls (`server/src/engine/assurance.js`). Each control is one question with the 10 fields: ID, family, question, answer type, applicability rule, mandatory flag, evidence types, weight, legal reference and rule version. Each is marked legally mandatory, contractually required, buyer-required or recommended. Controls that do not apply are NOT APPLICABLE (kept separate from unanswered). A buyer-added or unverified vendor gets 3 extra questions (the fuller questionnaire). ISO 27001 / SOC 2 is buyer-required, never a legal requirement.
+- **Answer types:** Yes/No, Yes/No/Partial, Yes/No/Unknown, Yes/No + registration number, Yes/No + subprocessor table, Yes/No + file, country multi-select, RTO/RPO hours, insured limit + expiry date.
+- **Step 12 · Request:** a request record with the 9 fields (request ID, contact email, questionnaire version, control IDs, requested documents, due date, secure token …). The token is stored only as a hash, expires 14 days after the due date and can be withdrawn or issued again by the reviewer. Each email delivery is recorded. The vendor portal shows sections, required answers, document uploads, completion % and the due date.
+- **Step 13 · Submit:** each document has type, issuer, issue date and expiry date. Automatic checks: malware scan (built-in EICAR / program / file-type check; **a full virus scanner such as ClamAV is needed before go-live**), file type, size, expiry, company name in the document, duplicate files, readability. Expired, unreadable or mismatched files are kept but not counted as current evidence. The vendor gets a submission receipt with completeness % and the processing status of each file.
+- **Step 14 · Score:** statuses PASS, PARTIAL, FAIL, UNKNOWN, NOT APPLICABLE, REVIEW REQUIRED. Weighted score of the applicable controls (N/A left out of the denominator). Checks: completeness, document validity, entity match, certificate scope, MFA for privileged accounts (the spec's contradiction example), subprocessor answer vs register, data location, incident plan, RTO/RPO vs target, evidence quality. A critical control that is not resolved gives "Escalation required" whatever the score.
+- **Step 15 · Save:** 12 fields per control result, gap IDs (GAP-001 …), response → evidence → control links, saved as ComplianceAssessmentSnapshot v1.0. A reviewer decision makes v1.1; a clarification and resubmission makes v2.0. Earlier versions and documents are never replaced.
+- **Step 16 · Results:** the "Vendor assurance" box (score, position, Pass / Partial / Fail / Information required, outstanding evidence) and the 10 dashboard fields, labelled provisional and "not a final legal approval".
+- **Reviewer:** marks documents verified or not acceptable (only a human review gives High confidence) and asks the vendor for clarification on chosen controls; the vendor can then change only those.
+- **Older assessments** keep the earlier draft engine and their saved results; an unsubmitted old questionnaire can be started again with the new control set.
+- **Later stages updated:** risk register (contradictions and critical gaps count as failures), transfers, report, monitoring re-checks, evidence page groups, vendor portal and the rule base page.
+- **Provisional (to confirm with the client):** continuity targets by criticality (Critical 4h/1h, High 8h/4h, Medium 24h/12h, Low 72h/24h), no minimum insured limit, critical-control policy "escalate" (can be set to "block").
+- **Tests:** API 116, all pass (Stage 3 rewritten: 11 tests). Frontend build passes; the flow was checked in a browser (start form → vendor answers → receipt → buyer results).
+
+### Project documents in Word (10 Nov 2026) ✅
+Four documents in `docs/project-documents/`, to be kept up to date with each piece of work (each has a document history table at the front):
+- **01 Requirements:** sources, roles, requirements by stage with IDs (REQ-0.1 … REQ-9.3), non-functional requirements, open questions.
+- **02 Design and stage workflow:** architecture, the four lanes, the journey, each stage (inputs, engine, saved records, screens), how stages feed each other.
+- **03 Implementation approach:** how we work, technology, rule-pack versions, database changes, coding habits, security, branches and hand-over, running locally, the update checklist.
+- **04 Testing:** how we test, latest results per test file (116 pass), Stage 3 tests mapped to requirements, browser checks, what is not tested yet, test run log.
+
+### Stage 4 rebuilt to the client's "Input / Output Stage 4, 5, 6" PDF (10 Nov 2026) ✅
+Branch `stage-4-spec` (local, built on `stage-3-spec`).
+- **Step 17 · Upload:** the 11 fields (assessment ID, document type MSA / SOW / SLA / DPA / NDA / SCC / other, title, Party A = our organisation, Party B = the selected vendor, governing law, effective and expiry dates, execution status, language, PDF or DOCX file). Effective date required unless it is a draft; expiry before effective needs an explanation. Same malware / file-type check as Stage 3. Output: document ID, version and analysis status.
+- **Contract set:** several documents per assessment (DOC-001, DOC-002 …), each with versions ("a new version of DOC-002" needs a reason). The current versions are analysed together, so a DPA's Article 28 terms count for the MSA.
+- **Unreadable / other language:** the file is still kept and marked for manual review; nothing is reported missing while extraction is not good enough. An unsigned draft is flagged as not executed.
+- **Step 18:** each clause has the 10 fields (clause ID, document ID, page, section, heading, text, category, responsible party, confidence 0–1, review status) and is placed in the 20 categories CL-01 … CL-20. Article 28 terms (CL-01 … CL-13) are legal requirements only for a controller–processor relationship (personal data and Stage 3 role not "controller"); CL-14 when data leaves the UK; CL-15 … CL-20 are contract terms. A heading alone is never proof.
+- **Step 19:** Contract Source Record per document (original file and extracted text, both encrypted, with hashes, extraction job ID and model version). Every analysis of the set is a locked version. Reviewer corrections (verify a clause, move it to another category, correct a finding with a note) are attributed and save the next version: the Extraction History.
+- **Step 20:** the clause table with FOUND / PARTIAL / MISSING / NOT APPLICABLE / HUMAN REVIEW and the 9 fields per finding, plus the clause register and preliminary findings (drafts, parties not named in the text).
+- **Later stages:** Stages 5, 6, 7, 9, the assessment list, evidence page and admin now read the latest analysis of the contract set (its version is the "contract version"). Stage 7 also takes partial and human-review clauses as findings.
+- **Database:** `022_stage4_spec.sql`. Earlier analyses keep their rule pack and are shown as before.
+- **Tests:** API 119, all pass (Stage 4 rewritten: 9 tests). Frontend build passes; checked in a browser (upload form → findings → reviewer correction → history).
+- **Project documents** updated to version 1.1.
+
 ---
 
 ## 4. Decisions
@@ -854,8 +892,8 @@ Requested by Vishwajeet before starting Stage 3: make the user-facing site clear
 | 3 | **Vendor sign-up:** built per the Technical Architecture (self-registration + OffshoreAssure verification; buyer invitations in Stage 2). Needs Mukesh to confirm | 21 Oct | Nothing (built; adjust if needed) |
 | 4 | **Delivery Assurance** was in the prototype but is not in the diagram. Drop it, or include it under Stage 9? | 20 Oct | Stage 9 scope |
 | 5 | Revised Step 5 (Stage 2) specification from Moumita. Stage 2 is built with provisional match rules; this will confirm or adjust them | Oct 2026 | Final Stage 2 match rules |
-| 8 | Stage 3 questionnaire questions per control (ASS-001 … ASS-015), evidence rules, scoring weights and bands, response deadline | 21 Oct | Final Stage 3 rules (provisional ones are built and in use) |
-| 9 | Stage 4: which clause topics to look for, which are mandatory, and whether the contract must wait for Stage 3 | 23 Oct | Final Stage 4 rules (provisional ones are built and in use) |
+| 8 | Stage 3: the specification arrived and is built. Still to confirm: continuity targets (RTO/RPO), minimum insured limit, critical-control policy (escalate or block), control weights, and the virus scanner for the live server | 10 Nov | Final Stage 3 settings (provisional values in use) |
+| 9 | Stage 4: the specification arrived and is built. Still to confirm: the keyword lists per clause category, whether a non-English contract should be translated, and whether the contract must wait for Stage 3 | 10 Nov | Final Stage 4 wording rules |
 | 10 | Stage 5: which rules each obligation is checked against, obligation categories, and how deadlines and frequencies are recorded | 23 Oct | Final Stage 5 rules (provisional ones are built and in use) |
 | 11 | Stage 6: the transfer rules (adequacy list to use, IDTA / Addendum, transfer risk assessment questions, how to treat sub-processors with unknown locations) | 23 Oct | Final Stage 6 rules (provisional ones are built and in use) |
 | 6 | Production hosting (UK region) for the API and database | Oct 2026 | Going live |

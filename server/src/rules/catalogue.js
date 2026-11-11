@@ -12,14 +12,16 @@ import { RULE_PACK_VERSION, SERVICE_CODES, CLASSIFICATIONS } from '../engine/rul
 import { CONTROLS } from '../engine/controls.js';
 import { FIT_RULE_PACK, WEIGHTS } from '../engine/vendorFit.js';
 import {
-  S3_RULE_PACK,
-  ANSWER_POINTS,
-  AREAS,
-  CONTROL_QUESTIONS,
-  EVIDENCE_TYPES,
-  EXPIRING,
-} from '../engine/questionnaire.js';
-import { S4_RULE_PACK, TOPICS } from '../engine/clauses.js';
+  RULE_VERSION as S3_RULE_VERSION,
+  CONTROL_LIBRARY,
+  FAMILIES,
+  ANSWER_TYPES,
+  DOCUMENT_TYPES,
+  STATUSES,
+  CONTINUITY_TARGETS,
+  CRITICAL_POLICY,
+} from '../engine/assurance.js';
+import { S4_RULE_PACK, TOPICS, CATEGORIES } from '../engine/clauses.js';
 import { S5_RULE_PACK, RULES } from '../engine/obligations.js';
 import { S6_RULE_PACK, ADEQUACY, ROUTE_STATUS } from '../engine/transfers.js';
 import { S7_RULE_PACK, THEMES, SEVERITY, RATINGS } from '../engine/risks.js';
@@ -28,7 +30,6 @@ import { S9_RULE_PACK, REVIEW_MONTHS, EXPIRY_WARNING_DAYS } from '../engine/repo
 import { countryName } from '../reference/countries.js';
 
 const table = (title, columns, rows, note = null) => ({ title, columns, rows, note });
-const controlName = Object.fromEntries(CONTROLS.map(c => [c.id, c.name]));
 
 /*
  * Stage 1 risk tier and classification rules, in words. They mirror derive() in
@@ -89,45 +90,76 @@ export function ruleCatalogue() {
     {
       stage: 3,
       title: 'Compliance assessment',
-      version: S3_RULE_PACK,
-      file: 'engine/questionnaire.js',
+      version: S3_RULE_VERSION,
+      file: 'engine/assurance.js',
       tables: [
         table(
-          'Answer points',
-          ['Answer', 'Points'],
-          Object.entries(ANSWER_POINTS).map(([a, p]) => [a, String(p)]),
-          '“Yes” that needs evidence counts as 50 until a valid document is uploaded. An expired certificate or insurance does not count.',
-        ),
-        table(
-          'Score bands',
-          ['Band', 'Score'],
+          'Control library',
           [
-            ['Strong', '80–100'],
-            ['Adequate, with gaps', '60–79'],
-            ['Weak', '40–59'],
-            ['Insufficient', '0–39'],
+            'Control ID',
+            'Family',
+            'Question',
+            'Answer type',
+            'Applicability rule',
+            'Mandatory',
+            'Evidence',
+            'Weight',
+            'Legal reference',
+            'Rule version',
           ],
+          CONTROL_LIBRARY.map(c => [
+            `${c.id} (${c.ass})`,
+            FAMILIES[c.family],
+            c.question,
+            ANSWER_TYPES[c.answerType].label,
+            `${c.applies.id}: ${c.applies.text}`,
+            'Yes, when it applies',
+            c.evidence.map(t => DOCUMENT_TYPES[t].label).join('; ') || '—',
+            String(c.weight),
+            typeof c.legalRef === 'function'
+              ? c.legalRef({ law: 'UK GDPR', personalData: 'Yes' })
+              : c.legalRef,
+            S3_RULE_VERSION,
+          ]),
+          `${CONTROL_LIBRARY.length} controls. Only the controls whose rule applies are activated; the rest are NOT APPLICABLE, which is different from UNANSWERED. Questions marked by the APP-UNVERIFIED rule are added for a vendor with no previously verified evidence (buyer-added or not yet approved).`,
         ),
         table(
-          'Scoring areas',
-          ['Area', 'Controls'],
-          AREAS.map(([, label, ids]) => [label, ids.join(', ')]),
+          'Status points',
+          ['Status', 'Points'],
+          Object.entries(STATUSES).map(([, v]) => [
+            v.label,
+            v.points == null ? 'Left out of the score' : String(v.points),
+          ]),
+          'Score = weighted points of the applicable controls ÷ their total weight × 100. NOT APPLICABLE controls are left out of the denominator. UNKNOWN and missing evidence stay visible as gaps.',
         ),
         table(
-          'Questions',
-          ['Control', 'Question', 'Evidence'],
-          Object.entries(CONTROL_QUESTIONS).flatMap(([id, qs]) =>
-            qs.map(q => [
-              `${id} ${controlName[id] || ''}`.trim(),
-              q.text,
-              q.evidence ? EVIDENCE_TYPES[q.evidence] || q.evidence : '—',
-            ]),
-          ),
+          'Overall position',
+          ['Position', 'When'],
+          [
+            [
+              'Escalation required',
+              `A critical control is FAIL, UNKNOWN or REVIEW REQUIRED (policy: ${CRITICAL_POLICY}; with "block" the label is "Approval blocked"). The score never overrides this.`,
+            ],
+            [
+              'Satisfactory (provisional)',
+              'Score 80 or more, and no FAIL, UNKNOWN or REVIEW REQUIRED controls',
+            ],
+            ['Conditional', 'Any other result'],
+          ],
+          'Provisional findings only. Never a final legal approval, and never called "compliant".',
         ),
         table(
-          'Documents that expire',
-          ['Type'],
-          EXPIRING.map(t => [EVIDENCE_TYPES[t]]),
+          'Continuity targets (provisional)',
+          ['Service criticality', 'RTO (hours)', 'RPO (hours)'],
+          Object.entries(CONTINUITY_TARGETS).map(([k, t]) => [k, String(t.rto), String(t.rpo)]),
+        ),
+        table(
+          'Documents requested by control',
+          ['Document', 'Expiry date needed'],
+          Object.values(DOCUMENT_TYPES).map(t => [
+            t.label,
+            t.expires ? 'Yes' : t.maxAgeMonths ? `Issued in the last ${t.maxAgeMonths} months` : 'No',
+          ]),
         ),
       ],
     },
@@ -138,7 +170,23 @@ export function ruleCatalogue() {
       file: 'engine/clauses.js',
       tables: [
         table(
-          'Clause topics',
+          'Clause categories',
+          ['Clause ID', 'Clause name', 'What to check', 'Applies as', 'The text must show'],
+          CATEGORIES.map(c => [
+            c.id,
+            c.name,
+            c.check,
+            c.group === 'ART28'
+              ? `UK GDPR Art. ${c.article} (controller–processor only)`
+              : c.group === 'TRANSFER'
+                ? 'UK GDPR Chapter V (when data leaves the UK)'
+                : 'Contract term (not statutory)',
+            c.requires.map(r => r.label).join('; '),
+          ]),
+          'Each category becomes a finding: FOUND, PARTIAL, MISSING, NOT APPLICABLE or HUMAN REVIEW. A heading alone is not proof, and nothing is reported missing when the text could not be read well enough.',
+        ),
+        table(
+          'Clause topics (tags used by Stages 5 and 6)',
           ['Topic', 'Controls', 'Words it looks for'],
           TOPICS.map(t => [
             t.name,

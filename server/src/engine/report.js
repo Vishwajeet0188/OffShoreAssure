@@ -97,15 +97,18 @@ export function compileReport(s) {
     s.compliance && {
       stage: 3,
       title: 'Compliance assessment',
-      summary: `Provisional score ${s.compliance.overall}/100 (${s.compliance.rating.toLowerCase()}), ${s.compliance.gaps} gap${s.compliance.gaps === 1 ? '' : 's'}, ${s.compliance.evidence} document${s.compliance.evidence === 1 ? '' : 's'}.`,
+      summary: `Provisional score ${s.compliance.overall}/100 (${String(s.compliance.position || s.compliance.rating).toLowerCase()}), ${s.compliance.gaps} gap${s.compliance.gaps === 1 ? '' : 's'}, ${s.compliance.evidence} document${s.compliance.evidence === 1 ? '' : 's'}.`,
       facts: s.compliance.areas.map(a => [a.label, `${a.score}/100`]),
       record: s.compliance.sha256,
     },
     s.contract && {
       stage: 4,
       title: 'Contract analysis',
-      summary: `Contract v${s.contract.version} (${s.contract.fileName}): ${s.contract.clauses} clauses, ${s.contract.notFound.length} expected topic${s.contract.notFound.length === 1 ? '' : 's'} not found.`,
-      facts: s.contract.notFound.map(t => ['Not found', t]),
+      summary: `Contract analysis v${s.contract.version} (${s.contract.documents || 1} document${(s.contract.documents || 1) === 1 ? '' : 's'}): ${s.contract.clauses} clauses, ${s.contract.notFound.length} clause categor${s.contract.notFound.length === 1 ? 'y' : 'ies'} missing, ${(s.contract.partial || []).length} partial.`,
+      facts: [
+        ...s.contract.notFound.map(t => ['Missing', t]),
+        ...(s.contract.partial || []).map(t => ['Partial', t]),
+      ],
       record: s.contract.sha256,
     },
     s.obligations && {
@@ -189,7 +192,7 @@ export function monitoringItems({
     const key = `renew:${e.id}`;
     const request = requested.get(key); // the action already sent for it, if any
     const renewed = request?.status === 'CLOSED';
-    const what = e.type === 'insurance' ? 'insurance certificate' : 'certificate';
+    const what = ['insurance', 'INSURANCE_CERT'].includes(e.type) ? 'insurance certificate' : 'certificate';
     items.push({
       key,
       kind: 'renewal',

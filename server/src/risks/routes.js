@@ -186,8 +186,8 @@ export async function gatherSources(run, assessment) {
     [assessment.id],
   );
   const contract = await one(
-    `SELECT d.version, ca.not_found FROM contract_documents d JOIN contract_analyses ca ON ca.contract_id = d.id
-      WHERE d.assessment_id = $1 ORDER BY d.version DESC LIMIT 1`,
+    `SELECT ca.version, ca.not_found, ca.findings FROM contract_analyses ca
+      WHERE ca.assessment_id = $1 ORDER BY ca.version DESC LIMIT 1`,
     [assessment.id],
   );
   const obligations = await one(
@@ -202,7 +202,9 @@ export async function gatherSources(run, assessment) {
       ? { version: selection.version, status: selection.status, fit: selection.match }
       : null,
     compliance: compliance ? { version: compliance.version, result: compliance.result } : null,
-    contract: contract ? { version: contract.version, notFound: contract.not_found } : null,
+    contract: contract
+      ? { version: contract.version, notFound: contract.not_found, findings: contract.findings || [] }
+      : null,
     obligations: obligations ? { version: obligations.version, gaps: obligations.gaps } : null,
     transfers: { version: transfers.version, routes: transfers.routes },
     versions: {

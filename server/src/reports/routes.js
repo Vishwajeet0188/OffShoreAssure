@@ -62,8 +62,8 @@ async function gatherSources(db, a) {
       WHERE c.assessment_id = $1 ORDER BY r.version DESC LIMIT 1`,
   );
   const contract = await one(
-    `SELECT d.version, d.file_name, ca.totals, ca.not_found, ca.snapshot_sha256 FROM contract_documents d JOIN contract_analyses ca ON ca.contract_id = d.id
-      WHERE d.assessment_id = $1 ORDER BY d.version DESC LIMIT 1`,
+    `SELECT ca.version, d.file_name, ca.totals, ca.not_found, ca.findings, ca.snapshot_sha256 FROM contract_analyses ca JOIN contract_documents d ON d.id = ca.contract_id
+      WHERE ca.assessment_id = $1 ORDER BY ca.version DESC LIMIT 1`,
   );
   const obligations = await one(
     'SELECT version, totals, gaps, snapshot_sha256 FROM obligation_registers WHERE assessment_id = $1 ORDER BY version DESC LIMIT 1',
@@ -117,6 +117,7 @@ async function gatherSources(db, a) {
       version: compliance.version,
       overall: compliance.overall_score,
       rating: compliance.rating,
+      position: compliance.result.rating?.label || compliance.rating,
       gaps: (compliance.result.gaps || []).length,
       evidence: (compliance.evidence || []).length,
       areas: compliance.result.areas || [],
@@ -127,6 +128,8 @@ async function gatherSources(db, a) {
       fileName: contract.file_name,
       clauses: contract.totals?.clauses ?? 0,
       notFound: (contract.not_found || []).map(t => t.name),
+      partial: (contract.findings || []).filter(f => f.status === 'PARTIAL').map(f => f.name),
+      documents: contract.totals?.documents ?? 1,
       sha256: contract.snapshot_sha256,
     },
     obligations: obligations && {
@@ -183,7 +186,7 @@ async function evidenceIndex(db, a) {
      SELECT 3, 'Compliance evidence', e.file_name, e.sha256, e.uploaded_at, e.expires_on, e.control_id || ' · ' || e.doc_type
        FROM compliance_evidence e JOIN compliance_assessments c ON c.id = e.compliance_id WHERE c.assessment_id = $1
      UNION ALL
-     SELECT 4, 'Contract', d.file_name, d.sha256, d.uploaded_at, NULL, 'v' || d.version
+     SELECT 4, 'Contract', d.file_name, d.sha256, d.uploaded_at, NULL, 'DOC-' || lpad(d.document_no::text, 3, '0') || ' v' || d.version
        FROM contract_documents d WHERE d.assessment_id = $1
      UNION ALL
      SELECT 8, 'Remediation evidence', e.file_name, e.sha256, e.uploaded_at, NULL, 'ACT-' || lpad(x.number::text, 2, '0')

@@ -345,29 +345,38 @@ function CompliancePanel({ s }) {
   );
 }
 
-/* Stage 4 for the admin: contract versions and the latest analysis (read-only). */
+/* Stage 4 for the admin: the contract set and the latest analysis (read-only). */
 function ContractPanel({ state }) {
-  const latest = state.versions[0];
-  const { totals, notFound } = state.analysis;
-
+  const a = state.analysis;
+  const t = a.totals;
+  const open = a.findings.filter(f => ['MISSING', 'PARTIAL', 'HUMAN_REVIEW'].includes(f.status));
   return (
     <section className="card" data-section="admin-contract">
       <div className="ch">
         <div>
           <h2>Stage 4 · Contract analysis</h2>
           <div className="sub">
-            {latest.fileName} · version {latest.version} of {state.versions.length} · uploaded{' '}
-            {fmtTime(latest.uploadedAt)} by {latest.uploadedBy}
+            Analysis v{a.version} of {state.versions.length} · {t.documents || 1} document
+            {(t.documents || 1) === 1 ? '' : 's'} · {t.clauses} clauses · {fmtTime(a.createdAt)}
           </div>
         </div>
-        <Badge s="Complete" label={`${totals.clauses} clauses · ${totals.relevant} relevant`} />
+        <Badge
+          s={a.status === 'HUMAN_REVIEW' ? 'In review' : 'Complete'}
+          label={
+            a.legacy
+              ? `${t.clauses} clauses (earlier rules)`
+              : `${t.found} found · ${t.partial} partial · ${t.missing} missing`
+          }
+        />
       </div>
       <div className="asr-block">
-        <h3>Topics not found ({notFound.length})</h3>
-        {notFound.length ? (
+        <h3>Missing, partial or for human review ({open.length})</h3>
+        {open.length ? (
           <ul>
-            {notFound.map(item => (
-              <li key={item.topicId}>{item.name}</li>
+            {open.map(f => (
+              <li key={f.categoryId}>
+                {f.categoryId} {f.name}: {f.status.replace('_', ' ').toLowerCase()} · {f.explanation}
+              </li>
             ))}
           </ul>
         ) : (
@@ -377,13 +386,14 @@ function ContractPanel({ state }) {
         )}
       </div>
       <div className="asr-block">
-        <h3>Versions</h3>
+        <h3>Documents</h3>
         <ul>
-          {state.versions.map(v => (
-            <li key={v.version}>
-              v{v.version} · {v.fileName}
-              {v.label ? ` (${v.label})` : ''} · {fmtTime(v.uploadedAt)}
-              {v.changeReason ? <span className="note"> · {v.changeReason}</span> : null}
+          {state.documents.map(d => (
+            <li key={d.id}>
+              {d.documentId} v{d.version} · {d.documentType} · {d.title} · {d.fileName} ·{' '}
+              {fmtTime(d.uploadedAt)}
+              {d.current ? '' : ' (earlier version)'}
+              {d.changeReason ? <span className="note"> · {d.changeReason}</span> : null}
             </li>
           ))}
         </ul>

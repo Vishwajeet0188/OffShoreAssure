@@ -18,7 +18,7 @@ const { migrate } = await import('../src/migrate.js');
 const { createApp } = await import('../src/app.js');
 const { analyseContract } = await import('../src/engine/clauses.js');
 const { assessTransfers, readContractTransferTerms } = await import('../src/engine/transfers.js');
-const { EXAMPLE } = await import('./fixtures.js');
+const { EXAMPLE, startStage3, completeStage3, uploadSpecContract } = await import('./fixtures.js');
 const bcrypt = (await import('bcryptjs')).default;
 
 let server, base;
@@ -51,8 +51,9 @@ async function signUp(email, role) {
 }
 let admin, buyer, vendor, other, ref, vendorId;
 const fixture = name => fs.readFileSync(new URL('./fixtures/' + name, import.meta.url));
+// A new upload with a reason is a new version of the main contract (DOC-001).
 const uploadContract = (c, query, data, type = 'application/pdf') =>
-  c('POST', `/assessments/${ref}/contract?${new URLSearchParams(query)}`, null, { type, data });
+  uploadSpecContract(c, ref, data, { type, ...query, ...(query.reason ? { replaces: 'DOC-001' } : {}) });
 
 before(async () => {
   await pool.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
@@ -109,16 +110,11 @@ async function selectVendorAndStartCompliance() {
     approverId: (await buyer('GET', '/me')).body.user.id,
     confirmedAt: new Date().toISOString(),
   });
-  await buyer('POST', `/assessments/${ref}/compliance`);
+  assert.equal((await startStage3(buyer, ref)).status, 201);
 }
 
 async function vendorSubmitsCompliance() {
-  const questionnaire = (await vendor('GET', `/vendor/compliance/${ref}`)).body.compliance.questionnaire;
-  const answers = {};
-  for (const control of questionnaire)
-    for (const question of control.questions) answers[question.id] = { answer: 'Yes' };
-  await vendor('PUT', `/vendor/compliance/${ref}/answers`, { answers });
-  const r = await vendor('POST', `/vendor/compliance/${ref}/submit`);
+  const r = await completeStage3(vendor, ref);
   assert.equal(r.status, 201, JSON.stringify(r.body));
 }
 
@@ -135,13 +131,8 @@ async function uploadContractAfterStage3() {
     approverId: (await buyer('GET', '/me')).body.user.id,
     confirmedAt: new Date().toISOString(),
   });
-  await buyer('POST', `/assessments/${ref}/compliance`);
-  const questionnaire = (await vendor('GET', `/vendor/compliance/${ref}`)).body.compliance.questionnaire;
-  const answers = {};
-  for (const control of questionnaire)
-    for (const question of control.questions) answers[question.id] = { answer: 'Yes' };
-  await vendor('PUT', `/vendor/compliance/${ref}/answers`, { answers });
-  await vendor('POST', `/vendor/compliance/${ref}/submit`);
+  assert.equal((await startStage3(buyer, ref)).status, 201);
+  assert.equal((await completeStage3(vendor, ref)).status, 201);
   const r = await uploadContract(buyer, { name: 'contract.pdf' }, fixture('contract.pdf'));
   assert.equal(r.status, 201, JSON.stringify(r.body));
 }

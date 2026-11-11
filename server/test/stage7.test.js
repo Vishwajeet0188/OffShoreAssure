@@ -17,7 +17,7 @@ const { pool } = await import('../src/db.js');
 const { migrate } = await import('../src/migrate.js');
 const { createApp } = await import('../src/app.js');
 const { collectFindings, scoreRisks, buildRiskRegister, ratingFor } = await import('../src/engine/risks.js');
-const { EXAMPLE } = await import('./fixtures.js');
+const { EXAMPLE, startStage3, completeStage3, uploadSpecContract } = await import('./fixtures.js');
 const bcrypt = (await import('bcryptjs')).default;
 
 let server, base;
@@ -107,19 +107,13 @@ async function runStagesTwoToFive() {
     approverId: (await buyer('GET', '/me')).body.user.id,
     confirmedAt: new Date().toISOString(),
   });
-  await buyer('POST', `/assessments/${ref}/compliance`);
-  const questionnaire = (await vendor('GET', `/vendor/compliance/${ref}`)).body.compliance.questionnaire;
-  const answers = {};
-  for (const control of questionnaire)
-    for (const question of control.questions) answers[question.id] = { answer: 'Yes' };
-  answers['006-1'] = { answer: 'No' }; // no up-to-date sub-processor list
-  answers['008-2'] = { answer: 'No' }; // continuity plan not tested
-  await vendor('PUT', `/vendor/compliance/${ref}/answers`, { answers });
-  assert.equal((await vendor('POST', `/vendor/compliance/${ref}/submit`)).status, 201);
-  const up = await buyer('POST', `/assessments/${ref}/contract?name=contract.pdf`, null, {
-    type: 'application/pdf',
-    data: fixture('contract.pdf'),
+  assert.equal((await startStage3(buyer, ref)).status, 201);
+  // No commitment on subprocessor approval, and the continuity plan not tested.
+  const submitted = await completeStage3(vendor, ref, {
+    overrides: { 'SUB-02': { answer: 'No' }, 'BCP-02': { answer: 'No' } },
   });
+  assert.equal(submitted.status, 201, JSON.stringify(submitted.body));
+  const up = await uploadSpecContract(buyer, ref, fixture('contract.pdf'));
   assert.equal(up.status, 201, JSON.stringify(up.body));
   assert.equal((await buyer('POST', `/assessments/${ref}/obligations`)).status, 201);
 }
@@ -275,9 +269,9 @@ test('steps 29–32: register saved with linked sources, on the timeline; Stage 
     'transfers',
   ]);
   const subs = g.risks.find(x => x.theme === 'subprocessors');
-  assert.ok(subs, 'the "No" on the sub-processor list becomes a risk');
+  assert.ok(subs, 'the "No" on subprocessor approval becomes a risk');
   assert.ok(
-    subs.findings.some(f => f.stage === 3 && f.ref === '006-1'),
+    subs.findings.some(f => f.stage === 3 && f.ref === 'SUB-02'),
     'linked to its source question',
   );
   assert.ok(
@@ -312,15 +306,12 @@ test('steps 29–32: register saved with linked sources, on the timeline; Stage 
 });
 
 test('a change in an earlier stage allows v2; v1 kept and locked; access rules', async () => {
-  await buyer(
-    'POST',
-    `/assessments/${ref}/contract?name=contract.docx&reason=${encodeURIComponent('Signed copy received from the vendor')}`,
-    null,
-    {
-      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      data: fixture('contract.docx'),
-    },
-  );
+  await uploadSpecContract(buyer, ref, fixture('contract.docx'), {
+    name: 'contract.docx',
+    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    replaces: 'DOC-001',
+    reason: 'Signed copy received from the vendor',
+  });
   const r = await buyer('POST', `/assessments/${ref}/risks`);
   assert.equal(r.status, 201);
   assert.equal(r.body.register.version, 2);
